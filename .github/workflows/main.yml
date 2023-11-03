@@ -40,7 +40,7 @@ jobs:
     steps:
       - name: Stop and remove previous container
         run: |
-          cd ~/api-gateway
+          cd ~/BE
           docker-compose down --rmi all
 
       - name: Login to Amazon ECR
