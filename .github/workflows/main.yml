@@ -1,0 +1,55 @@
+name: api-gateway CI/CD
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: CI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.ACTION_TOKEN }} # personal token
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Docker build, tag, and push image to Amazon ECR
+        id: build-image
+        run: |
+          docker buildx create --use --name arm64-my-builder
+          docker buildx build --platform linux/arm64 -t ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ secrets.ECR_IMAGE_TAG }} . --push
+
+  deploy:
+    needs: build
+    name: CD
+    runs-on: self-hosted
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Stop and remove previous container
+        run: |
+          cd ~/api-gateway
+          docker-compose down --rmi all
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Pull image from Amazon ECR and run container
+        continue-on-error: true
+        run: |
+          cd ~/BE
+          docker pull ${{ secrets.ECR_REGISTRY }}/${{ secrets.ECR_REPOSITORY }}:${{ secrets.ECR_IMAGE_TAG }}
+          docker-compose up -d
