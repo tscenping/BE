@@ -34,7 +34,7 @@ jobs:
   deploy:
     needs: build
     name: CD
-    runs-on: self-hosted
+    runs-on: [self-hosted, ec2]
     if: github.ref == 'refs/heads/main'
 
     steps:
