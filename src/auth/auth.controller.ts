@@ -1,42 +1,22 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+import { Controller, Get, Logger, Query } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { Auth42Service } from './auth-42.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly auth42Service: Auth42Service,
+  ) {}
+  private readonly logger = new Logger(AuthController.name);
 
-  @Post()
-  create(@Body() createAuthDto: CreateAuthDto) {
-    return this.authService.create(createAuthDto);
-  }
-
-  @Get()
-  findAll() {
-    return this.authService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.authService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
-    return this.authService.update(+id, updateAuthDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.authService.remove(+id);
+  @Get('/signin')
+  async signin(@Query('code') code: string) {
+    // code를 이용해 access token을 받아온다.
+    const accessToken = await this.auth42Service.getAccessToken(code);
+    // access token을 이용해 사용자 정보를 받아온다.
+    const userData = await this.auth42Service.getUserData(accessToken);
+    // 사용자 정보를 이용해 JWT 토큰을 생성한다.
+    const jwt = await this.authService.signin(userData);
   }
 }
