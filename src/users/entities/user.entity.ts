@@ -12,13 +12,13 @@ import { Column, Entity, Unique } from 'typeorm';
 @Entity()
 @Unique(['nickname'])
 export class User extends BaseEntity {
-  @Column()
+  @Column({ default: null })
   @IsString()
   @Length(1, 10)
-  @Matches(/^[ㄱ-ㅎ가-힣a-zA-Z0-9]+$/)
+  @Matches(/^[ㄱ-ㅎ가-힣a-zA-Z0-9!]+$/)
   nickname: string;
 
-  @Column()
+  @Column({ default: null })
   @IsString()
   avatar: string;
 
@@ -50,15 +50,15 @@ export class User extends BaseEntity {
   //   @IsString()
   //   accessToken!: string | null;
 
-  @Column()
+  @Column({ default: null })
   @IsString()
   refreshToken: string;
 
-  @Column()
+  @Column({ default: null })
   @IsString()
   gameSocketId: string;
 
-  @Column()
+  @Column({ default: null })
   @IsString()
   chatSocketId: string;
 
