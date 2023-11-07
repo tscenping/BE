@@ -1,7 +1,18 @@
-import { Controller, Get, Logger, Query, Res } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Logger,
+  Post,
+  Query,
+  Res,
+  UploadedFile,
+  UseInterceptors,
+} from '@nestjs/common';
 import { Auth42Service } from './auth-42.service';
 import { AuthService } from './auth.service';
 import { UserSigninResponseDto } from './dto/user-signin-response.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
 
 @Controller('auth')
 export class AuthController {
@@ -37,10 +48,23 @@ export class AuthController {
     });
     const userSigninResponseDto: UserSigninResponseDto = {
       userId: user.id,
-      isFirstLogin: user.avatar === null ? true : false,
+      isFirstLogin: user.avatar === null,
       isMfaEnabled: user.isMfaEnabled,
       mfaQRCode,
     };
     return res.send(userSigninResponseDto);
+  }
+
+  @Post('/login')
+  @UseInterceptors(
+    FileInterceptor('avatar', {
+      storage: diskStorage({
+        destination: './uploads',
+      }),
+    }),
+  )
+  async login(@UploadedFile() file: Express.Multer.File) {
+    console.log('file: ', file);
+    return `http://localhost:3000/auth/login/${file.filename}`;
   }
 }

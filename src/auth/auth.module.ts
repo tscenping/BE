@@ -6,6 +6,7 @@ import { Auth42Service } from './auth-42.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtModule } from '@nestjs/jwt';
+import { MulterModule } from '@nestjs/platform-express';
 
 @Module({
   controllers: [AuthController],
@@ -20,6 +21,11 @@ import { JwtModule } from '@nestjs/jwt';
         },
       }),
     }),
+    // MulterModule.registerAsync({
+    //   useFactory: () => ({
+    //     dest: './uploads',
+    //   }),
+    // }),
   ],
 })
 export class AuthModule {}
