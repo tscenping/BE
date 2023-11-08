@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { User } from 'src/users/entities/user.entity';
 import { UserRepository } from './../users/users.repository';
@@ -33,7 +33,7 @@ export class AuthService {
   }
 
   async generateJwtToken(user: User) {
-    const payload = { id: user.id, nickname: user.nickname };
+    const payload = { id: user.id, email: user.email };
     // accessToken 생성
     const accessToken = await this.jwtService.signAsync(payload);
     // refreshToken 생성
@@ -41,5 +41,15 @@ export class AuthService {
     // refreshToken을 DB에 저장한다.
     await this.userRepository.update(user.id, { refreshToken });
     return { jwtAccessToken: accessToken, jwtRefreshToken: refreshToken };
+  }
+
+  async validateNickname(nickname: string) {
+    const user = await this.userRepository.findOneByNickname(nickname);
+    if (user) {
+      throw new HttpException(
+        '이미 존재하는 닉네임입니다.',
+        HttpStatus.CONFLICT,
+      );
+    }
   }
 }

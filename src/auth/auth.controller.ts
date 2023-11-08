@@ -1,7 +1,18 @@
-import { Controller, Get, Logger, Query, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Logger,
+  Patch,
+  Post,
+  Query,
+  Res,
+  UseInterceptors,
+} from '@nestjs/common';
 import { Auth42Service } from './auth-42.service';
 import { AuthService } from './auth.service';
 import { UserSigninResponseDto } from './dto/user-signin-response.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('auth')
 export class AuthController {
@@ -11,8 +22,8 @@ export class AuthController {
   ) {}
   private readonly logger = new Logger(AuthController.name);
 
-  @Get('/signin')
-  async signin(@Query('code') code: string, @Res() res: any) {
+  @Post('/signin')
+  async signin(@Body('code') code: string, @Res() res: any) {
     // code를 이용해 access token을 받아온다.
     const accessToken = await this.auth42Service.getAccessToken(code);
     // access token을 이용해 사용자 정보를 받아온다.
@@ -42,5 +53,14 @@ export class AuthController {
       mfaQRCode,
     };
     return res.send(userSigninResponseDto);
+  }
+
+  // TODO: AuthGuard
+  @Patch('/login')
+  @UseInterceptors(FileInterceptor('image'))
+  async login(@Body('nickname') nickname: string) {
+    // nickname validation
+    await this.authService.validateNickname(nickname);
+    //
   }
 }
