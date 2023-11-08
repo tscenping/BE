@@ -45,7 +45,7 @@ export class Auth42Service {
         email: response.data.email,
         fortyTwoId: response.data.id,
       };
-      this.logger.log(userData);
+      this.logger.log('user: ', userData);
       return userData;
     } catch (error) {
       this.logger.error(error);

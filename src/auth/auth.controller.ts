@@ -1,24 +1,28 @@
 import {
   Body,
   Controller,
-  Get,
   Logger,
-  Patch,
   Post,
-  Query,
   Res,
+  UploadedFile,
+  UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { User } from 'src/users/entities/user.entity';
+import { UserRepository } from 'src/users/users.repository';
 import { Auth42Service } from './auth-42.service';
 import { AuthService } from './auth.service';
 import { UserSigninResponseDto } from './dto/user-signin-response.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { GetUser } from './get-user.decorator';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly auth42Service: Auth42Service,
+    private readonly userRepository: UserRepository,
   ) {}
   private readonly logger = new Logger(AuthController.name);
 
@@ -48,19 +52,22 @@ export class AuthController {
     });
     const userSigninResponseDto: UserSigninResponseDto = {
       userId: user.id,
-      isFirstLogin: user.avatar === null ? true : false,
+      isFirstLogin:
+        user.nickname && user.nickname[0] === process.env.FIRST_NICKNAME_PREFIX,
       isMfaEnabled: user.isMfaEnabled,
       mfaQRCode,
     };
     return res.send(userSigninResponseDto);
   }
 
-  // TODO: AuthGuard
-  @Patch('/login')
-  @UseInterceptors(FileInterceptor('image'))
-  async login(@Body('nickname') nickname: string) {
-    // nickname validation
-    await this.authService.validateNickname(nickname);
-    //
+  @Post('/login')
+  @UseGuards(AuthGuard())
+  @UseInterceptors(FileInterceptor('avatar'))
+  async login(
+    @GetUser() user: User,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    console.log(user);
+    // return this.userRepository.updateAvatar(user.id, file);
   }
 }
