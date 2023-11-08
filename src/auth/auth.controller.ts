@@ -11,7 +11,6 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { User } from 'src/users/entities/user.entity';
 import { UsersService } from './../users/users.service';
@@ -19,6 +18,7 @@ import { Auth42Service } from './auth-42.service';
 import { AuthService } from './auth.service';
 import { UserSigninResponseDto } from './dto/user-signin-response.dto';
 import { GetUser } from './get-user.decorator';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -67,13 +67,14 @@ export class AuthController {
   }
 
   @Post('/login')
-  @UseGuards(AuthGuard())
+  @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('avatar'))
   async login(
     @GetUser() user: User,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    // console.log(user);
+    console.log(user);
+
     if (!file) {
       throw new HttpException('avatar is required', HttpStatus.BAD_REQUEST);
     }

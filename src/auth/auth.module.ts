@@ -9,20 +9,20 @@ import { UsersService } from 'src/users/users.service';
 import { Auth42Service } from './auth-42.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { CustomJwtStrategy } from './custom-jwt.strategy';
+import { JwtAccessStrategy } from './jwt-access.strategy';
 
 @Module({
   controllers: [AuthController],
   providers: [
     AuthService,
     Auth42Service,
-    CustomJwtStrategy,
+    JwtAccessStrategy,
     UserRepository,
     UsersService,
   ],
   imports: [
     TypeOrmModule.forFeature([User]),
-    PassportModule.register({ defaultStrategy: 'jwt' }),
+    PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -39,6 +39,5 @@ import { CustomJwtStrategy } from './custom-jwt.strategy';
     //   }),
     // }),
   ],
-  exports: [CustomJwtStrategy, PassportModule],
 })
 export class AuthModule {}
