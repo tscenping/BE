@@ -56,13 +56,7 @@ export class AuthController {
   }
 
   @Post('/login')
-  @UseInterceptors(
-    FileInterceptor('avatar', {
-      storage: diskStorage({
-        destination: './uploads',
-      }),
-    }),
-  )
+  @UseInterceptors(FileInterceptor('avatar'))
   async login(@UploadedFile() file: Express.Multer.File) {
     console.log('file: ', file);
     return `http://localhost:3000/auth/login/${file.filename}`;

@@ -7,25 +7,16 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtModule } from '@nestjs/jwt';
 import { MulterModule } from '@nestjs/platform-express';
+import { jwtConfig } from '../common/config/jwt.config';
+import { multerConfig } from '../common/config/multer.config';
 
 @Module({
   controllers: [AuthController],
   providers: [AuthService, Auth42Service, UserRepository],
   imports: [
     TypeOrmModule.forFeature([User]),
-    JwtModule.registerAsync({
-      useFactory: () => ({
-        secret: process.env.JWT_SECRET,
-        signOptions: {
-          expiresIn: process.env.JWT_EXPIRATION_TIME,
-        },
-      }),
-    }),
-    // MulterModule.registerAsync({
-    //   useFactory: () => ({
-    //     dest: './uploads',
-    //   }),
-    // }),
+    JwtModule.registerAsync(jwtConfig),
+    MulterModule.registerAsync(multerConfig),
   ],
 })
 export class AuthModule {}
