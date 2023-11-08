@@ -1,6 +1,8 @@
 import {
   Body,
   Controller,
+  HttpException,
+  HttpStatus,
   Logger,
   Post,
   Res,
@@ -12,7 +14,7 @@ import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { User } from 'src/users/entities/user.entity';
-import { UserRepository } from 'src/users/users.repository';
+import { UsersService } from './../users/users.service';
 import { Auth42Service } from './auth-42.service';
 import { AuthService } from './auth.service';
 import { UserSigninResponseDto } from './dto/user-signin-response.dto';
@@ -23,7 +25,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly auth42Service: Auth42Service,
-    private readonly userRepository: UserRepository,
+    private readonly usersService: UsersService,
     private readonly configService: ConfigService,
   ) {}
   private readonly logger = new Logger(AuthController.name);
@@ -71,7 +73,11 @@ export class AuthController {
     @GetUser() user: User,
     @UploadedFile() file: Express.Multer.File,
   ) {
-    console.log(user);
-    // return this.userRepository.updateAvatar(user.id, file);
+    // console.log(user);
+    if (!file) {
+      throw new HttpException('avatar is required', HttpStatus.BAD_REQUEST);
+    }
+
+    return this.usersService.updateUserAvatar(user.id, file);
   }
 }
