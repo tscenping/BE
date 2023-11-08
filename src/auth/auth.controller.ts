@@ -8,6 +8,7 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { User } from 'src/users/entities/user.entity';
@@ -23,6 +24,7 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly auth42Service: Auth42Service,
     private readonly userRepository: UserRepository,
+    private readonly configService: ConfigService,
   ) {}
   private readonly logger = new Logger(AuthController.name);
 
@@ -53,7 +55,9 @@ export class AuthController {
     const userSigninResponseDto: UserSigninResponseDto = {
       userId: user.id,
       isFirstLogin:
-        user.nickname && user.nickname[0] === process.env.FIRST_NICKNAME_PREFIX,
+        user.nickname &&
+        user.nickname[0] ===
+          this.configService.get<string>('FIRST_NICKNAME_PREFIX'),
       isMfaEnabled: user.isMfaEnabled,
       mfaQRCode,
     };

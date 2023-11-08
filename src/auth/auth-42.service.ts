@@ -1,9 +1,12 @@
 import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import axios from 'axios';
 import { User42Dto } from './dto/user-42.dto';
 
 @Injectable()
 export class Auth42Service {
+  constructor(private readonly configService: ConfigService) {}
+
   private readonly logger = new Logger(Auth42Service.name);
   private readonly baseUrl = 'https://api.intra.42.fr';
 
@@ -13,10 +16,12 @@ export class Auth42Service {
         `${this.baseUrl}/oauth/token`,
         {
           grant_type: 'authorization_code',
-          client_id: process.env.FORTYTWO_CLIENT_ID,
-          client_secret: process.env.FORTYTWO_CLIENT_SECRET,
+          client_id: this.configService.get<string>('FORTYTWO_CLIENT_ID'),
+          client_secret: this.configService.get<string>(
+            'FORTYTWO_CLIENT_SECRET',
+          ),
           code,
-          redirect_uri: process.env.FORTYTWO_REDIRECT_URI,
+          redirect_uri: this.configService.get<string>('FORTYTWO_REDIRECT_URI'),
         },
         {
           headers: {
