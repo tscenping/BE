@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Response } from 'express';
 import { User } from 'src/users/entities/user.entity';
 import { UsersService } from './../users/users.service';
 import { Auth42Service } from './auth-42.service';
@@ -19,7 +20,6 @@ import { AuthService } from './auth.service';
 import { UserSigninResponseDto } from './dto/user-signin-response.dto';
 import { GetUser } from './get-user.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -81,13 +81,16 @@ export class AuthController {
   async login(
     @GetUser() user: User,
     @UploadedFile() file: Express.Multer.File,
+    @Body('nickname') nickname: string,
   ) {
     console.log(user);
+    console.log(file);
+    console.log(nickname);
 
     if (!file) {
       throw new HttpException('avatar is required', HttpStatus.BAD_REQUEST);
     }
 
-    return this.usersService.updateUserAvatar(user.id, file);
+    // return this.usersService.updateUserAvatar(user.id, file);
   }
 }
