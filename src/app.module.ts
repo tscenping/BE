@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { typeOrmConfig } from './common/config/typeorm.config';
 import { AuthModule } from './auth/auth.module';
+import ftConfig from './config/ft.config';
+import { typeOrmConfig } from './config/typeorm.config';
 import { UsersModule } from './users/users.module';
-import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { ConfigModule } from '@nestjs/config';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+      load: [ftConfig],
     }),
     AuthModule,
     UsersModule,
