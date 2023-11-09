@@ -10,7 +10,7 @@ export const multerConfig: MulterModuleAsyncOptions = {
     return {
       storage: diskStorage({
         destination: (req, file, callback) => {
-          const uploadPath = __dirname + '/../../uploads';
+          const uploadPath = '/app/dist/uploads';
           if (!existsSync(uploadPath)) {
             // uploads 폴더가 존재하지 않을시, 생성합니다.
             mkdirSync(uploadPath);
@@ -19,8 +19,8 @@ export const multerConfig: MulterModuleAsyncOptions = {
         },
         filename: (req, file, callback) => {
           const userAccessToken = 'test';
-          const extension = extname(file.mimetype);
-          callback(null, `${userAccessToken}-${file.fieldname}.${extension}`);
+          const extension = extname(file.originalname);
+          callback(null, `${userAccessToken}-${file.fieldname}${extension}`);
         },
       }),
     };
