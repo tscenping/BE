@@ -1,7 +1,11 @@
 import {
+  Body,
   Controller,
   Get,
+  HttpStatus,
   Logger,
+  Param,
+  ParseFilePipeBuilder,
   Post,
   Query,
   Res,
@@ -12,13 +16,14 @@ import { Auth42Service } from './auth-42.service';
 import { AuthService } from './auth.service';
 import { UserSigninResponseDto } from './dto/user-signin-response.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { UsersService } from '../users/users.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly auth42Service: Auth42Service,
+    private readonly usersService: UsersService,
   ) {}
   private readonly logger = new Logger(AuthController.name);
 
@@ -56,9 +61,14 @@ export class AuthController {
   }
 
   @Post('/login')
-  @UseInterceptors(FileInterceptor('avatar'))
-  async login(@UploadedFile() file: Express.Multer.File) {
+  @UseInterceptors(FileInterceptor('avatar', {}))
+  async login(
+    @UploadedFile() file: Express.Multer.File,
+    @Param('nickname') nickname: string,
+  ) {
     console.log('file: ', file);
-    console.log('filename: ', file.filename);
+    console.log('nickname: ', nickname);
+    // this.usersService.login(file.path, nickname);
+    // db에 avatar->file.path, nickname 저장: service에 매개변수로 넘기기
   }
 }

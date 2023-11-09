@@ -23,6 +23,8 @@ export const multerConfig: MulterModuleAsyncOptions = {
           callback(null, `${userAccessToken}-${file.fieldname}${extension}`);
         },
       }),
+      // limits: {},
+      // fileFilter(req, file, callback) {}
     };
   },
 };
