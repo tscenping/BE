@@ -1,26 +1,31 @@
-import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { Injectable, Logger } from '@nestjs/common';
+import * as fs from 'fs';
+import * as path from 'path';
+import { UserRepository } from './users.repository';
 
 @Injectable()
 export class UsersService {
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
-  }
+  constructor(private readonly userRepository: UserRepository) {}
 
-  findAll() {
-    return `This action returns all users`;
-  }
+  private readonly logger = new Logger(UsersService.name);
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
-  }
+  private dirPath = path.join(__dirname, '..', '..', 'public', 'users');
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
-  }
+  async updateUserAvatar(userId: number, file: Express.Multer.File) {
+    const dirPath = path.join(this.dirPath, userId.toString());
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+
+    const type = file.mimetype.split('/')[1];
+    const filePath = path.join(dirPath, 'avatar.' + type);
+
+    fs.writeFileSync(filePath, file.buffer);
+
+    return await this.userRepository.update(
+      { id: userId },
+      { avatar: filePath },
+    );
   }
 }
