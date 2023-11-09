@@ -7,14 +7,15 @@ import { AuthModule } from './auth/auth.module';
 import ftConfig from './config/ft.config';
 import { typeOrmConfig } from './config/typeorm.config';
 import { UsersModule } from './users/users.module';
+import userConfig from './config/user.config';
 
 @Module({
   imports: [
     TypeOrmModule.forRootAsync(typeOrmConfig),
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
-      load: [ftConfig],
+      envFilePath: './BE-config/.env',
+      load: [ftConfig, userConfig],
     }),
     AuthModule,
     UsersModule,
