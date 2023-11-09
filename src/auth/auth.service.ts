@@ -19,7 +19,7 @@ export class AuthService {
     private readonly userRepository: UserRepository,
     private readonly jwtService: JwtService,
     @Inject(userConfig.KEY)
-    private userConfigure: ConfigType<typeof userConfig>,
+    private readonly userConfigure: ConfigType<typeof userConfig>,
   ) {
     this.nicknamePrefix = this.userConfigure.FIRST_NICKNAME_PREFIX;
   }
