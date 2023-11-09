@@ -1,6 +1,6 @@
-export class UserSigninResponseDto {
+export type UserSigninResponseDto = {
   userId: number;
   isFirstLogin: boolean;
   isMfaEnabled: boolean;
-  mfaQRCode: string;
-}
+  mfaCode?: string;
+};

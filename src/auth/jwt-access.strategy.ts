@@ -6,6 +6,10 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { User } from 'src/users/entities/user.entity';
 import { UserRepository } from 'src/users/users.repository';
 
+type JwtPayload = {
+  id: number;
+};
+
 @Injectable()
 export class JwtAccessStrategy extends PassportStrategy(Strategy) {
   constructor(
@@ -14,21 +18,17 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy) {
     private readonly configService: ConfigService,
   ) {
     super({
-      secretOrKey: configService.get<string>('JWT_SECRET'),
-      // get token from cookie
+      secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
       jwtFromRequest: ExtractJwt.fromExtractors([
-        (request) => {
-          return request?.cookies?.accessToken;
-        },
+        (request) => request.cookies?.accessToken,
       ]),
       // jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: true, // 토큰 만료 여부를 검사하지 않는다.
     });
   }
 
-  async validate(payload): Promise<User> {
-    const { id } = payload;
-    const user: User = await this.userRepository.findOneBy({ id });
+  async validate({ id }: JwtPayload): Promise<User> {
+    const user = await this.userRepository.findOneBy({ id });
 
     if (!user) {
       throw new UnauthorizedException();

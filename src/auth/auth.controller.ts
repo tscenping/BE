@@ -23,12 +23,18 @@ import { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
+  private readonly nicknamePrefix: string;
+
   constructor(
     private readonly authService: AuthService,
     private readonly auth42Service: Auth42Service,
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
-  ) {}
+  ) {
+    this.nicknamePrefix = this.configService.getOrThrow<string>(
+      'FIRST_NICKNAME_PREFIX',
+    );
+  }
   private readonly logger = new Logger(AuthController.name);
 
   @Post('/signin')
@@ -38,35 +44,34 @@ export class AuthController {
     // access token을 이용해 사용자 정보를 받아온다.
     const userData = await this.auth42Service.getUserData(accessToken);
     // 신규가입자라면 DB에 저장한다.
-    const { user, mfaQRCode } = await this.authService.findOrCreateUser(
-      userData,
-    );
+    const { user, mfaCode } = await this.authService.findOrCreateUser(userData);
+
     // 사용자 정보를 이용해 JWT 토큰을 생성한다.
     const { jwtAccessToken, jwtRefreshToken } =
       await this.authService.generateJwtToken(user);
+
     // token을 쿠키에 저장한다.
     res.cookie('accessToken', jwtAccessToken, {
-      // domain: 'https://localhost:8001',
       httpOnly: true,
       secure: true,
       sameSite: 'none',
       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
     });
+
     res.cookie('refreshToken', jwtRefreshToken, {
-      // httpOnly: true,
+      httpOnly: true,
       secure: true,
       sameSite: 'none',
       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
     });
+
     const userSigninResponseDto: UserSigninResponseDto = {
       userId: user.id,
-      isFirstLogin:
-        user.nickname &&
-        user.nickname[0] ===
-          this.configService.get<string>('FIRST_NICKNAME_PREFIX'),
+      isFirstLogin: user.nickname.at(0) === this.nicknamePrefix,
       isMfaEnabled: user.isMfaEnabled,
-      mfaQRCode,
+      mfaCode,
     };
+
     return res.send(userSigninResponseDto);
   }
 
