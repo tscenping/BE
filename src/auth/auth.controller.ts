@@ -19,6 +19,7 @@ import { AuthService } from './auth.service';
 import { UserSigninResponseDto } from './dto/user-signin-response.dto';
 import { GetUser } from './get-user.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { Response } from 'express';
 
 @Controller('auth')
 export class AuthController {
@@ -31,7 +32,7 @@ export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
   @Post('/signin')
-  async signin(@Body('code') code: string, @Res() res: any) {
+  async signin(@Body('code') code: string, @Res() res: Response) {
     // code를 이용해 access token을 받아온다.
     const accessToken = await this.auth42Service.getAccessToken(code);
     // access token을 이용해 사용자 정보를 받아온다.
@@ -45,14 +46,17 @@ export class AuthController {
       await this.authService.generateJwtToken(user);
     // token을 쿠키에 저장한다.
     res.cookie('accessToken', jwtAccessToken, {
+      // domain: 'https://localhost:8001',
       httpOnly: true,
       secure: true,
       sameSite: 'none',
+      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
     });
     res.cookie('refreshToken', jwtRefreshToken, {
-      httpOnly: true,
+      // httpOnly: true,
       secure: true,
       sameSite: 'none',
+      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
     });
     const userSigninResponseDto: UserSigninResponseDto = {
       userId: user.id,
