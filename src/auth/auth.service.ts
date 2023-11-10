@@ -1,6 +1,7 @@
-import { ConfigService } from '@nestjs/config';
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import userConfig from 'src/config/user.config';
 import { User } from 'src/users/entities/user.entity';
 import { UserRepository } from './../users/users.repository';
 import { User42Dto } from './dto/user-42.dto';
@@ -17,11 +18,10 @@ export class AuthService {
   constructor(
     private readonly userRepository: UserRepository,
     private readonly jwtService: JwtService,
-    private readonly configService: ConfigService,
+    @Inject(userConfig.KEY)
+    private readonly userConfigure: ConfigType<typeof userConfig>,
   ) {
-    this.nicknamePrefix = this.configService.getOrThrow<string>(
-      'FIRST_NICKNAME_PREFIX',
-    );
+    this.nicknamePrefix = this.userConfigure.FIRST_NICKNAME_PREFIX;
   }
 
   private async createMfaCode(): Promise<string> {
@@ -53,10 +53,13 @@ export class AuthService {
     const payload = { id: user.id, email: user.email };
     // accessToken 생성
     const accessToken = await this.jwtService.signAsync(payload);
+
     // refreshToken 생성
     const refreshToken = await this.jwtService.signAsync({ id: payload.id });
+
     // refreshToken을 DB에 저장한다.
     await this.userRepository.update(user.id, { refreshToken });
+
     return { jwtAccessToken: accessToken, jwtRefreshToken: refreshToken };
   }
 

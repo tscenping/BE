@@ -3,6 +3,7 @@ import {
   Controller,
   HttpException,
   HttpStatus,
+  Inject,
   Logger,
   Post,
   Res,
@@ -10,9 +11,10 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigType } from '@nestjs/config';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
+import userConfig from 'src/config/user.config';
 import { User } from 'src/users/entities/user.entity';
 import { UsersService } from './../users/users.service';
 import { Auth42Service } from './auth-42.service';
@@ -29,11 +31,10 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly auth42Service: Auth42Service,
     private readonly usersService: UsersService,
-    private readonly configService: ConfigService,
+    @Inject(userConfig.KEY)
+    private readonly userConfigure: ConfigType<typeof userConfig>,
   ) {
-    this.nicknamePrefix = this.configService.getOrThrow<string>(
-      'FIRST_NICKNAME_PREFIX',
-    );
+    this.nicknamePrefix = this.userConfigure.FIRST_NICKNAME_PREFIX;
   }
   private readonly logger = new Logger(AuthController.name);
 

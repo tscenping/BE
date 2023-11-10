@@ -1,11 +1,28 @@
-import { Injectable, Logger, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import {
+  Inject,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
 import axios from 'axios';
+import ftConfig from './../config/ft.config';
 import { User42Dto } from './dto/user-42.dto';
+
+type FtOauthResponseBody = {
+  grant_type: string;
+  client_id: string;
+  client_secret: string;
+  code: string;
+  redirect_uri: string;
+};
 
 @Injectable()
 export class Auth42Service {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    @Inject(ftConfig.KEY)
+    private readonly ftConfigure: ConfigType<typeof ftConfig>,
+  ) {}
 
   private readonly logger = new Logger(Auth42Service.name);
   private readonly baseUrl = 'https://api.intra.42.fr';
@@ -16,13 +33,11 @@ export class Auth42Service {
         `${this.baseUrl}/oauth/token`,
         {
           grant_type: 'authorization_code',
-          client_id: this.configService.get<string>('FORTYTWO_CLIENT_ID'),
-          client_secret: this.configService.get<string>(
-            'FORTYTWO_CLIENT_SECRET',
-          ),
+          client_id: this.ftConfigure.FT_CLIENT_ID,
+          client_secret: this.ftConfigure.FT_CLIENT_SECRET,
           code,
-          redirect_uri: this.configService.get<string>('FORTYTWO_REDIRECT_URI'),
-        },
+          redirect_uri: this.ftConfigure.FT_REDIRECT_URI,
+        } satisfies FtOauthResponseBody,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -51,6 +66,7 @@ export class Auth42Service {
         fortyTwoId: response.data.id,
       };
       this.logger.log('user: ', userData);
+
       return userData;
     } catch (error) {
       this.logger.error(error);

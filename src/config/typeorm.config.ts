@@ -1,5 +1,5 @@
+import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleAsyncOptions } from '@nestjs/typeorm';
-import { ConfigModule, ConfigService } from '@nestjs/config';
 
 export const typeOrmConfig: TypeOrmModuleAsyncOptions = {
   inject: [ConfigService],
@@ -11,7 +11,7 @@ export const typeOrmConfig: TypeOrmModuleAsyncOptions = {
       username: configService.get<string>('POSTGRES_USER'),
       password: configService.get<string>('POSTGRES_PASSWORD'),
       database: configService.get<string>('POSTGRES_DB'),
-      entities: [__dirname + '/../../**/entities/*.entity.{js,ts}'],
+      entities: [__dirname + '/../**/entities/*.entity.{js,ts}'],
       synchronize: true,
     };
   },
