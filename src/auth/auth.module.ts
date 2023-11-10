@@ -6,9 +6,7 @@ import { Auth42Service } from './auth-42.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtModule } from '@nestjs/jwt';
-import { MulterModule } from '@nestjs/platform-express';
 import { jwtConfig } from '../common/config/jwt.config';
-import { multerConfig } from '../common/config/multer.config';
 
 @Module({
   controllers: [AuthController],
@@ -16,7 +14,6 @@ import { multerConfig } from '../common/config/multer.config';
   imports: [
     TypeOrmModule.forFeature([User]),
     JwtModule.registerAsync(jwtConfig),
-    MulterModule.registerAsync(multerConfig),
   ],
 })
 export class AuthModule {}

@@ -2,21 +2,22 @@ import {
   Body,
   Controller,
   Get,
+  HttpException,
   HttpStatus,
   Logger,
   Param,
   ParseFilePipeBuilder,
+  Patch,
   Post,
   Query,
   Res,
-  UploadedFile,
-  UseInterceptors,
+  UseGuards,
 } from '@nestjs/common';
 import { Auth42Service } from './auth-42.service';
 import { AuthService } from './auth.service';
 import { UserSigninResponseDto } from './dto/user-signin-response.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from '../users/users.service';
+import { User } from '../users/entities/user.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -60,15 +61,20 @@ export class AuthController {
     return res.send(userSigninResponseDto);
   }
 
-  @Post('/login')
-  @UseInterceptors(FileInterceptor('avatar', {}))
+  @Patch('/login')
+  // @UseGuards(JwtAuthGuard)
   async login(
-    @UploadedFile() file: Express.Multer.File,
-    @Param('nickname') nickname: string,
+    // @GetUser() user: User,
+    @Body() nickname: string,
+    @Body() avatar: string,
   ) {
-    console.log('file: ', file);
-    console.log('nickname: ', nickname);
-    // this.usersService.login(file.path, nickname);
-    // db에 avatar->file.path, nickname 저장: service에 매개변수로 넘기기
+    // console.log(user);
+    console.log(nickname);
+
+    if (!avatar) {
+      throw new HttpException('avatar is required', HttpStatus.BAD_REQUEST);
+    }
+
+    // return this.usersService.updateUserAvatar(user.id, file);
   }
 }
