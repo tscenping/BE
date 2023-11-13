@@ -4,12 +4,12 @@ import { UserRepository } from './users.repository';
 
 @Injectable()
 export class FriendsService {
+  private readonly logger = new Logger(FriendsService.name);
+
   constructor(
     private readonly friendRepository: FriendRepository,
     private readonly userRepository: UserRepository,
   ) {}
-
-  private readonly logger = new Logger(FriendsService.name);
 
   /**
    * 친구 추가
@@ -18,22 +18,14 @@ export class FriendsService {
    * @returns
    */
   async createFriend(fromUserId: number, toUserId: number) {
-    // 본인->본인 친구요청
-    if (fromUserId === toUserId) {
-      throw new BadRequestException(`Can't be friend with yourself`);
-    }
+    // 본인에게 친구요청을 보내는지 확인
+    this.checkSelfFriendship(fromUserId, toUserId);
 
-    // 이미 친구인지 검사
-    const isExistFriend = await this.isExistFriend(fromUserId, toUserId);
-    if (isExistFriend) {
-      throw new BadRequestException(`Already friend`);
-    }
+    // 친구요청을 받은 유저가 존재하는지 확인
+    await this.validateUserExists(toUserId);
 
-    // 존재하는 유저인지 검사
-    const isExistUser = await this.isExistUser(toUserId);
-    if (!isExistUser) {
-      throw new BadRequestException(`User with id ${toUserId} doesn't exist`);
-    }
+    // 이미 친구인지 확인
+    await this.checkAlreadyFriends(fromUserId, toUserId);
 
     // 친구 추가
     const friend = this.friendRepository.create({
@@ -44,24 +36,76 @@ export class FriendsService {
     await this.friendRepository.save(friend);
   }
 
-  async isExistFriend(fromUserId: number, toUserId: number) {
-    const friend = await this.friendRepository.findOne({
+  /**
+   * 친구 삭제
+   * @param fromUserId 친구 삭제 요청을 보낸 유저의 id
+   * @param toUserId 친구 삭제 요청을 받은 유저의 id
+   */
+  async deleteFriend(fromUserId: number, toUserId: number) {
+    // 본인에게 친구 삭제 요청을 보내는지 확인
+    this.checkSelfFriendship(fromUserId, toUserId);
+
+    // 친구 삭제 요청을 받은 유저가 존재하는지 확인
+    await this.validateUserExists(toUserId);
+
+    // 친구인지 확인
+    const friend = await this.findFriend(fromUserId, toUserId);
+    if (!friend) {
+      throw new BadRequestException(`Not friend with ${toUserId}`);
+    }
+
+    // 친구 삭제
+    const result = await this.friendRepository.softDelete(friend.id);
+    if (result.affected !== 1) {
+      throw new BadRequestException(`Failed to delete friend with ${toUserId}`);
+    }
+    this.logger.log('result: ', result);
+  }
+
+  /**
+   * 친구 entity 조회
+   * @returns 친구 entity 또는 null
+   */
+  async findFriend(fromUserId: number, toUserId: number) {
+    return await this.friendRepository.findOne({
       where: {
         fromUserId,
         toUserId,
       },
     });
-
-    return friend !== null;
   }
 
-  async isExistUser(userId: number) {
+  /**
+   * 유저가 존재하는지 확인
+   */
+  async validateUserExists(userId: number) {
     const user = await this.userRepository.findOne({
       where: {
         id: userId,
       },
     });
 
-    return user !== null;
+    if (!user) {
+      throw new BadRequestException(`User with id ${userId} doesn't exist`);
+    }
+  }
+
+  /**
+   * 본인에게 친구/친구삭제 요청을 보내는지 확인
+   */
+  private checkSelfFriendship(fromUserId: number, toUserId: number) {
+    if (fromUserId === toUserId) {
+      throw new BadRequestException(`Can't be friend with yourself`);
+    }
+  }
+
+  /**
+   * 이미 친구인지 확인
+   */
+  private async checkAlreadyFriends(fromUserId: number, toUserId: number) {
+    const isExistFriend = await this.findFriend(fromUserId, toUserId);
+    if (isExistFriend) {
+      throw new BadRequestException(`Already friends`);
+    }
   }
 }

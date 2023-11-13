@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   ParseIntPipe,
   Post,
   UseGuards,
@@ -27,5 +28,14 @@ export class UsersController {
   ) {
     await this.friendsService.createFriend(user.id, toUserId);
     // TODO: 친구요청을 받은 유저에게 알림 보내기
+  }
+
+  @Delete('/friends')
+  @UseGuards(JwtAuthGuard)
+  async deleteFriend(
+    @GetUser() user: User,
+    @Body('friendId', ParseIntPipe, PositiveIntPipe) toUserId: number,
+  ) {
+    await this.friendsService.deleteFriend(user.id, toUserId);
   }
 }
