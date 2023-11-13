@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { PageInfo } from './dto/page-info.dto';
 import { FriendRepository } from './friends.repository';
 import { UserRepository } from './users.repository';
+import { DATA_PER_PAGE } from 'src/common/constants';
 
 @Injectable()
 export class FriendsService {
@@ -49,7 +51,7 @@ export class FriendsService {
     await this.validateUserExists(toUserId);
 
     // 친구인지 확인
-    const friend = await this.findFriend(fromUserId, toUserId);
+    const friend = await this.friendRepository.findFriend(fromUserId, toUserId);
     if (!friend) {
       throw new BadRequestException(`Not friend with ${toUserId}`);
     }
@@ -63,16 +65,32 @@ export class FriendsService {
   }
 
   /**
-   * 친구 entity 조회
-   * @returns 친구 entity 또는 null
+   * 친구 목록 조회
+   * @param userId 친구 목록을 조회할 유저의 id
+   * @param page 페이지 번호
+   * @returns 친구 목록
    */
-  async findFriend(fromUserId: number, toUserId: number) {
-    return await this.friendRepository.findOne({
+  async findFriendsWithPage(userId: number, page: number) {
+    // 친구 목록 조회
+    const friends = await this.friendRepository.findFriendInfos(userId, page);
+
+    // 페이지 정보 조회
+    const total = await this.friendRepository.count({
       where: {
-        fromUserId,
-        toUserId,
+        fromUserId: userId,
       },
     });
+    const lastPage = Math.ceil(total / DATA_PER_PAGE);
+    const pageInfo: PageInfo = {
+      total,
+      page,
+      lastPage,
+    };
+
+    this.logger.log('friends: ', friends);
+    this.logger.log('pageInfo: ', pageInfo);
+
+    return { friends, pageInfo };
   }
 
   /**
@@ -103,7 +121,10 @@ export class FriendsService {
    * 이미 친구인지 확인
    */
   private async checkAlreadyFriends(fromUserId: number, toUserId: number) {
-    const isExistFriend = await this.findFriend(fromUserId, toUserId);
+    const isExistFriend = await this.friendRepository.findFriend(
+      fromUserId,
+      toUserId,
+    );
     if (isExistFriend) {
       throw new BadRequestException(`Already friends`);
     }

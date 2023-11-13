@@ -2,6 +2,8 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
+  Param,
   ParseIntPipe,
   Post,
   UseGuards,
@@ -37,5 +39,18 @@ export class UsersController {
     @Body('friendId', ParseIntPipe, PositiveIntPipe) toUserId: number,
   ) {
     await this.friendsService.deleteFriend(user.id, toUserId);
+  }
+
+  @Get('/friends/:page')
+  @UseGuards(JwtAuthGuard)
+  async findFriendsWithPage(
+    @GetUser() user: User,
+    @Param('page', ParseIntPipe, PositiveIntPipe) page: number,
+  ) {
+    const { friends, pageInfo } = await this.friendsService.findFriendsWithPage(
+      user.id,
+      page,
+    );
+    return { friends, pageInfo };
   }
 }
