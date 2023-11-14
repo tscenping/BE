@@ -84,7 +84,7 @@ export class FriendsService {
     });
 
     this.logger.log('friends: ', friends);
-    this.logger.log('pageInfo: ', totalItemCount);
+    this.logger.log('totalItemCount: ', totalItemCount);
 
     return { friends, totalItemCount };
   }

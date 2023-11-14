@@ -22,18 +22,18 @@ export class FriendRepository extends Repository<Friend> {
     userId: number,
     page: number,
   ): Promise<FriendInfoDto[]> {
-    // raw query
     const friends = await this.dataSource.query(
       `
       SELECT u.id, u.nickname, u.avatar, u.status
       FROM friend f
       JOIN "user" u
       ON u.id = f."toUserId"
-      WHERE f."fromUserId" = $1
+      WHERE f."fromUserId" = $1 AND f."deletedAt" IS NULL
       LIMIT $2 OFFSET $3;
       `,
       [userId, DATA_PER_PAGE, (page - 1) * DATA_PER_PAGE],
     );
+
     return friends;
   }
 }
