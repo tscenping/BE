@@ -30,7 +30,7 @@ export class FriendRepository extends Repository<Friend> {
       JOIN "user" u
       ON u.id = f."toUserId"
       WHERE f."fromUserId" = $1
-      LIMIT $2 OFFSET $3
+      LIMIT $2 OFFSET $3;
       `,
       [userId, DATA_PER_PAGE, (page - 1) * DATA_PER_PAGE],
     );

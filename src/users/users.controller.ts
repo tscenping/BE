@@ -16,6 +16,7 @@ import { FriendsService } from './friends.service';
 import { UsersService } from './users.service';
 
 @Controller('users')
+@UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(
     private readonly usersService: UsersService,
@@ -23,7 +24,6 @@ export class UsersController {
   ) {}
 
   @Post('/friends')
-  @UseGuards(JwtAuthGuard)
   async createFriend(
     @GetUser() user: User,
     @Body('friendId', ParseIntPipe, PositiveIntPipe) toUserId: number,
@@ -33,7 +33,6 @@ export class UsersController {
   }
 
   @Delete('/friends')
-  @UseGuards(JwtAuthGuard)
   async deleteFriend(
     @GetUser() user: User,
     @Body('friendId', ParseIntPipe, PositiveIntPipe) toUserId: number,
@@ -42,7 +41,6 @@ export class UsersController {
   }
 
   @Get('/friends/:page')
-  @UseGuards(JwtAuthGuard)
   async findFriendsWithPage(
     @GetUser() user: User,
     @Param('page', ParseIntPipe, PositiveIntPipe) page: number,
@@ -53,5 +51,12 @@ export class UsersController {
     );
 
     return friendResponseDto;
+  }
+
+  @Get('/me')
+  async findMyProfile(@GetUser() user: User) {
+    const profile = await this.usersService.findMyProfile(user.id);
+
+    return profile;
   }
 }

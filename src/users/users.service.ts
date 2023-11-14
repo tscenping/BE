@@ -29,6 +29,12 @@ export class UsersService {
     );
   }
 
+  async findMyProfile(userId: number) {
+    const myProfile = await this.userRepository.findMyProfile(userId);
+
+    return myProfile;
+  }
+
   // TODO: test용 메서드. 추후 삭제
   async isNicknameExists(nickname: string) {
     const user = await this.userRepository.findOne({

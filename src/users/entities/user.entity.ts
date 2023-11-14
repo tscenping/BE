@@ -40,7 +40,7 @@ export class User extends BaseEntity {
   @IsNumber()
   ladderScore: number;
 
-  @Column({ default: 1000 })
+  @Column({ default: 1200 })
   @IsNotEmpty()
   @IsNumber()
   ladderMaxScore: number;

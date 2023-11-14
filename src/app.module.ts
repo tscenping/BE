@@ -10,6 +10,7 @@ import pgadminConfig from './config/pgadmin.config';
 import { typeOrmConfig } from './config/typeorm.config';
 import userConfig from './config/user.config';
 import { UsersModule } from './users/users.module';
+import { GameModule } from './game/game.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { UsersModule } from './users/users.module';
     }),
     AuthModule,
     UsersModule,
+    GameModule,
   ],
   controllers: [AppController],
   providers: [AppService],
