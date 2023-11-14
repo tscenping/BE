@@ -9,7 +9,7 @@ import { multerConfig } from '../config/multer.config';
 import { User } from '../users/entities/user.entity';
 import { UserRepository } from '../users/users.repository';
 import { UsersService } from '../users/users.service';
-import { Auth42Service } from './auth-42.service';
+import { FtAuthService } from './ft-auth.service';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtAccessStrategy } from './jwt-access.strategy';
@@ -27,7 +27,7 @@ import { JwtAccessStrategy } from './jwt-access.strategy';
   controllers: [AuthController],
   providers: [
     AuthService,
-    Auth42Service,
+    FtAuthService,
     JwtAccessStrategy,
     UserRepository,
     UsersService,
