@@ -6,25 +6,18 @@ import {
 } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import axios from 'axios';
-import ftConfig from './../config/ft.config';
-import { User42Dto } from './dto/user-42.dto';
-
-type FtOauthResponseBody = {
-  grant_type: string;
-  client_id: string;
-  client_secret: string;
-  code: string;
-  redirect_uri: string;
-};
+import ftConfig from '../config/ft.config';
+import { FtUserDto } from './dto/ft-user.dto';
+import { FtOauthResponseDto } from './dto/ft-oauth-response.dto';
 
 @Injectable()
-export class Auth42Service {
+export class FtAuthService {
   constructor(
     @Inject(ftConfig.KEY)
     private readonly ftConfigure: ConfigType<typeof ftConfig>,
   ) {}
 
-  private readonly logger = new Logger(Auth42Service.name);
+  private readonly logger = new Logger(FtAuthService.name);
   private readonly baseUrl = 'https://api.intra.42.fr';
 
   async getAccessToken(code: string): Promise<string> {
@@ -37,7 +30,7 @@ export class Auth42Service {
           client_secret: this.ftConfigure.FT_CLIENT_SECRET,
           code,
           redirect_uri: this.ftConfigure.FT_REDIRECT_URI,
-        } satisfies FtOauthResponseBody,
+        } satisfies FtOauthResponseDto,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -52,7 +45,7 @@ export class Auth42Service {
     }
   }
 
-  async getUserData(accessToken: string): Promise<User42Dto> {
+  async getUserData(accessToken: string): Promise<FtUserDto> {
     try {
       const response = await axios.get(`${this.baseUrl}/v2/me`, {
         headers: {
@@ -60,10 +53,10 @@ export class Auth42Service {
         },
       });
 
-      const userData: User42Dto = {
+      const userData: FtUserDto = {
         nickname: response.data.login,
         email: response.data.email,
-        fortyTwoId: response.data.id,
+        ftId: response.data.id,
       };
       this.logger.log('user: ', userData);
 
