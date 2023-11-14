@@ -3,9 +3,9 @@ import { ConfigType } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import jwtConfig from '../config/jwt.config';
-import { User } from '../users/entities/user.entity';
-import { UserRepository } from '../users/users.repository';
+import jwtConfig from 'src/config/jwt.config';
+import { User } from 'src/users/entities/user.entity';
+import { UserRepository } from 'src/users/users.repository';
 
 type JwtPayload = {
   id: number;

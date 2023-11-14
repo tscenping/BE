@@ -1,12 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigType } from '@nestjs/config';
-import {
-  TypeOrmModule,
-  TypeOrmModuleAsyncOptions,
-  TypeOrmModuleOptions,
-} from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import ftConfig from './config/ft.config';
 import jwtConfig from './config/jwt.config';
@@ -14,6 +9,7 @@ import pgadminConfig from './config/pgadmin.config';
 import typeOrmConfig from './config/typeorm.config';
 import userConfig from './config/user.config';
 import { UsersModule } from './users/users.module';
+import {ConfigModule, ConfigType} from '@nestjs/config';
 
 @Module({
   imports: [

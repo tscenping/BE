@@ -1,24 +1,21 @@
 import {
   Body,
   Controller,
-  HttpException,
-  HttpStatus,
   Inject,
   Logger,
   Patch,
   Post,
-  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { Response } from 'express';
-import userConfig from '../config/user.config';
-import { User } from '../users/entities/user.entity';
+import userConfig from 'src/config/user.config';
+import { User } from 'src/users/entities/user.entity';
 import { UsersService } from '../users/users.service';
-import { Auth42Service } from './auth-42.service';
 import { AuthService } from './auth.service';
 import { UserSigninResponseDto } from './dto/user-signin-response.dto';
+import { FtAuthService } from './ft-auth.service';
 import { GetUser } from './get-user.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { LoginRequestDto } from '../users/dto/login-request.dto';
@@ -29,7 +26,7 @@ export class AuthController {
 
   constructor(
     private readonly authService: AuthService,
-    private readonly auth42Service: Auth42Service,
+    private readonly ftAuthService: FtAuthService,
     private readonly usersService: UsersService,
     @Inject(userConfig.KEY)
     private readonly userConfigure: ConfigType<typeof userConfig>,
@@ -41,9 +38,9 @@ export class AuthController {
   @Post('/signin')
   async signin(@Body('code') code: string, @Res() res: Response) {
     // code를 이용해 access token을 받아온다.
-    const accessToken = await this.auth42Service.getAccessToken(code);
+    const accessToken = await this.ftAuthService.getAccessToken(code);
     // access token을 이용해 사용자 정보를 받아온다.
-    const userData = await this.auth42Service.getUserData(accessToken);
+    const userData = await this.ftAuthService.getUserData(accessToken);
     // 신규가입자라면 DB에 저장한다.
     const { user, mfaCode } = await this.authService.findOrCreateUser(userData);
 
@@ -79,10 +76,6 @@ export class AuthController {
   @Patch('/login')
   @UseGuards(JwtAuthGuard)
   async login(@GetUser() user: User, @Body() loginRequestDto: LoginRequestDto) {
-    console.log(
-      'controller: ',
-      `${loginRequestDto.avatar}, ${loginRequestDto.nickname}`,
-    );
     // try catch 처리 대신 exception filter로 처리 예정
     await this.usersService.login(user.id, loginRequestDto);
   }
