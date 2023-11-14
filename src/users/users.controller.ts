@@ -3,9 +3,9 @@ import {
   Controller,
   Delete,
   Get,
-  Param,
   ParseIntPipe,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { GetUser } from 'src/auth/get-user.decorator';
@@ -40,10 +40,10 @@ export class UsersController {
     await this.friendsService.deleteFriend(user.id, toUserId);
   }
 
-  @Get('/friends/:page')
+  @Get('/friends')
   async findFriendsWithPage(
     @GetUser() user: User,
-    @Param('page', ParseIntPipe, PositiveIntPipe) page: number,
+    @Query('page', ParseIntPipe, PositiveIntPipe) page: number,
   ) {
     const friendResponseDto = await this.friendsService.findFriendsWithPage(
       user.id,
