@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { PageInfo } from './dto/page-info.dto';
+import { PageInfoDto } from './dto/page-info.dto';
 import { FriendRepository } from './friends.repository';
 import { UserRepository } from './users.repository';
 import { DATA_PER_PAGE } from 'src/common/constants';
@@ -81,7 +81,7 @@ export class FriendsService {
       },
     });
     const lastPage = Math.ceil(total / DATA_PER_PAGE);
-    const pageInfo: PageInfo = {
+    const pageInfo: PageInfoDto = {
       total,
       page,
       lastPage,

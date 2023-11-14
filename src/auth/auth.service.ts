@@ -5,11 +5,7 @@ import userConfig from 'src/config/user.config';
 import { User } from 'src/users/entities/user.entity';
 import { UserRepository } from './../users/users.repository';
 import { User42Dto } from './dto/user-42.dto';
-
-type UserFindreturn = {
-  user: User;
-  mfaCode?: string;
-};
+import { UserFindReturnDto } from './dto/user-find-return.dto';
 
 @Injectable()
 export class AuthService {
@@ -28,7 +24,7 @@ export class AuthService {
     return Promise.resolve('mfaCode'); // TODO: 2FA 코드 생성
   }
 
-  async findOrCreateUser(userData: User42Dto): Promise<UserFindreturn> {
+  async findOrCreateUser(userData: User42Dto): Promise<UserFindReturnDto> {
     const user = await this.userRepository.findOne({
       where: { email: userData.email },
     });
