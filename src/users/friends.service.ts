@@ -1,8 +1,7 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { PageInfoDto } from './dto/page-info.dto';
 import { FriendRepository } from './friends.repository';
 import { UserRepository } from './users.repository';
-import { DATA_PER_PAGE } from 'src/common/constants';
+import { FriendResponseDto } from './dto/friend-response.dto';
 
 @Injectable()
 export class FriendsService {
@@ -70,27 +69,24 @@ export class FriendsService {
    * @param page 페이지 번호
    * @returns 친구 목록
    */
-  async findFriendsWithPage(userId: number, page: number) {
+  async findFriendsWithPage(
+    userId: number,
+    page: number,
+  ): Promise<FriendResponseDto> {
     // 친구 목록 조회
     const friends = await this.friendRepository.findFriendInfos(userId, page);
 
     // 페이지 정보 조회
-    const total = await this.friendRepository.count({
+    const totalItemCount = await this.friendRepository.count({
       where: {
         fromUserId: userId,
       },
     });
-    const lastPage = Math.ceil(total / DATA_PER_PAGE);
-    const pageInfo: PageInfoDto = {
-      total,
-      page,
-      lastPage,
-    };
 
     this.logger.log('friends: ', friends);
-    this.logger.log('pageInfo: ', pageInfo);
+    this.logger.log('pageInfo: ', totalItemCount);
 
-    return { friends, pageInfo };
+    return { friends, totalItemCount };
   }
 
   /**

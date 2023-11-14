@@ -1,4 +1,4 @@
-export type friendInfoDto = {
+export type FriendInfoDto = {
   id: number;
   nickname: string;
   avatar: string;

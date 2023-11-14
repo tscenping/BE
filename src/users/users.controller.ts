@@ -47,10 +47,11 @@ export class UsersController {
     @GetUser() user: User,
     @Param('page', ParseIntPipe, PositiveIntPipe) page: number,
   ) {
-    const { friends, pageInfo } = await this.friendsService.findFriendsWithPage(
+    const friendResponseDto = await this.friendsService.findFriendsWithPage(
       user.id,
       page,
     );
-    return { friends, pageInfo };
+
+    return friendResponseDto;
   }
 }
