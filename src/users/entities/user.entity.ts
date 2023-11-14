@@ -6,13 +6,13 @@ import {
   Length,
   Matches,
 } from 'class-validator';
-import { BaseEntity } from 'src/common/base-entity';
+import { BaseEntity } from '../../common/base-entity';
 import { Column, Entity, Unique } from 'typeorm';
 
 @Entity()
 @Unique(['nickname'])
 export class User extends BaseEntity {
-  @Column({ default: null })
+  @Column({ unique: true })
   @IsString()
   @Length(1, 10)
   @Matches(/^[ㄱ-ㅎ가-힣a-zA-Z0-9!]+$/)

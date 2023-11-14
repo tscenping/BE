@@ -1,26 +1,35 @@
-import { Injectable } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import * as fs from 'fs';
+import * as path from 'path';
+import { UserRepository } from './users.repository';
+import { string } from 'zod';
+import { User } from './entities/user.entity';
+import { DBUpdateFailureException } from '../common/exception/custom-exception';
+import { LoginRequestDto } from './dto/login-request.dto';
 
 @Injectable()
 export class UsersService {
-  create(createUserDto: CreateUserDto) {
-    return 'This action adds a new user';
-  }
+  constructor(private readonly userRepository: UserRepository) {}
 
-  findAll() {
-    return `This action returns all users`;
-  }
+  //logger interceptor 만들기
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
-  }
+  async login(userId: number, loginRequestDto: LoginRequestDto) {
+    const avatar = loginRequestDto?.avatar;
+    const nickname = loginRequestDto?.nickname;
+    if (!avatar || !nickname) {
+      throw new HttpException(
+        'Request data is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
-  }
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user)
+      throw new HttpException(`there is no user`, HttpStatus.BAD_REQUEST);
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+    const result = await this.userRepository.update(userId, {
+      avatar: avatar,
+      nickname: nickname,
+    });
   }
 }

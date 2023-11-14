@@ -26,15 +26,19 @@
     "@nestjs/core": "^9.0.0",
     "@nestjs/jwt": "^10.1.1",
     "@nestjs/mapped-types": "*",
+    "@nestjs/passport": "^10.0.2",
     "@nestjs/platform-express": "^9.0.0",
     "@nestjs/typeorm": "^10.0.0",
+    "@types/passport-jwt": "^3.0.13",
     "axios": "^1.6.0",
     "class-validator": "^0.14.0",
     "cookie-parser": "^1.4.6",
+    "passport-jwt": "^4.0.1",
     "pg": "^8.11.3",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.2",
-    "rxjs": "^7.2.0"
+    "rxjs": "^7.2.0",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@nestjs/cli": "^9.0.0",
