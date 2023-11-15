@@ -51,17 +51,15 @@ export class AuthController {
 
 		// token을 쿠키에 저장한다.
 		res.cookie('accessToken', jwtAccessToken, {
-			// httpOnly: true,
+			// httpOnly: true,	// 자동로그인을 위해 httpOnly를 false로 설정
 			secure: true,
 			sameSite: 'none',
-			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
 		});
 
 		res.cookie('refreshToken', jwtRefreshToken, {
 			httpOnly: true,
 			secure: true,
 			sameSite: 'none',
-			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
 		});
 
 		const userSigninResponseDto: UserSigninResponseDto = {
