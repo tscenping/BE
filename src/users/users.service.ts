@@ -1,6 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { LoginRequestDto } from './dto/login-request.dto';
 import { UserRepository } from './users.repository';
 
 @Injectable()
@@ -8,32 +7,6 @@ export class UsersService {
   constructor(private readonly userRepository: UserRepository) {}
 
   private readonly logger = new Logger(UsersService.name);
-
-  private dirPath = path.join(__dirname, '..', '..', 'public', 'users');
-
-  async updateUserAvatar(userId: number, file: Express.Multer.File) {
-    const dirPath = path.join(this.dirPath, userId.toString());
-
-    if (!fs.existsSync(dirPath)) {
-      fs.mkdirSync(dirPath, { recursive: true });
-    }
-
-    const type = file.mimetype.split('/')[1];
-    const filePath = path.join(dirPath, 'avatar.' + type);
-
-    fs.writeFileSync(filePath, file.buffer);
-
-    return await this.userRepository.update(
-      { id: userId },
-      { avatar: filePath },
-    );
-  }
-
-  async findMyProfile(userId: number) {
-    const myProfile = await this.userRepository.findMyProfile(userId);
-
-    return myProfile;
-  }
 
   // TODO: test용 메서드. 추후 삭제
   async isNicknameExists(nickname: string) {
@@ -54,5 +27,31 @@ export class UsersService {
     await this.userRepository.save(user);
 
     return user;
+  }
+
+  async findMyProfile(userId: number) {
+    const myProfile = await this.userRepository.findMyProfile(userId);
+
+    return myProfile;
+  }
+
+  async login(userId: number, loginRequestDto: LoginRequestDto) {
+    const avatar = loginRequestDto?.avatar;
+    const nickname = loginRequestDto?.nickname;
+    if (!avatar || !nickname) {
+      throw new HttpException(
+        'Request data is required',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user)
+      throw new HttpException(`there is no user`, HttpStatus.BAD_REQUEST);
+
+    await this.userRepository.update(userId, {
+      avatar: avatar,
+      nickname: nickname,
+    });
   }
 }

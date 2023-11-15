@@ -5,24 +5,22 @@ import {
   HttpStatus,
   Inject,
   Logger,
+  Patch,
   Post,
   Res,
-  UploadedFile,
   UseGuards,
-  UseInterceptors,
 } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
 import userConfig from 'src/config/user.config';
 import { User } from 'src/users/entities/user.entity';
-import { UsersService } from './../users/users.service';
-
+import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 import { UserSigninResponseDto } from './dto/user-signin-response.dto';
 import { FtAuthService } from './ft-auth.service';
 import { GetUser } from './get-user.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { LoginRequestDto } from '../users/dto/login-request.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -77,23 +75,11 @@ export class AuthController {
     return res.send(userSigninResponseDto);
   }
 
-  @Post('/login')
+  @Patch('/login')
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('avatar'))
-  async login(
-    @GetUser() user: User,
-    @UploadedFile() file: Express.Multer.File,
-    @Body('nickname') nickname: string,
-  ) {
-    console.log(user);
-    console.log(file);
-    console.log(nickname);
-
-    if (!file) {
-      throw new HttpException('avatar is required', HttpStatus.BAD_REQUEST);
-    }
-
-    // return this.usersService.updateUserAvatar(user.id, file);
+  async login(@GetUser() user: User, @Body() loginRequestDto: LoginRequestDto) {
+    // try catch 처리 대신 exception filter로 처리 예정
+    await this.usersService.login(user.id, loginRequestDto);
   }
 
   @Post('/test/signin')
