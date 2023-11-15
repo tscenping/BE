@@ -1,6 +1,6 @@
 export type FriendInfoDto = {
-  id: number;
-  nickname: string;
-  avatar: string;
-  status: string;
+	id: string;
+	nickname: string;
+	avatar: string;
+	status: string;
 };

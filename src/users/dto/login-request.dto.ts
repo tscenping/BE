@@ -1,4 +1,4 @@
 export class LoginRequestDto {
-  avatar: string;
-  nickname: string;
+	avatar: string;
+	nickname: string;
 }

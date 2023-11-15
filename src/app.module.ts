@@ -9,24 +9,25 @@ import pgadminConfig from './config/pgadmin.config';
 import typeOrmConfig from './config/typeorm.config';
 import userConfig from './config/user.config';
 import { UsersModule } from './users/users.module';
-import {ConfigModule, ConfigType} from '@nestjs/config';
+import { GameModule } from './game/game.module';
+import { ConfigModule, ConfigType } from '@nestjs/config';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      envFilePath: './BE-config/.env',
-      load: [ftConfig, userConfig, pgadminConfig, jwtConfig, typeOrmConfig],
-    }),
-    TypeOrmModule.forRootAsync({
-      inject: [typeOrmConfig.KEY],
-      useFactory: (typeOrmConfigure: ConfigType<typeof typeOrmConfig>) =>
-        typeOrmConfigure,
-    }),
-    AuthModule,
-    UsersModule,
-  ],
-  controllers: [AppController],
-  providers: [AppService],
+	imports: [
+		ConfigModule.forRoot({
+			isGlobal: true,
+			envFilePath: './BE-config/.env',
+			load: [ftConfig, userConfig, pgadminConfig, jwtConfig, typeOrmConfig],
+		}),
+		TypeOrmModule.forRootAsync({
+			inject: [typeOrmConfig.KEY],
+			useFactory: (typeOrmConfigure: ConfigType<typeof typeOrmConfig>) => typeOrmConfigure,
+		}),
+		AuthModule,
+		UsersModule,
+		GameModule,
+	],
+	controllers: [AppController],
+	providers: [AppService],
 })
 export class AppModule {}

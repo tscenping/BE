@@ -1,6 +1,6 @@
 export type UserSigninResponseDto = {
-  userId: number;
-  isFirstLogin: boolean;
-  isMfaEnabled: boolean;
-  mfaCode?: string;
+	userId: string;
+	isFirstLogin: boolean;
+	isMfaEnabled: boolean;
+	mfaCode?: string;
 };
