@@ -11,20 +11,20 @@ export class UserRepository extends Repository<User> {
 		return await this.findOne({ where: { nickname } });
 	}
 
-	async findMyProfile(userId: number) {
+	async findMyProfile(userId: string) {
 		const myProfile = this.dataSource.query(
 			`
-      SELECT nickname,
-      avatar,
-      "statusMessage",
-      "loseCount",
-      "winCount",
-      "loseCount" + "winCount" AS totalCount,
-      "ladderScore",
-      "ladderMaxScore"
-      FROM "user" u
-      WHERE u.id = $1;
-      `,
+			SELECT nickname,
+			avatar,
+			"statusMessage",
+			"loseCount",
+			"winCount",
+			"loseCount" + "winCount" AS totalCount,
+			"ladderScore",
+			"ladderMaxScore"
+			FROM "user" u
+			WHERE u.id = $1;
+			`,
 			[userId],
 		);
 

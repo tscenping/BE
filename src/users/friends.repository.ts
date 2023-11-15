@@ -9,7 +9,7 @@ export class FriendRepository extends Repository<Friend> {
 		super(Friend, dataSource.manager);
 	}
 
-	async findFriend(fromUserId: number, toUserId: number) {
+	async findFriend(fromUserId: string, toUserId: string) {
 		return await this.findOne({
 			where: {
 				fromUserId,
@@ -18,16 +18,16 @@ export class FriendRepository extends Repository<Friend> {
 		});
 	}
 
-	async findFriendInfos(userId: number, page: number): Promise<FriendInfoDto[]> {
+	async findFriendInfos(userId: string, page: number): Promise<FriendInfoDto[]> {
 		const friends = await this.dataSource.query(
 			`
-      SELECT u.id, u.nickname, u.avatar, u.status
-      FROM friend f
-      JOIN "user" u
-      ON u.id = f."toUserId"
-      WHERE f."fromUserId" = $1 AND f."deletedAt" IS NULL
-      LIMIT $2 OFFSET $3;
-      `,
+			SELECT u.id, u.nickname, u.avatar, u.status
+			FROM friend f
+			JOIN "user" u
+			ON u.id = f."toUserId"
+			WHERE f."fromUserId" = $1 AND f."deletedAt" IS NULL
+			LIMIT $2 OFFSET $3;
+			`,
 			[userId, DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
 		);
 

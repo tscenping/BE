@@ -1,3 +1,5 @@
+import { HttpStatus } from '@nestjs/common';
+
 class ErrorCodeValueObject {
 	readonly statusCode: number;
 	readonly message: string;
@@ -10,4 +12,7 @@ class ErrorCodeValueObject {
 
 export type ErrorCode = ErrorCodeValueObject;
 
-export const DB_UPDATE_FAILURE = new ErrorCodeValueObject(500, 'Data task could not be done');
+export const DB_UPDATE_FAILURE = new ErrorCodeValueObject(
+	HttpStatus.INTERNAL_SERVER_ERROR,
+	'Data task could not be done',
+);

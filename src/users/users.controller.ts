@@ -12,13 +12,13 @@ export class UsersController {
 	constructor(private readonly usersService: UsersService, private readonly friendsService: FriendsService) {}
 
 	@Post('/friends')
-	async createFriend(@GetUser() user: User, @Body('friendId', ParseIntPipe, PositiveIntPipe) toUserId: number) {
+	async createFriend(@GetUser() user: User, @Body('friendId', ParseIntPipe, PositiveIntPipe) toUserId: string) {
 		await this.friendsService.createFriend(user.id, toUserId);
 		// TODO: 친구요청을 받은 유저에게 알림 보내기
 	}
 
 	@Delete('/friends')
-	async deleteFriend(@GetUser() user: User, @Body('friendId', ParseIntPipe, PositiveIntPipe) toUserId: number) {
+	async deleteFriend(@GetUser() user: User, @Body('friendId', ParseIntPipe, PositiveIntPipe) toUserId: string) {
 		await this.friendsService.deleteFriend(user.id, toUserId);
 	}
 

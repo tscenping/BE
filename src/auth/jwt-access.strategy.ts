@@ -8,7 +8,7 @@ import { User } from 'src/users/entities/user.entity';
 import { UserRepository } from 'src/users/users.repository';
 
 type JwtPayload = {
-	id: number;
+	id: string;
 };
 
 @Injectable()

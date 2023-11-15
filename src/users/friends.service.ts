@@ -15,7 +15,7 @@ export class FriendsService {
 	 * @param toUserId 친구요청을 받은 유저의 id
 	 * @returns
 	 */
-	async createFriend(fromUserId: number, toUserId: number) {
+	async createFriend(fromUserId: string, toUserId: string) {
 		// 본인에게 친구요청을 보내는지 확인
 		this.checkSelfFriendship(fromUserId, toUserId);
 
@@ -39,7 +39,7 @@ export class FriendsService {
 	 * @param fromUserId 친구 삭제 요청을 보낸 유저의 id
 	 * @param toUserId 친구 삭제 요청을 받은 유저의 id
 	 */
-	async deleteFriend(fromUserId: number, toUserId: number) {
+	async deleteFriend(fromUserId: string, toUserId: string) {
 		// 본인에게 친구 삭제 요청을 보내는지 확인
 		this.checkSelfFriendship(fromUserId, toUserId);
 
@@ -66,7 +66,7 @@ export class FriendsService {
 	 * @param page 페이지 번호
 	 * @returns 친구 목록
 	 */
-	async findFriendsWithPage(userId: number, page: number): Promise<FriendResponseDto> {
+	async findFriendsWithPage(userId: string, page: number): Promise<FriendResponseDto> {
 		// 친구 목록 조회
 		const friends = await this.friendRepository.findFriendInfos(userId, page);
 
@@ -86,7 +86,7 @@ export class FriendsService {
 	/**
 	 * 유저가 존재하는지 확인
 	 */
-	async validateUserExists(userId: number) {
+	async validateUserExists(userId: string) {
 		const user = await this.userRepository.findOne({
 			where: {
 				id: userId,
@@ -101,7 +101,7 @@ export class FriendsService {
 	/**
 	 * 본인에게 친구/친구삭제 요청을 보내는지 확인
 	 */
-	private checkSelfFriendship(fromUserId: number, toUserId: number) {
+	private checkSelfFriendship(fromUserId: string, toUserId: string) {
 		if (fromUserId === toUserId) {
 			throw new BadRequestException(`Can't be friend with yourself`);
 		}
@@ -110,7 +110,7 @@ export class FriendsService {
 	/**
 	 * 이미 친구인지 확인
 	 */
-	private async checkAlreadyFriends(fromUserId: number, toUserId: number) {
+	private async checkAlreadyFriends(fromUserId: string, toUserId: string) {
 		const isExistFriend = await this.friendRepository.findFriend(fromUserId, toUserId);
 		if (isExistFriend) {
 			throw new BadRequestException(`Already friends`);

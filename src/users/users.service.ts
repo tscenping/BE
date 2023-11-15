@@ -29,13 +29,13 @@ export class UsersService {
 		return user;
 	}
 
-	async findMyProfile(userId: number) {
+	async findMyProfile(userId: string) {
 		const myProfile = await this.userRepository.findMyProfile(userId);
 
 		return myProfile;
 	}
 
-	async login(userId: number, loginRequestDto: LoginRequestDto) {
+	async login(userId: string, loginRequestDto: LoginRequestDto) {
 		const avatar = loginRequestDto?.avatar;
 		const nickname = loginRequestDto?.nickname;
 		if (!avatar || !nickname) {
