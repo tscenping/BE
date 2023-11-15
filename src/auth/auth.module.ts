@@ -13,21 +13,15 @@ import { AuthService } from './auth.service';
 import { JwtAccessStrategy } from './jwt-access.strategy';
 
 @Module({
-    imports: [
-        TypeOrmModule.forFeature([User]),
-        PassportModule,
-        JwtModule.registerAsync({
-            inject: [jwtConfig.KEY],
-            useFactory: (jwtConfigure: ConfigType<typeof jwtConfig>) => jwtConfigure,
-        }),
-    ],
-    controllers: [AuthController],
-    providers: [
-        AuthService,
-        FtAuthService,
-        JwtAccessStrategy,
-        UserRepository,
-        UsersService,
-    ],
+	imports: [
+		TypeOrmModule.forFeature([User]),
+		PassportModule,
+		JwtModule.registerAsync({
+			inject: [jwtConfig.KEY],
+			useFactory: (jwtConfigure: ConfigType<typeof jwtConfig>) => jwtConfigure,
+		}),
+	],
+	controllers: [AuthController],
+	providers: [AuthService, FtAuthService, JwtAccessStrategy, UserRepository, UsersService],
 })
 export class AuthModule {}

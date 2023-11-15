@@ -1,7 +1,7 @@
 import { FriendInfoDto } from './friend-info.dto';
 
 export type FriendResponseDto = {
-  friends: FriendInfoDto[];
+	friends: FriendInfoDto[];
 
-  totalItemCount: number;
+	totalItemCount: number;
 };

@@ -1,15 +1,15 @@
 import { InjectRepository } from '@nestjs/typeorm';
-import { DATA_PER_PAGE } from 'src/common/constants';
+import { DEFAULT_PAGE_SIZE } from 'src/common/constants';
 import { DataSource, Repository } from 'typeorm';
 import { Game } from './entities/game.entity';
 export class GameRepository extends Repository<Game> {
-  constructor(@InjectRepository(Game) private dataSource: DataSource) {
-    super(Game, dataSource.manager);
-  }
+	constructor(@InjectRepository(Game) private dataSource: DataSource) {
+		super(Game, dataSource.manager);
+	}
 
-  async findGameHistories(userId: number, page: number) {
-    const gameHistories = await this.dataSource.query(
-      `
+	async findGameHistories(userId: number, page: number) {
+		const gameHistories = await this.dataSource.query(
+			`
       SELECT u.nickname             AS rivalName,
       u.avatar               AS rivalAvatar,
       CASE
@@ -29,8 +29,8 @@ export class GameRepository extends Repository<Game> {
       ORDER BY g."updatedAt" DESC
       LIMIT $2 OFFSET $3;
       `,
-      [userId, DATA_PER_PAGE, (page - 1) * DATA_PER_PAGE],
-    );
-    return gameHistories;
-  }
+			[userId, DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
+		);
+		return gameHistories;
+	}
 }

@@ -9,9 +9,9 @@ import { FriendRepository } from './friends.repository';
 import { FriendsService } from './friends.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Friend])],
-  controllers: [UsersController],
-  providers: [UsersService, FriendsService, UserRepository, FriendRepository],
-  exports: [UsersService],
+	imports: [TypeOrmModule.forFeature([User, Friend])],
+	controllers: [UsersController],
+	providers: [UsersService, FriendsService, UserRepository, FriendRepository],
+	exports: [UsersService],
 })
 export class UsersModule {}
