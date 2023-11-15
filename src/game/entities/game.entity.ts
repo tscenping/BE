@@ -1,4 +1,4 @@
-import { IsIn, IsNotEmpty, IsNumber, IsString } from 'class-validator';
+import { IsIn, IsNotEmpty, IsNumber, IsString, IsUUID } from 'class-validator';
 import { BaseEntity } from 'src/common/base-entity';
 import { GameStatus, GameType } from 'src/common/enum';
 import { Column, Entity } from 'typeorm';
@@ -7,13 +7,15 @@ import { Column, Entity } from 'typeorm';
 export class Game extends BaseEntity {
 	@Column()
 	@IsNotEmpty()
-	@IsNumber()
-	winnerId: number;
+	@IsString()
+	@IsUUID()
+	winnerId: string;
 
 	@Column()
 	@IsNotEmpty()
-	@IsNumber()
-	loserId: number;
+	@IsString()
+	@IsUUID()
+	loserId: string;
 
 	@Column()
 	@IsNotEmpty()
