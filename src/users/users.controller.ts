@@ -3,6 +3,8 @@ import {
 	Controller,
 	Delete,
 	Get,
+	Logger,
+	Param,
 	ParseIntPipe,
 	Post,
 	Query,
@@ -22,8 +24,11 @@ export class UsersController {
 	constructor(
 		private readonly usersService: UsersService,
 		private readonly friendsService: FriendsService,
+
 		private readonly blocksService: BlocksService,
 	) {}
+
+	private readonly logger = new Logger(UsersController.name);
 
 	@Post('/friends')
 	async createFriend(
@@ -60,6 +65,20 @@ export class UsersController {
 		const profile = await this.usersService.findMyProfile(user.id);
 
 		return profile;
+	}
+
+	@Get('/games/:nickname')
+	async findGameHistories(
+		@GetUser() user: User,
+		@Param('nickname') nickname: string,
+		@Query('page', ParseIntPipe, PositiveIntPipe) page: number,
+	) {
+		const gameHistories = await this.usersService.findGameHistoriesWithPage(
+			nickname,
+			page,
+		);
+
+		this.logger.log('gameHistories: ', gameHistories);
 	}
 
 	@Post('/blocks')

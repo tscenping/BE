@@ -44,22 +44,27 @@ export class AuthController {
 		// access token을 이용해 사용자 정보를 받아온다.
 		const userData = await this.ftAuthService.getUserData(accessToken);
 		// 신규가입자라면 DB에 저장한다.
-		const { user, mfaCode } = await this.authService.findOrCreateUser(userData);
+		const { user, mfaCode } = await this.authService.findOrCreateUser(
+			userData,
+		);
 
 		// 사용자 정보를 이용해 JWT 토큰을 생성한다.
-		const { jwtAccessToken, jwtRefreshToken } = await this.authService.generateJwtToken(user);
+		const { jwtAccessToken, jwtRefreshToken } =
+			await this.authService.generateJwtToken(user);
 
 		// token을 쿠키에 저장한다.
 		res.cookie('accessToken', jwtAccessToken, {
 			// httpOnly: true,	// 자동로그인을 위해 httpOnly를 false로 설정
 			secure: true,
 			sameSite: 'none',
+			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1), // 1일
 		});
 
 		res.cookie('refreshToken', jwtRefreshToken, {
 			httpOnly: true,
 			secure: true,
 			sameSite: 'none',
+			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
 		});
 
 		const userSigninResponseDto: UserSigninResponseDto = {
@@ -74,7 +79,10 @@ export class AuthController {
 
 	@Patch('/login')
 	@UseGuards(JwtAuthGuard)
-	async login(@GetUser() user: User, @Body() loginRequestDto: LoginRequestDto) {
+	async login(
+		@GetUser() user: User,
+		@Body() loginRequestDto: LoginRequestDto,
+	) {
 		// try catch 처리 대신 exception filter로 처리 예정
 		await this.usersService.login(user.id, loginRequestDto);
 	}
@@ -82,26 +90,30 @@ export class AuthController {
 	@Post('/test/signin')
 	async testSignIn(@Body('nickname') nickname: string, @Res() res: Response) {
 		if (await this.usersService.isNicknameExists(nickname)) {
-			throw new HttpException('이미 존재하는 닉네임입니다.', HttpStatus.CONFLICT);
+			throw new HttpException(
+				'이미 존재하는 닉네임입니다.',
+				HttpStatus.CONFLICT,
+			);
 		}
 
 		const user = await this.usersService.createUser(nickname, 'test@test');
 
-		const { jwtAccessToken, jwtRefreshToken } = await this.authService.generateJwtToken(user);
+		const { jwtAccessToken, jwtRefreshToken } =
+			await this.authService.generateJwtToken(user);
 
 		// token을 쿠키에 저장한다.
 		res.cookie('accessToken', jwtAccessToken, {
-			httpOnly: true,
+			// httpOnly: true,
 			secure: true,
 			sameSite: 'none',
-			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1), // 1일
 		});
 
 		res.cookie('refreshToken', jwtRefreshToken, {
 			httpOnly: true,
 			secure: true,
 			sameSite: 'none',
-			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 7),
+			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
 		});
 
 		const userSigninResponseDto: UserSigninResponseDto = {
