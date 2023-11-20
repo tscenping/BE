@@ -26,6 +26,7 @@ export class GameRepository extends Repository<Game> {
             ON (g."winnerId" = u.id AND g."loserId" = $1)
                 OR (g."loserId" = u.id AND g."winnerId" = $1)
             AND (g."winnerId" = $1 OR g."loserId" = $1)
+            WHERE g."deletedAt" IS NULL
             ORDER BY g."updatedAt" DESC
             LIMIT $2 OFFSET $3;
             `,
