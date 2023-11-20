@@ -8,7 +8,7 @@ import { User } from 'src/users/entities/user.entity';
 import { UserRepository } from 'src/users/users.repository';
 
 type JwtPayload = {
-	id: string;
+	id: number;
 };
 
 @Injectable()
@@ -21,7 +21,9 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy) {
 	) {
 		super({
 			secretOrKey: jwtConfigure.secret,
-			jwtFromRequest: ExtractJwt.fromExtractors([(request) => request.cookies?.accessToken]),
+			jwtFromRequest: ExtractJwt.fromExtractors([
+				(request) => request.cookies?.accessToken,
+			]),
 			// jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
 			ignoreExpiration: true, // 토큰 만료 여부를 검사하지 않는다.
 		});

@@ -11,7 +11,7 @@ export class BlocksRepository extends Repository<Block> {
 	}
 
 	async findBlockUsers(
-		userId: string,
+		userId: number,
 		page: number,
 	): Promise<BlockUserInfoDto[]> {
 		const users = this.dataSource
@@ -20,8 +20,8 @@ export class BlocksRepository extends Repository<Block> {
 			SELECT u.id, u.nickname, u.avatar, u.status
 			FROM Block b
 			JOIN "user" u
-			ON u.id = b."toUserId" 
-			WHERE b."fromUserId" = $1 AND b."deletedAt" IS NULL // QueryFailedError: operator does not exist: uuid = character varying
+			ON u.id = b."toUserId"
+			WHERE b."fromUserId" = $1 AND b."deletedAt" IS NULL
 			LIMIT $2 OFFSET $3;
 			`,
 				[userId, DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
