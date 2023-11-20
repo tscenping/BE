@@ -10,9 +10,11 @@ import { UsersService } from './users.service';
 import { Block } from './entities/block.entity';
 import { BlocksService } from './blocks.service';
 import { BlocksRepository } from './blocks.repository';
+import { GameRepository } from 'src/game/game.repository';
+import { Game } from 'src/game/entities/game.entity';
 
 @Module({
-	imports: [TypeOrmModule.forFeature([User, Friend, Block])],
+	imports: [TypeOrmModule.forFeature([User, Friend, Block, Game])],
 	controllers: [UsersController],
 	providers: [
 		UsersService,
@@ -21,6 +23,7 @@ import { BlocksRepository } from './blocks.repository';
 		UserRepository,
 		FriendRepository,
 		BlocksRepository,
+		GameRepository,
 	],
 	exports: [UsersService],
 })

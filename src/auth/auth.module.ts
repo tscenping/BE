@@ -11,10 +11,12 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { FtAuthService } from './ft-auth.service';
 import { JwtAccessStrategy } from './jwt-access.strategy';
+import { GameRepository } from 'src/game/game.repository';
+import { Game } from 'src/game/entities/game.entity';
 
 @Module({
 	imports: [
-		TypeOrmModule.forFeature([User]),
+		TypeOrmModule.forFeature([User, Game]),
 		PassportModule,
 		JwtModule.registerAsync({
 			inject: [jwtConfig.KEY],
@@ -29,6 +31,7 @@ import { JwtAccessStrategy } from './jwt-access.strategy';
 		JwtAccessStrategy,
 		UserRepository,
 		UsersService,
+		GameRepository,
 	],
 })
 export class AuthModule {}
