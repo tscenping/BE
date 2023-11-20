@@ -79,6 +79,8 @@ export class UsersController {
 		);
 
 		this.logger.log('gameHistories: ', gameHistories);
+
+		return gameHistories;
 	}
 
 	@Post('/blocks')

@@ -23,7 +23,7 @@ export class UserRepository extends Repository<User> {
 			"ladderScore",
 			"ladderMaxScore"
 			FROM "user" u
-			WHERE u.id = $1;
+			WHERE u.id = $1 AND u."deletedAt" IS NULL
 			`,
 			[userId],
 		);
