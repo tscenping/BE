@@ -7,9 +7,9 @@ import { BlockUserInfoDto } from './dto/block-user-info.dto';
 import { UUID } from 'crypto';
 
 class BlockDto {
-	id: string;
-	fromUserId: string;
-	toUserId: string;
+	id: number;
+	fromUserId: number;
+	toUserId: number;
 }
 
 @Injectable()
@@ -19,7 +19,7 @@ export class BlocksService {
 		private readonly blockRepository: BlocksRepository,
 	) {}
 
-	async applyBlock(fromUserId: string, toUserId: string) {
+	async applyBlock(fromUserId: number, toUserId: number) {
 		if (fromUserId === toUserId) {
 			throw new BadRequestException(`Could not blocking yourself`);
 		}
@@ -45,7 +45,7 @@ export class BlocksService {
 		if (!result) throw DBUpdateFailureException('Apply block failed');
 	}
 
-	async cancelBlock(fromUserId: string, toUserId: string) {
+	async cancelBlock(fromUserId: number, toUserId: number) {
 		if (fromUserId === toUserId) {
 			throw new BadRequestException(`Could not non-blocking yourself`);
 		}
@@ -69,7 +69,7 @@ export class BlocksService {
 	}
 
 	async findBlockUserListWithPage(
-		userId: string,
+		userId: number,
 		page: number,
 	): Promise<BlockUserResponseDto> {
 		const blockUsers: BlockUserInfoDto[] =
@@ -84,7 +84,7 @@ export class BlocksService {
 		return { friends: blockUsers, totalItemCount };
 	}
 
-	async validateUserExists(userId: string) {
+	async validateUserExists(userId: number) {
 		const user = await this.userRepository.findOne({
 			where: {
 				id: userId,

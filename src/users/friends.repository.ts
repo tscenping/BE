@@ -9,7 +9,7 @@ export class FriendRepository extends Repository<Friend> {
 		super(Friend, dataSource.manager);
 	}
 
-	async findFriend(fromUserId: string, toUserId: string) {
+	async findFriend(fromUserId: number, toUserId: number) {
 		return await this.findOne({
 			where: {
 				fromUserId,
@@ -18,7 +18,10 @@ export class FriendRepository extends Repository<Friend> {
 		});
 	}
 
-	async findFriendInfos(userId: string, page: number): Promise<FriendInfoDto[]> {
+	async findFriendInfos(
+		userId: number,
+		page: number,
+	): Promise<FriendInfoDto[]> {
 		const friends = await this.dataSource.query(
 			`
 			SELECT u.id, u.nickname, u.avatar, u.status

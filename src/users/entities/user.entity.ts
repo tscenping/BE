@@ -1,4 +1,12 @@
-import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString, Length, Matches } from 'class-validator';
+import {
+	IsBoolean,
+	IsNotEmpty,
+	IsNumber,
+	IsOptional,
+	IsString,
+	Length,
+	Matches,
+} from 'class-validator';
 import { BaseEntity } from 'src/common/base-entity';
 import { UserStatus } from 'src/common/enum';
 import { Column, Entity, Unique } from 'typeorm';

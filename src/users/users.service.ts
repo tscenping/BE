@@ -30,13 +30,13 @@ export class UsersService {
 		return user;
 	}
 
-	async findMyProfile(userId: string) {
+	async findMyProfile(userId: number) {
 		const myProfile = await this.userRepository.findMyProfile(userId);
 
 		return myProfile;
 	}
 
-	async login(userId: string, loginRequestDto: LoginRequestDto) {
+	async login(userId: number, loginRequestDto: LoginRequestDto) {
 		const avatar = loginRequestDto.avatar;
 		const nickname = loginRequestDto.nickname;
 

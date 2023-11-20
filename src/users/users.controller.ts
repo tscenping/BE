@@ -15,7 +15,6 @@ import { User } from './entities/user.entity';
 import { FriendsService } from './friends.service';
 import { UsersService } from './users.service';
 import { BlocksService } from './blocks.service';
-import { isString } from '@nestjs/common/utils/shared.utils';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -29,7 +28,7 @@ export class UsersController {
 	@Post('/friends')
 	async createFriend(
 		@GetUser() user: User,
-		@Body('friendId', ParseIntPipe, PositiveIntPipe) toUserId: string,
+		@Body('friendId', ParseIntPipe, PositiveIntPipe) toUserId: number,
 	) {
 		await this.friendsService.createFriend(user.id, toUserId);
 		// TODO: 친구요청을 받은 유저에게 알림 보내기
@@ -38,7 +37,7 @@ export class UsersController {
 	@Delete('/friends')
 	async deleteFriend(
 		@GetUser() user: User,
-		@Body('friendId', ParseIntPipe, PositiveIntPipe) toUserId: string,
+		@Body('friendId', ParseIntPipe, PositiveIntPipe) toUserId: number,
 	) {
 		await this.friendsService.deleteFriend(user.id, toUserId);
 	}
@@ -66,7 +65,7 @@ export class UsersController {
 	@Post('/blocks')
 	async createBlock(
 		@GetUser() user: User,
-		@Body('blockId') toUserId: string,
+		@Body('blockId') toUserId: number,
 	) {
 		await this.blocksService.applyBlock(user.id, toUserId);
 	}
@@ -74,7 +73,7 @@ export class UsersController {
 	@Delete('/blocks')
 	async deleteBlock(
 		@GetUser() user: User,
-		@Body('blockId') toUserId: string,
+		@Body('blockId') toUserId: number,
 	) {
 		await this.blocksService.cancelBlock(user.id, toUserId);
 	}
