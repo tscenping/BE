@@ -1,8 +1,8 @@
 import { IsUUID } from 'class-validator';
 import { Column, Entity } from 'typeorm';
-import { numberIdBaseEntity } from '../../common/number-id-base-entity';
+import { BaseEntity } from '../../common/base-entity';
 @Entity()
-export class Block extends numberIdBaseEntity {
+export class Block extends BaseEntity {
 	@Column()
 	@IsUUID()
 	fromUserId: string;

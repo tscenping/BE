@@ -4,9 +4,10 @@ import { UserRepository } from './users.repository';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { BlockUserResponseDto } from './dto/block-user-response.dto';
 import { BlockUserInfoDto } from './dto/block-user-info.dto';
+import { UUID } from 'crypto';
 
 class BlockDto {
-	id: number;
+	id: string;
 	fromUserId: string;
 	toUserId: string;
 }
