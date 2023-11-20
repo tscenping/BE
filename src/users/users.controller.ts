@@ -15,6 +15,7 @@ import { User } from './entities/user.entity';
 import { FriendsService } from './friends.service';
 import { UsersService } from './users.service';
 import { BlocksService } from './blocks.service';
+import { isString } from '@nestjs/common/utils/shared.utils';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
