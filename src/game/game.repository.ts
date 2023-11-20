@@ -7,7 +7,7 @@ export class GameRepository extends Repository<Game> {
 		super(Game, dataSource.manager);
 	}
 
-	async findGameHistoriesWithPage(userId: string, page: number) {
+	async findGameHistoriesWithPage(userId: number, page: number) {
 		const gameHistories = await this.dataSource.query(
 			`
             SELECT u.nickname             AS rivalName,

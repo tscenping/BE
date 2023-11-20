@@ -14,5 +14,10 @@ export type ErrorCode = ErrorCodeValueObject;
 
 export const DB_UPDATE_FAILURE = new ErrorCodeValueObject(
 	HttpStatus.INTERNAL_SERVER_ERROR,
-	'Data task could not be done',
+	'DataBase task could not be done',
+);
+
+export const DB_QUERY_ERROR = new ErrorCodeValueObject(
+	HttpStatus.INTERNAL_SERVER_ERROR,
+	'Query task could not be done',
 );

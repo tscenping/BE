@@ -3,8 +3,6 @@ import {
 	Controller,
 	Delete,
 	Get,
-	Logger,
-	Param,
 	ParseIntPipe,
 	Post,
 	Query,
@@ -16,6 +14,7 @@ import { PositiveIntPipe } from 'src/common/pipes/positiveInt.pipe';
 import { User } from './entities/user.entity';
 import { FriendsService } from './friends.service';
 import { UsersService } from './users.service';
+import { BlocksService } from './blocks.service';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -23,6 +22,8 @@ export class UsersController {
 	constructor(
 		private readonly usersService: UsersService,
 		private readonly friendsService: FriendsService,
+
+		private readonly blocksService: BlocksService,
 	) {}
 
 	private readonly logger = new Logger(UsersController.name);
@@ -30,7 +31,7 @@ export class UsersController {
 	@Post('/friends')
 	async createFriend(
 		@GetUser() user: User,
-		@Body('friendId', ParseIntPipe, PositiveIntPipe) toUserId: string,
+		@Body('friendId', ParseIntPipe, PositiveIntPipe) toUserId: number,
 	) {
 		await this.friendsService.createFriend(user.id, toUserId);
 		// TODO: 친구요청을 받은 유저에게 알림 보내기
@@ -39,7 +40,7 @@ export class UsersController {
 	@Delete('/friends')
 	async deleteFriend(
 		@GetUser() user: User,
-		@Body('friendId', ParseIntPipe, PositiveIntPipe) toUserId: string,
+		@Body('friendId', ParseIntPipe, PositiveIntPipe) toUserId: number,
 	) {
 		await this.friendsService.deleteFriend(user.id, toUserId);
 	}
@@ -76,5 +77,32 @@ export class UsersController {
 		);
 
 		this.logger.log('gameHistories: ', gameHistories);
+	}
+
+	@Post('/blocks')
+	async createBlock(
+		@GetUser() user: User,
+		@Body('blockId') toUserId: number,
+	) {
+		await this.blocksService.applyBlock(user.id, toUserId);
+	}
+
+	@Delete('/blocks')
+	async deleteBlock(
+		@GetUser() user: User,
+		@Body('blockId') toUserId: number,
+	) {
+		await this.blocksService.cancelBlock(user.id, toUserId);
+	}
+
+	@Get('/blocks')
+	async findBlockListWithPage(
+		@GetUser() user: User,
+		@Query('page', ParseIntPipe, PositiveIntPipe) page: number,
+	) {
+		const BlockUserResponseDto =
+			await this.blocksService.findBlockUserListWithPage(user.id, page);
+
+		return BlockUserResponseDto;
 	}
 }
