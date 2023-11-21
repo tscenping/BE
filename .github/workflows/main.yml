@@ -35,7 +35,7 @@ jobs:
     needs: build
     name: CD
     runs-on: self-hosted
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/deploy'
 
     steps:
       - name: Stop and remove previous container
