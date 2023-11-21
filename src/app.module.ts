@@ -11,6 +11,7 @@ import userConfig from './config/user.config';
 import { UsersModule } from './users/users.module';
 import { GameModule } from './game/game.module';
 import { ConfigModule, ConfigType } from '@nestjs/config';
+import { ChannelsModule } from './channels/channels.module';
 
 @Module({
 	imports: [
@@ -26,6 +27,7 @@ import { ConfigModule, ConfigType } from '@nestjs/config';
 		AuthModule,
 		UsersModule,
 		GameModule,
+		ChannelsModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],
