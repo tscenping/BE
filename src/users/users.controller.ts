@@ -62,9 +62,22 @@ export class UsersController {
 
 	@Get('/me')
 	async findMyProfile(@GetUser() user: User) {
-		const profile = await this.usersService.findMyProfile(user.id);
+		const myProfile = await this.usersService.findMyProfile(user.id);
 
-		return profile;
+		return myProfile;
+	}
+
+	@Get('/profile/:nickname')
+	async findUserProfile(
+		@GetUser() user: User,
+		@Param('nickname') nickname: string,
+	) {
+		const userProfile = await this.usersService.findUserProfile(
+			user.id,
+			nickname,
+		);
+
+		return userProfile;
 	}
 
 	@Get('/games/:nickname')
@@ -79,6 +92,8 @@ export class UsersController {
 		);
 
 		this.logger.log('gameHistories: ', gameHistories);
+
+		return gameHistories;
 	}
 
 	@Post('/blocks')

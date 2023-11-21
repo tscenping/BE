@@ -1,10 +1,10 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { Friend } from './entities/friend.entity';
 import { Repository, DataSource } from 'typeorm';
-import { FriendInfoDto } from './dto/friend-info.dto';
+import { FriendUserReturnDto } from './dto/friend-user-return.dto';
 import { DEFAULT_PAGE_SIZE } from 'src/common/constants';
 
-export class FriendRepository extends Repository<Friend> {
+export class FriendsRepository extends Repository<Friend> {
 	constructor(@InjectRepository(Friend) private dataSource: DataSource) {
 		super(Friend, dataSource.manager);
 	}
@@ -21,7 +21,7 @@ export class FriendRepository extends Repository<Friend> {
 	async findFriendInfos(
 		userId: number,
 		page: number,
-	): Promise<FriendInfoDto[]> {
+	): Promise<FriendUserReturnDto[]> {
 		const friends = await this.dataSource.query(
 			`
 			SELECT u.id, u.nickname, u.avatar, u.status

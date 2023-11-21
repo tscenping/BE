@@ -1,8 +1,11 @@
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
+import { MyProfileResponseDto } from './dto/my-profile-response.dto';
 import { User } from './entities/user.entity';
+import { UserProfileResponseDto } from './dto/user-profile-response.dto';
 
-export class UserRepository extends Repository<User> {
+export class UsersRepository extends Repository<User> {
 	constructor(@InjectRepository(User) private dataSource: DataSource) {
 		super(User, dataSource.manager);
 	}
@@ -11,24 +14,58 @@ export class UserRepository extends Repository<User> {
 		return await this.findOne({ where: { nickname } });
 	}
 
-	async findMyProfile(userId: number) {
-		const myProfile = this.dataSource.query(
-			`
-			SELECT nickname,
-			avatar,
-			"statusMessage",
-			"loseCount",
-			"winCount",
-			"loseCount" + "winCount" AS totalCount,
-			"ladderScore",
-			"ladderMaxScore"
-			FROM "user" u
-			WHERE u.id = $1;
-			`,
-			[userId],
-		);
+	async findMyProfile(userId: number): Promise<MyProfileResponseDto> {
+		const myProfile = await this.findOne({
+			select: [
+				'nickname',
+				'avatar',
+				'statusMessage',
+				'loseCount',
+				'winCount',
+				'ladderScore',
+				'ladderMaxScore',
+			],
+			where: { id: userId },
+		});
 
-		// TODO: ladderRank cache에서 조회하기
-		return myProfile;
+		if (!myProfile) {
+			throw new ForbiddenException('invalid user');
+		}
+
+		return {
+			...myProfile,
+			totalCount: myProfile.loseCount + myProfile.winCount,
+			ladderRank: 1, // TODO: ladderRank cache에서 조회하기
+		} as MyProfileResponseDto;
+	}
+
+	async findUserProfileByNickname(
+		nickname: string,
+	): Promise<UserProfileResponseDto> {
+		const userProfile = await this.findOne({
+			select: [
+				'id',
+				'nickname',
+				'avatar',
+				'statusMessage',
+				'loseCount',
+				'winCount',
+				'ladderScore',
+				'ladderMaxScore',
+			],
+			where: { nickname: nickname },
+		});
+
+		if (!userProfile) {
+			throw new NotFoundException(`there is no user ${nickname}`);
+		}
+
+		return {
+			...userProfile,
+			totalCount: userProfile.loseCount + userProfile.winCount,
+			ladderRank: 1, // TODO: ladderRank cache에서 조회하기,
+			isFriend: false,
+			isBlocked: false,
+		} as UserProfileResponseDto;
 	}
 }

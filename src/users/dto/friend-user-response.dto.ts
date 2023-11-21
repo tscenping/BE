@@ -1,6 +1,6 @@
 import { FriendUserReturnDto } from './friend-user-return.dto';
 
-export type BlockUserResponseDto = {
+export type FriendUserResponseDto = {
 	friends: FriendUserReturnDto[];
 
 	totalItemCount: number;

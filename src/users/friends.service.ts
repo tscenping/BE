@@ -1,15 +1,15 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { FriendRepository } from './friends.repository';
-import { UserRepository } from './users.repository';
-import { FriendResponseDto } from './dto/friend-response.dto';
+import { FriendsRepository } from './friends.repository';
+import { UsersRepository } from './users.repository';
+import { FriendUserResponseDto } from './dto/friend-user-response.dto';
 
 @Injectable()
 export class FriendsService {
 	private readonly logger = new Logger(FriendsService.name);
 
 	constructor(
-		private readonly friendRepository: FriendRepository,
-		private readonly userRepository: UserRepository,
+		private readonly friendRepository: FriendsRepository,
+		private readonly userRepository: UsersRepository,
 	) {}
 
 	/**
@@ -77,7 +77,7 @@ export class FriendsService {
 	async findFriendsWithPage(
 		userId: number,
 		page: number,
-	): Promise<FriendResponseDto> {
+	): Promise<FriendUserResponseDto> {
 		// 친구 목록 조회
 		const friends = await this.friendRepository.findFriendInfos(
 			userId,

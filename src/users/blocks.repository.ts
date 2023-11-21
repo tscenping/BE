@@ -2,7 +2,7 @@ import { DataSource, Repository } from 'typeorm';
 import { Block } from './entities/block.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DEFAULT_PAGE_SIZE } from '../common/constants';
-import { BlockUserInfoDto } from './dto/block-user-info.dto';
+import { BlockUserReturnDto } from './dto/block-user-return.dto';
 import { DBQueryErrorException } from '../common/exception/custom-exception';
 
 export class BlocksRepository extends Repository<Block> {
@@ -13,7 +13,7 @@ export class BlocksRepository extends Repository<Block> {
 	async findBlockUsers(
 		userId: number,
 		page: number,
-	): Promise<BlockUserInfoDto[]> {
+	): Promise<BlockUserReturnDto[]> {
 		const users = this.dataSource
 			.query(
 				`
@@ -30,5 +30,17 @@ export class BlocksRepository extends Repository<Block> {
 				throw DBQueryErrorException(reason);
 			});
 		return users;
+	}
+
+	async findBlock(
+		fromUserId: number,
+		toUserId: number,
+	): Promise<Block | null> {
+		return await this.findOne({
+			where: {
+				fromUserId,
+				toUserId,
+			},
+		});
 	}
 }

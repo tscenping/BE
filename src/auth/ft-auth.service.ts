@@ -1,8 +1,13 @@
-import { Inject, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import {
+	Inject,
+	Injectable,
+	Logger,
+	UnauthorizedException,
+} from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import axios from 'axios';
 import ftConfig from '../config/ft.config';
-import { FtUserDto } from './dto/ft-user.dto';
+import { FtUserParamDto } from './dto/ft-user-param.dto';
 import { FtOauthResponseDto } from './dto/ft-oauth-response.dto';
 
 @Injectable()
@@ -40,7 +45,7 @@ export class FtAuthService {
 		}
 	}
 
-	async getUserData(accessToken: string): Promise<FtUserDto> {
+	async getUserData(accessToken: string): Promise<FtUserParamDto> {
 		try {
 			const response = await axios.get(`${this.baseUrl}/v2/me`, {
 				headers: {
@@ -48,7 +53,7 @@ export class FtAuthService {
 				},
 			});
 
-			const userData: FtUserDto = {
+			const userData: FtUserParamDto = {
 				nickname: response.data.login,
 				email: response.data.email,
 				ftId: response.data.id,

@@ -3,16 +3,16 @@ import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import userConfig from 'src/config/user.config';
 import { User } from 'src/users/entities/user.entity';
-import { UserRepository } from './../users/users.repository';
+import { UsersRepository } from './../users/users.repository';
 import { UserFindReturnDto } from './dto/user-find-return.dto';
-import { FtUserDto } from './dto/ft-user.dto';
+import { FtUserParamDto } from './dto/ft-user-param.dto';
 
 @Injectable()
 export class AuthService {
 	private readonly nicknamePrefix: string;
 
 	constructor(
-		private readonly userRepository: UserRepository,
+		private readonly userRepository: UsersRepository,
 		private readonly jwtService: JwtService,
 		@Inject(userConfig.KEY)
 		private readonly userConfigure: ConfigType<typeof userConfig>,
@@ -24,7 +24,9 @@ export class AuthService {
 		return Promise.resolve('mfaCode'); // TODO: 2FA 코드 생성
 	}
 
-	async findOrCreateUser(userData: FtUserDto): Promise<UserFindReturnDto> {
+	async findOrCreateUser(
+		userData: FtUserParamDto,
+	): Promise<UserFindReturnDto> {
 		const user = await this.userRepository.findOne({
 			where: { email: userData.email },
 		});
@@ -51,7 +53,9 @@ export class AuthService {
 		const accessToken = await this.jwtService.signAsync(payload);
 
 		// refreshToken 생성
-		const refreshToken = await this.jwtService.signAsync({ id: payload.id });
+		const refreshToken = await this.jwtService.signAsync({
+			id: payload.id,
+		});
 
 		// refreshToken을 DB에 저장한다.
 		await this.userRepository.update(user.id, { refreshToken });
@@ -62,7 +66,10 @@ export class AuthService {
 	async validateNickname(nickname: string) {
 		const user = await this.userRepository.findOneByNickname(nickname);
 		if (user) {
-			throw new HttpException('이미 존재하는 닉네임입니다.', HttpStatus.CONFLICT);
+			throw new HttpException(
+				'이미 존재하는 닉네임입니다.',
+				HttpStatus.CONFLICT,
+			);
 		}
 	}
 }

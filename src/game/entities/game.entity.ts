@@ -41,7 +41,7 @@ export class Game extends BaseEntity {
 	@Column()
 	@IsNotEmpty()
 	@IsString()
-	gameStatue: GameStatus;
+	gameStatus: GameStatus;
 
 	@Column()
 	@IsNotEmpty()
