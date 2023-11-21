@@ -3,6 +3,7 @@ import * as cookieParser from 'cookie-parser';
 import * as fs from 'fs';
 import { AppModule } from './app.module';
 import { ToHttpFilter } from './common/exception/custom-exception.filter';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
 	const httpsOptions = {
@@ -21,6 +22,7 @@ async function bootstrap() {
 	app.use(cookieParser());
 	// app.useGlobalInterceptors(new LoggingInterceptor());
 	app.useGlobalFilters(new ToHttpFilter());
+	app.useGlobalPipes(new ValidationPipe());
 
 	await app.listen(3000);
 }

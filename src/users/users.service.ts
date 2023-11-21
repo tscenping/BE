@@ -5,6 +5,7 @@ import { BlocksRepository } from './blocks.repository';
 import { LoginRequestDto } from './dto/login-request.dto';
 import { FriendsRepository } from './friends.repository';
 import { UsersRepository } from './users.repository';
+import { UserProfileResponseDto } from './dto/user-profile.dto';
 
 @Injectable()
 export class UsersService {
@@ -72,26 +73,29 @@ export class UsersService {
 		return myProfile;
 	}
 
-	async findUserProfile(userId: number, targetUserNickname: string) {
+	async findUserProfile(
+		userId: number,
+		targetUserNickname: string,
+	): Promise<UserProfileResponseDto> {
 		const userProfile = await this.userRepository.findUserProfileByNickname(
 			targetUserNickname,
 		);
 
-		// isFriend
-		const isFriend = await this.friendsRepository.findFriend(
+		const friend = await this.friendsRepository.findFriend(
 			userId,
 			userProfile.id,
 		);
-		userProfile.isFriend = isFriend !== null;
 
-		// isBlocked
-		const isBlocked = await this.blocksRepository.findBlock(
+		const block = await this.blocksRepository.findBlock(
 			userId,
 			userProfile.id,
 		);
-		userProfile.isBlocked = isBlocked !== null;
 
-		return userProfile;
+		return {
+			...userProfile,
+			isFriend: friend !== null,
+			isBlocked: block !== null,
+		};
 	}
 
 	async login(userId: number, loginRequestDto: LoginRequestDto) {
@@ -103,12 +107,12 @@ export class UsersService {
 		});
 		if (!user) throw new BadRequestException(`there is no user`);
 
-		const resault = await this.userRepository.update(userId, {
+		const result = await this.userRepository.update(userId, {
 			avatar: avatar,
 			nickname: nickname,
 		});
 
-		if (resault.affected !== 1) {
+		if (result.affected !== 1) {
 			throw DBUpdateFailureException(UsersService.name);
 		}
 	}

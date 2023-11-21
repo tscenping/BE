@@ -17,3 +17,16 @@ export enum GameStatus {
 	PLAYING = 'PLAYING',
 	FINISHED = 'FINISHED',
 }
+
+export enum ChannelType {
+	PUBLIC = 'PUBLIC',
+	PROTECTED = 'PROTECTED',
+	PRIVATE = 'PRIVATE',
+	DM = 'DM',
+}
+
+export enum ChannelUserType {
+	OWNER = 'OWNER',
+	ADMIN = 'ADMIN',
+	MEMBER = 'MEMBER',
+}

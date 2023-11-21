@@ -1,11 +1,11 @@
-import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { ConflictException, Inject, Injectable } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import userConfig from 'src/config/user.config';
 import { User } from 'src/users/entities/user.entity';
 import { UsersRepository } from './../users/users.repository';
-import { UserFindReturnDto } from './dto/user-find-return.dto';
 import { FtUserParamDto } from './dto/ft-user-param.dto';
+import { UserFindReturnDto } from './dto/user-find-return.dto';
 
 @Injectable()
 export class AuthService {
@@ -66,10 +66,7 @@ export class AuthService {
 	async validateNickname(nickname: string) {
 		const user = await this.userRepository.findOneByNickname(nickname);
 		if (user) {
-			throw new HttpException(
-				'이미 존재하는 닉네임입니다.',
-				HttpStatus.CONFLICT,
-			);
+			throw new ConflictException('이미 존재하는 닉네임입니다.');
 		}
 	}
 }

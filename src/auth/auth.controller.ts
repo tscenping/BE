@@ -1,8 +1,7 @@
 import {
 	Body,
+	ConflictException,
 	Controller,
-	HttpException,
-	HttpStatus,
 	Inject,
 	Logger,
 	Patch,
@@ -14,13 +13,13 @@ import { ConfigType } from '@nestjs/config';
 import { Response } from 'express';
 import userConfig from 'src/config/user.config';
 import { User } from 'src/users/entities/user.entity';
+import { LoginRequestDto } from '../users/dto/login-request.dto';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 import { UserSigninResponseDto } from './dto/user-signin-response.dto';
 import { FtAuthService } from './ft-auth.service';
 import { GetUser } from './get-user.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { LoginRequestDto } from '../users/dto/login-request.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -90,10 +89,7 @@ export class AuthController {
 	@Post('/test/signin')
 	async testSignIn(@Body('nickname') nickname: string, @Res() res: Response) {
 		if (await this.usersService.isNicknameExists(nickname)) {
-			throw new HttpException(
-				'이미 존재하는 닉네임입니다.',
-				HttpStatus.CONFLICT,
-			);
+			throw new ConflictException('이미 존재하는 닉네임입니다.');
 		}
 
 		const user = await this.usersService.createUser(nickname, 'test@test');
