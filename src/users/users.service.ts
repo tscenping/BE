@@ -38,11 +38,7 @@ export class UsersService {
 
 		// 페이지 정보 조회
 		const totalItemCount = await this.gameRepository.count({
-			where: {
-				loserId: targetUser.id,
-			} || {
-				winnerId: targetUser.id,
-			},
+			where: [{ winnerId: targetUser.id }, { loserId: targetUser.id }],
 		});
 
 		return {
