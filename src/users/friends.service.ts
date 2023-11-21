@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { FriendRepository } from './friends.repository';
-import { UserRepository } from './users.repository';
+import { FriendsRepository } from './friends.repository';
+import { UsersRepository } from './users.repository';
 import { FriendUserResponseDto } from './dto/friend-user-response.dto';
 
 @Injectable()
@@ -8,8 +8,8 @@ export class FriendsService {
 	private readonly logger = new Logger(FriendsService.name);
 
 	constructor(
-		private readonly friendRepository: FriendRepository,
-		private readonly userRepository: UserRepository,
+		private readonly friendRepository: FriendsRepository,
+		private readonly userRepository: UsersRepository,
 	) {}
 
 	/**

@@ -1,14 +1,18 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { GameRepository } from './../game/game.repository';
 import { LoginRequestDto } from './dto/login-request.dto';
-import { UserRepository } from './users.repository';
+import { UsersRepository } from './users.repository';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
+import { FriendsRepository } from './friends.repository';
+import { BlocksRepository } from './blocks.repository';
 
 @Injectable()
 export class UsersService {
 	constructor(
-		private readonly userRepository: UserRepository,
+		private readonly userRepository: UsersRepository,
 		private readonly gameRepository: GameRepository,
+		private readonly friendsRepository: FriendsRepository,
+		private readonly blocksRepository: BlocksRepository,
 	) {}
 
 	private readonly logger = new Logger(UsersService.name);
@@ -46,7 +50,6 @@ export class UsersService {
 			totalItemCount,
 		};
 	}
-
 	// TODO: test용 메서드. 추후 삭제
 	async isNicknameExists(nickname: string) {
 		const user = await this.userRepository.findOne({
@@ -72,6 +75,28 @@ export class UsersService {
 		const myProfile = await this.userRepository.findMyProfile(userId);
 
 		return myProfile;
+	}
+
+	async findUserProfile(userId: number, targetUserNickname: string) {
+		const userProfile = await this.userRepository.findUserProfileByNickname(
+			targetUserNickname,
+		);
+
+		// isFriend
+		const isFriend = await this.friendsRepository.findFriend(
+			userId,
+			userProfile.id,
+		);
+		userProfile.isFriend = isFriend ? true : false;
+
+		// isBlocked
+		const isBlocked = await this.blocksRepository.findBlock(
+			userId,
+			userProfile.id,
+		);
+		userProfile.isBlocked = isBlocked ? true : false;
+
+		return userProfile;
 	}
 
 	async login(userId: number, loginRequestDto: LoginRequestDto) {

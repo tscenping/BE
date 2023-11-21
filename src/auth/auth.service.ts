@@ -3,7 +3,7 @@ import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import userConfig from 'src/config/user.config';
 import { User } from 'src/users/entities/user.entity';
-import { UserRepository } from './../users/users.repository';
+import { UsersRepository } from './../users/users.repository';
 import { UserFindReturnDto } from './dto/user-find-return.dto';
 import { FtUserParamDto } from './dto/ft-user-param.dto';
 
@@ -12,7 +12,7 @@ export class AuthService {
 	private readonly nicknamePrefix: string;
 
 	constructor(
-		private readonly userRepository: UserRepository,
+		private readonly userRepository: UsersRepository,
 		private readonly jwtService: JwtService,
 		@Inject(userConfig.KEY)
 		private readonly userConfigure: ConfigType<typeof userConfig>,

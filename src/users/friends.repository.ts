@@ -4,7 +4,7 @@ import { Repository, DataSource } from 'typeorm';
 import { FriendUserReturnDto } from './dto/friend-user-return.dto';
 import { DEFAULT_PAGE_SIZE } from 'src/common/constants';
 
-export class FriendRepository extends Repository<Friend> {
+export class FriendsRepository extends Repository<Friend> {
 	constructor(@InjectRepository(Friend) private dataSource: DataSource) {
 		super(Friend, dataSource.manager);
 	}

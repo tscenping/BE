@@ -67,12 +67,18 @@ export class UsersController {
 		return myProfile;
 	}
 
-	// @Get('/profile/:nickname')
-	// async findUserProfile(@GetUser() user: User) {
-	// 	const userProfile = await this.usersService.findUserProfile(user.id);
+	@Get('/profile/:nickname')
+	async findUserProfile(
+		@GetUser() user: User,
+		@Param('nickname') nickname: string,
+	) {
+		const userProfile = await this.usersService.findUserProfile(
+			user.id,
+			nickname,
+		);
 
-	// 	return userProfile;
-	// }
+		return userProfile;
+	}
 
 	@Get('/games/:nickname')
 	async findGameHistories(

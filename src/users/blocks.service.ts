@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { BlocksRepository } from './blocks.repository';
-import { UserRepository } from './users.repository';
+import { UsersRepository } from './users.repository';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { BlockUserResponseDto } from './dto/block-user-response.dto';
 import { BlockUserReturnDto } from './dto/block-user-return.dto';
@@ -15,7 +15,7 @@ class BlockDto {
 @Injectable()
 export class BlocksService {
 	constructor(
-		private readonly userRepository: UserRepository,
+		private readonly userRepository: UsersRepository,
 		private readonly blockRepository: BlocksRepository,
 	) {}
 

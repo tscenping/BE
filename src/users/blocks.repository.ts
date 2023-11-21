@@ -31,4 +31,16 @@ export class BlocksRepository extends Repository<Block> {
 			});
 		return users;
 	}
+
+	async findBlock(
+		fromUserId: number,
+		toUserId: number,
+	): Promise<Block | null> {
+		return await this.findOne({
+			where: {
+				fromUserId,
+				toUserId,
+			},
+		});
+	}
 }

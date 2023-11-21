@@ -1,4 +1,5 @@
-export type MyProfileResponseDto = {
+export type UserProfileResponseDto = {
+	id: number;
 	nickname: string;
 	avatar: string;
 	statusMessage: string;
@@ -8,4 +9,6 @@ export type MyProfileResponseDto = {
 	ladderScore: number;
 	ladderMaxScore: number;
 	ladderRank: number; // TODO: ladderRank cache에서 조회하기
+	isFriend: boolean;
+	isBlocked: boolean;
 };

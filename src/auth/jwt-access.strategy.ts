@@ -5,7 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import jwtConfig from 'src/config/jwt.config';
 import { User } from 'src/users/entities/user.entity';
-import { UserRepository } from 'src/users/users.repository';
+import { UsersRepository } from 'src/users/users.repository';
 
 type JwtPayload = {
 	id: number;
@@ -14,8 +14,8 @@ type JwtPayload = {
 @Injectable()
 export class JwtAccessStrategy extends PassportStrategy(Strategy) {
 	constructor(
-		@InjectRepository(UserRepository)
-		private readonly userRepository: UserRepository,
+		@InjectRepository(UsersRepository)
+		private readonly userRepository: UsersRepository,
 		@Inject(jwtConfig.KEY)
 		private readonly jwtConfigure: ConfigType<typeof jwtConfig>,
 	) {
