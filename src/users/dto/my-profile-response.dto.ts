@@ -1,4 +1,4 @@
-export type MyProfileDto = {
+export type MyProfileResponseDto = {
 	nickname: string;
 	avatar: string;
 	statusMessage: string;

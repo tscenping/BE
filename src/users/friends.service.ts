@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { FriendRepository } from './friends.repository';
 import { UserRepository } from './users.repository';
-import { FriendResponseDto } from './dto/friend-response.dto';
+import { FriendUserResponseDto } from './dto/friend-user-response.dto';
 
 @Injectable()
 export class FriendsService {
@@ -77,7 +77,7 @@ export class FriendsService {
 	async findFriendsWithPage(
 		userId: number,
 		page: number,
-	): Promise<FriendResponseDto> {
+	): Promise<FriendUserResponseDto> {
 		// 친구 목록 조회
 		const friends = await this.friendRepository.findFriendInfos(
 			userId,

@@ -3,7 +3,7 @@ import { BlocksRepository } from './blocks.repository';
 import { UserRepository } from './users.repository';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { BlockUserResponseDto } from './dto/block-user-response.dto';
-import { BlockUserInfoDto } from './dto/block-user-info.dto';
+import { BlockUserReturnDto } from './dto/block-user-return.dto';
 import { UUID } from 'crypto';
 
 class BlockDto {
@@ -72,7 +72,7 @@ export class BlocksService {
 		userId: number,
 		page: number,
 	): Promise<BlockUserResponseDto> {
-		const blockUsers: BlockUserInfoDto[] =
+		const blockUsers: BlockUserReturnDto[] =
 			await this.blockRepository.findBlockUsers(userId, page);
 
 		const totalItemCount = await this.blockRepository.count({
