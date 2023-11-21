@@ -87,14 +87,14 @@ export class UsersService {
 			userId,
 			userProfile.id,
 		);
-		userProfile.isFriend = isFriend ? true : false;
+		userProfile.isFriend = isFriend !== null;
 
 		// isBlocked
 		const isBlocked = await this.blocksRepository.findBlock(
 			userId,
 			userProfile.id,
 		);
-		userProfile.isBlocked = isBlocked ? true : false;
+		userProfile.isBlocked = isBlocked !== null;
 
 		return userProfile;
 	}
