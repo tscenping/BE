@@ -2,7 +2,7 @@ import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { MyProfileResponseDto } from './dto/my-profile-response.dto';
-import { UserProfileResponseDto } from './dto/user-profile-response.dto';
+import { UserProfileReturnDto } from './dto/user-profile.dto';
 import { User } from './entities/user.entity';
 
 export class UsersRepository extends Repository<User> {
@@ -41,7 +41,7 @@ export class UsersRepository extends Repository<User> {
 
 	async findUserProfileByNickname(
 		nickname: string,
-	): Promise<UserProfileResponseDto> {
+	): Promise<UserProfileReturnDto> {
 		const userProfile = await this.findOne({
 			select: [
 				'id',
@@ -66,8 +66,6 @@ export class UsersRepository extends Repository<User> {
 			...userProfile,
 			totalCount: userProfile.loseCount + userProfile.winCount,
 			ladderRank: 1, // TODO: ladderRank cache에서 조회하기,
-			isFriend: false,
-			isBlocked: false,
-		} as UserProfileResponseDto;
+		};
 	}
 }
