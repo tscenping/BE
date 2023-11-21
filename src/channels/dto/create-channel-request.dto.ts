@@ -28,5 +28,5 @@ export class CreateChannelRequestDto {
 	@IsNumber()
 	@IsPositive()
 	@IsOptional()
-	userId: number | null;
+	userId: number;
 }
