@@ -1,9 +1,9 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { MyProfileResponseDto } from './dto/my-profile-response.dto';
-import { User } from './entities/user.entity';
 import { UserProfileResponseDto } from './dto/user-profile-response.dto';
+import { User } from './entities/user.entity';
 
 export class UsersRepository extends Repository<User> {
 	constructor(@InjectRepository(User) private dataSource: DataSource) {
@@ -57,7 +57,9 @@ export class UsersRepository extends Repository<User> {
 		});
 
 		if (!userProfile) {
-			throw new NotFoundException(`there is no user ${nickname}`);
+			throw new BadRequestException(
+				`there is no user with nickname ${nickname}`,
+			);
 		}
 
 		return {

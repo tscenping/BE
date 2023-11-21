@@ -1,10 +1,10 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
-import { GameRepository } from './../game/game.repository';
-import { LoginRequestDto } from './dto/login-request.dto';
-import { UsersRepository } from './users.repository';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
-import { FriendsRepository } from './friends.repository';
+import { GameRepository } from './../game/game.repository';
 import { BlocksRepository } from './blocks.repository';
+import { LoginRequestDto } from './dto/login-request.dto';
+import { FriendsRepository } from './friends.repository';
+import { UsersRepository } from './users.repository';
 
 @Injectable()
 export class UsersService {
@@ -23,9 +23,8 @@ export class UsersService {
 			nickname,
 		);
 		if (!targetUser) {
-			throw new HttpException(
-				`there is no user with nickname: ${nickname}`,
-				HttpStatus.BAD_REQUEST,
+			throw new BadRequestException(
+				`there is no user with nickname ${nickname}`,
 			);
 		}
 
@@ -102,8 +101,7 @@ export class UsersService {
 		const user = await this.userRepository.findOne({
 			where: { id: userId },
 		});
-		if (!user)
-			throw new HttpException(`there is no user`, HttpStatus.BAD_REQUEST);
+		if (!user) throw new BadRequestException(`there is no user`);
 
 		const resault = await this.userRepository.update(userId, {
 			avatar: avatar,
