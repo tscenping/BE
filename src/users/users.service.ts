@@ -1,20 +1,32 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+	BadRequestException,
+	Inject,
+	Injectable,
+	Logger,
+} from '@nestjs/common';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
-import { GameRepository } from './../game/game.repository';
+import { GameRepository } from '../game/game.repository';
 import { BlocksRepository } from './blocks.repository';
-import { LoginRequestDto } from './dto/login-request.dto';
 import { FriendsRepository } from './friends.repository';
 import { UsersRepository } from './users.repository';
 import { UserProfileResponseDto } from './dto/user-profile.dto';
+import userConfig from '../config/user.config';
+import { ConfigType } from '@nestjs/config';
+import { User } from './entities/user.entity';
 
 @Injectable()
 export class UsersService {
+	private readonly nicknamePrefix: string;
 	constructor(
 		private readonly userRepository: UsersRepository,
 		private readonly gameRepository: GameRepository,
 		private readonly friendsRepository: FriendsRepository,
 		private readonly blocksRepository: BlocksRepository,
-	) {}
+		@Inject(userConfig.KEY)
+		private readonly userConfigure: ConfigType<typeof userConfig>,
+	) {
+		this.nicknamePrefix = this.userConfigure.FIRST_NICKNAME_PREFIX;
+	}
 
 	private readonly logger = new Logger(UsersService.name);
 
@@ -98,22 +110,49 @@ export class UsersService {
 		};
 	}
 
-	async login(userId: number, loginRequestDto: LoginRequestDto) {
-		const avatar = loginRequestDto.avatar;
-		const nickname = loginRequestDto.nickname;
+	async signup(userId: number, nickname: string, avatar: string) {
+		const user = await this.validateUserExist(userId);
 
-		const user = await this.userRepository.findOne({
-			where: { id: userId },
-		});
-		if (!user) throw new BadRequestException(`there is no user`);
+		await this.validateUserAlreadySignUp(user);
 
-		const result = await this.userRepository.update(userId, {
+		await this.validateNickname(nickname);
+
+		const updateRes = await this.userRepository.update(userId, {
 			avatar: avatar,
 			nickname: nickname,
 		});
 
-		if (result.affected !== 1) {
+		if (updateRes.affected !== 1) {
 			throw DBUpdateFailureException(UsersService.name);
 		}
+	}
+
+	async validateUserExist(userId: number) {
+		const user = await this.userRepository.findOne({
+			where: {
+				id: userId,
+			},
+		});
+
+		if (!user) {
+			throw new BadRequestException(
+				`User with id ${userId} doesn't exist`,
+			);
+		}
+		return user;
+	}
+
+	async validateUserAlreadySignUp(user: User) {
+		if (user.avatar && user.nickname)
+			throw new BadRequestException(`${user.id} is already signed up`);
+	}
+
+	async validateNickname(nickname: string) {
+		const user = await this.userRepository.findOneByNickname(nickname);
+
+		if (user)
+			throw new BadRequestException(
+				`nickname '${nickname}' is already exist! Try again`,
+			);
 	}
 }
