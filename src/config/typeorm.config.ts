@@ -5,7 +5,7 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 
 export default registerAs('typeorm', () => {
 	const TYPE = 'postgres';
-	const POSTGRES_HOST = z.string().parse(process.env.POSTGRES_HOST);
+	const POSTGRES_HOST = z.string().parse(process.env.HOSTNAME);
 	const POSTGRES_PORT = parseInt(
 		z.string().parse(process.env.POSTGRES_PORT),
 		10,
