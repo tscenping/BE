@@ -13,7 +13,7 @@ import { ConfigType } from '@nestjs/config';
 import { Response } from 'express';
 import userConfig from 'src/config/user.config';
 import { User } from 'src/users/entities/user.entity';
-import { LoginRequestDto } from '../users/dto/login-request.dto';
+import { SignupRequestDto } from '../users/dto/signup-request.dto';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 import { UserSigninResponseDto } from './dto/user-signin-response.dto';
@@ -76,14 +76,16 @@ export class AuthController {
 		return res.send(userSigninResponseDto);
 	}
 
-	@Patch('/login')
+	@Patch('/signup')
 	@UseGuards(JwtAuthGuard)
-	async login(
+	async signup(
 		@GetUser() user: User,
-		@Body() loginRequestDto: LoginRequestDto,
+		@Body() signupRequestDto: SignupRequestDto,
 	) {
-		// try catch 처리 대신 exception filter로 처리 예정
-		await this.usersService.login(user.id, loginRequestDto);
+		const nickname = signupRequestDto.nickname;
+		const avatar = signupRequestDto.avatar;
+
+		await this.usersService.signup(user.id, nickname, avatar);
 	}
 
 	@Post('/test/signin')
