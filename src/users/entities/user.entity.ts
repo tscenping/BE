@@ -18,7 +18,7 @@ export class User extends BaseEntity {
 	@IsString()
 	@Length(1, 10)
 	@IsNotEmpty()
-	@Matches(/^[ㄱ-ㅎ가-힣a-zA-Z0-9!]+$/)
+	@Matches(/^[ㄱ-ㅎ가-힣a-zA-Z0-9]+$/)
 	nickname: string;
 
 	@Column({ default: null })
