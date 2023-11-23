@@ -14,7 +14,7 @@ import { Column, Entity, Unique } from 'typeorm';
 @Entity()
 @Unique(['nickname'])
 export class User extends BaseEntity {
-	@Column({ unique: true })
+	@Column({ unique: true, default: null })
 	@IsString()
 	@Length(1, 10)
 	@IsNotEmpty()

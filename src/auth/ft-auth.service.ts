@@ -54,7 +54,6 @@ export class FtAuthService {
 			});
 
 			const userData: FtUserParamDto = {
-				nickname: response.data.login,
 				email: response.data.email,
 				ftId: response.data.id,
 			};
