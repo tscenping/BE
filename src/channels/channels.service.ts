@@ -61,6 +61,41 @@ export class ChannelsService {
 		return { channelId: channel.id };
 	}
 
+	async enterChannel(userId: number, channelId: number) {
+		// 채널이 존재하는지 확인
+		const channel = await this.channelsRepository.findOneBy({
+			id: channelId,
+		});
+		if (!channel) {
+			throw new BadRequestException(
+				`channel ${channelId} does not exist`,
+			);
+		}
+
+		// 이미 참여 중인 채널인지 확인
+		const myChannelUserInfo = await this.channelUsersRepository.findOneBy({
+			channelId,
+			userId,
+		});
+		if (!myChannelUserInfo) {
+			throw new BadRequestException(
+				`user ${userId} is not in channel ${channelId}`,
+			);
+		}
+
+		// 채널 유저 정보 조회
+		const channelUserInfoList =
+			await this.channelUsersRepository.findChannelUserInfoList(
+				userId,
+				channelId,
+			);
+
+		return {
+			channelUsers: channelUserInfoList,
+			myChannelUserType: myChannelUserInfo.channelUserType,
+		};
+	}
+
 	async validateDmChannel(userId: number, targetUserId: number) {
 		// 자기 자신에게 DM 채널을 생성할 수 없음
 		if (userId === targetUserId) {
