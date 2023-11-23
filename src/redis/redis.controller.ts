@@ -1,34 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { RedisService } from './redis.service';
-import { CreateRediDto } from './dto/create-redi.dto';
-import { UpdateRediDto } from './dto/update-redi.dto';
-
-@Controller('redis')
+@Controller('ranking')
 export class RedisController {
   constructor(private readonly redisService: RedisService) {}
 
-  @Post()
-  create(@Body() createRediDto: CreateRediDto) {
-    return this.redisService.create(createRediDto);
-  }
-
   @Get()
-  findAll() {
-    return this.redisService.findAll();
+  async getTwenty() {
+    return this.redisService.getTwenty();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.redisService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateRediDto: UpdateRediDto) {
-    return this.redisService.update(+id, updateRediDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.redisService.remove(+id);
+  async findOneById(@Param('id') id: string) {
+    return this.redisService.findOneById(+id);
   }
 }
