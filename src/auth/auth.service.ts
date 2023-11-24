@@ -3,7 +3,7 @@ import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import userConfig from 'src/config/user.config';
 import { User } from 'src/users/entities/user.entity';
-import { UsersRepository } from './../users/users.repository';
+import { UsersRepository } from '../users/users.repository';
 import { FtUserParamDto } from './dto/ft-user-param.dto';
 import { UserFindReturnDto } from './dto/user-find-return.dto';
 
@@ -64,7 +64,7 @@ export class AuthService {
 	}
 
 	async validateNickname(nickname: string) {
-		const user = await this.userRepository.findOneByNickname(nickname);
+		const user = await this.userRepository.findUserByNickname(nickname);
 		if (user) {
 			throw new ConflictException('이미 존재하는 닉네임입니다.');
 		}

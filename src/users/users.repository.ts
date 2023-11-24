@@ -10,7 +10,16 @@ export class UsersRepository extends Repository<User> {
 		super(User, dataSource.manager);
 	}
 
-	async findOneByNickname(nickname: string) {
+	async findUserById(userId: number) {
+		const user = await this.findOne({
+			where: {
+				id: userId,
+			},
+		});
+		return user;
+	}
+
+	async findUserByNickname(nickname: string) {
 		return await this.findOne({ where: { nickname } });
 	}
 
