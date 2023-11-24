@@ -2,16 +2,13 @@ import {
 	Body,
 	ConflictException,
 	Controller,
-	Inject,
 	Logger,
 	Patch,
 	Post,
 	Res,
 	UseGuards,
 } from '@nestjs/common';
-import { ConfigType } from '@nestjs/config';
 import { Response } from 'express';
-import userConfig from 'src/config/user.config';
 import { User } from 'src/users/entities/user.entity';
 import { SignupRequestDto } from '../users/dto/signup-request.dto';
 import { UsersService } from '../users/users.service';
@@ -23,17 +20,11 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-	private readonly nicknamePrefix: string;
-
 	constructor(
 		private readonly authService: AuthService,
 		private readonly ftAuthService: FtAuthService,
 		private readonly usersService: UsersService,
-		@Inject(userConfig.KEY)
-		private readonly userConfigure: ConfigType<typeof userConfig>,
-	) {
-		this.nicknamePrefix = this.userConfigure.FIRST_NICKNAME_PREFIX;
-	}
+	) {}
 	private readonly logger = new Logger(AuthController.name);
 
 	@Post('/signin')
@@ -68,7 +59,7 @@ export class AuthController {
 
 		const userSigninResponseDto: UserSigninResponseDto = {
 			userId: user.id,
-			isFirstLogin: user.nickname.at(0) === this.nicknamePrefix,
+			isFirstLogin: user.nickname === null,
 			isMfaEnabled: user.isMfaEnabled,
 			mfaCode,
 		};
