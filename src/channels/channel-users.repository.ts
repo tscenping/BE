@@ -3,6 +3,7 @@ import { DataSource, Repository } from 'typeorm';
 import { ChannelUser } from './entities/channel-user.entity';
 import { Logger } from '@nestjs/common';
 import { ChannelUserInfoReturnDto } from './dto/channel-user-info-return.dto';
+import { DBUpdateFailureException } from '../common/exception/custom-exception';
 
 export class ChannelUsersRepository extends Repository<ChannelUser> {
 	constructor(@InjectRepository(ChannelUser) private dataSource: DataSource) {
@@ -10,6 +11,16 @@ export class ChannelUsersRepository extends Repository<ChannelUser> {
 	}
 
 	private readonly logger = new Logger(ChannelUsersRepository.name);
+
+	async createChannelUser(channelId: number, userId: number) {
+		const newChannelUser = this.create({
+			channelId: channelId,
+			userId: userId,
+		});
+		const res = await this.save(newChannelUser);
+
+		if (!res) throw DBUpdateFailureException('join channel failed');
+	}
 
 	async findChannelUserInfoList(
 		userId: number,
@@ -66,5 +77,11 @@ export class ChannelUsersRepository extends Repository<ChannelUser> {
 		// 	'channelUserInfoList: ' + JSON.stringify(channelUserInfoList),
 		// );
 		return channelUserInfoList;
+	}
+
+	async softDeleteUserFromChannel(channelId: number) {
+		const result = await this.softDelete(channelId);
+		if (result.affected !== 1)
+			throw DBUpdateFailureException('delete user from channel failed');
 	}
 }

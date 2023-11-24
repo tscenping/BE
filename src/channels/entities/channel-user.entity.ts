@@ -21,7 +21,7 @@ export class ChannelUser extends BaseEntity {
 	@IsPositive()
 	userId: number;
 
-	@Column()
+	@Column({ default: ChannelUserType.MEMBER })
 	@IsString()
 	@IsEnum(ChannelUserType)
 	channelUserType: ChannelUserType;

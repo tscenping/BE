@@ -8,14 +8,24 @@ import { ChannelUsersRepository } from './channel-users.repository';
 import { ChannelUser } from './entities/channel-user.entity';
 import { User } from 'src/users/entities/user.entity';
 import { UsersRepository } from 'src/users/users.repository';
+import { ChannelInvitationRepository } from './channel-invitation.repository';
+import { ChannelInvitation } from './entities/channel-invitation.entity';
 
 @Module({
-	imports: [TypeOrmModule.forFeature([Channel, ChannelUser, User])],
+	imports: [
+		TypeOrmModule.forFeature([
+			Channel,
+			ChannelUser,
+			ChannelInvitation,
+			User,
+		]),
+	],
 	controllers: [ChannelsController],
 	providers: [
 		ChannelsService,
 		ChannelsRepository,
 		ChannelUsersRepository,
+		ChannelInvitationRepository,
 		UsersRepository,
 	],
 })

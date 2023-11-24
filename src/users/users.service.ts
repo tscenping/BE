@@ -21,7 +21,7 @@ export class UsersService {
 
 	async findGameHistoriesWithPage(nickname: string, page: number) {
 		// 유저 id 조회
-		const targetUser = await this.userRepository.findOneByNickname(
+		const targetUser = await this.userRepository.findUserByNickname(
 			nickname,
 		);
 		if (!targetUser) {
@@ -117,7 +117,7 @@ export class UsersService {
 	}
 
 	async validateNickname(nickname: string) {
-		const user = await this.userRepository.findOneByNickname(nickname);
+		const user = await this.userRepository.findUserByNickname(nickname);
 
 		if (user)
 			throw new BadRequestException(
