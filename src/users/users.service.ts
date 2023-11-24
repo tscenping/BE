@@ -1,32 +1,20 @@
-import {
-	BadRequestException,
-	Inject,
-	Injectable,
-	Logger,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { GameRepository } from '../game/game.repository';
 import { BlocksRepository } from './blocks.repository';
+import { UserProfileResponseDto } from './dto/user-profile.dto';
+import { User } from './entities/user.entity';
 import { FriendsRepository } from './friends.repository';
 import { UsersRepository } from './users.repository';
-import { UserProfileResponseDto } from './dto/user-profile.dto';
-import userConfig from '../config/user.config';
-import { ConfigType } from '@nestjs/config';
-import { User } from './entities/user.entity';
 
 @Injectable()
 export class UsersService {
-	private readonly nicknamePrefix: string;
 	constructor(
 		private readonly userRepository: UsersRepository,
 		private readonly gameRepository: GameRepository,
 		private readonly friendsRepository: FriendsRepository,
 		private readonly blocksRepository: BlocksRepository,
-		@Inject(userConfig.KEY)
-		private readonly userConfigure: ConfigType<typeof userConfig>,
-	) {
-		this.nicknamePrefix = this.userConfigure.FIRST_NICKNAME_PREFIX;
-	}
+	) {}
 
 	private readonly logger = new Logger(UsersService.name);
 
@@ -57,26 +45,6 @@ export class UsersService {
 			gameHistories,
 			totalItemCount,
 		};
-	}
-	// TODO: test용 메서드. 추후 삭제
-	async isNicknameExists(nickname: string) {
-		const user = await this.userRepository.findOne({
-			where: { nickname },
-		});
-
-		return !!user;
-	}
-
-	// TODO: test용 메서드. 추후 삭제
-	async createUser(nickname: string, email: string) {
-		const user = this.userRepository.create({
-			nickname,
-			email,
-		});
-
-		await this.userRepository.save(user);
-
-		return user;
 	}
 
 	async findMyProfile(userId: number) {
@@ -154,5 +122,26 @@ export class UsersService {
 			throw new BadRequestException(
 				`nickname '${nickname}' is already exist! Try again`,
 			);
+	}
+
+	// TODO: test용 메서드. 추후 삭제
+	async isNicknameExists(nickname: string) {
+		const user = await this.userRepository.findOne({
+			where: { nickname },
+		});
+
+		return !!user;
+	}
+
+	// TODO: test용 메서드. 추후 삭제
+	async createUser(nickname: string, email: string) {
+		const user = this.userRepository.create({
+			nickname,
+			email,
+		});
+
+		await this.userRepository.save(user);
+
+		return user;
 	}
 }
