@@ -114,4 +114,16 @@ export class AuthController {
 
 		return res.send(userSigninResponseDto);
 	}
+
+	@Patch('/signout')
+	@UseGuards(JwtAuthGuard)
+	async signout(@GetUser() user: User, @Res() res: Response) {
+		await this.usersService.signout(user.id);
+
+		// TODO: 해당 유저의 상태 변경을 알리는 소켓 이벤트 전송
+
+		res.clearCookie('accessToken');
+		res.clearCookie('refreshToken');
+		return res.send();
+	}
 }
