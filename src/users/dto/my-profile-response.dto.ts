@@ -1,4 +1,5 @@
 export type MyProfileResponseDto = {
+	id: number;
 	nickname: string;
 	avatar: string;
 	statusMessage: string;
