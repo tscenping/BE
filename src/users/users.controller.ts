@@ -145,4 +145,12 @@ export class UsersController {
 
 		await this.usersService.updateMyStatusMessage(user.id, statusMessage);
 	}
+
+	@Patch('/me/avatar')
+	async updateMyAvatar(
+		@GetUser() user: User,
+		@Body('avatar') avatar: string,
+	) {
+		await this.usersService.updateMyAvatar(user.id, avatar);
+	}
 }
