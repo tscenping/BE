@@ -89,10 +89,11 @@ export class UsersService {
 		const updateRes = await this.userRepository.update(userId, {
 			avatar: avatar,
 			nickname: nickname,
+			status: UserStatus.ONLINE,
 		});
 
 		if (updateRes.affected !== 1) {
-			throw DBUpdateFailureException(UsersService.name);
+			throw DBUpdateFailureException(`user ${userId} update failed`);
 		}
 	}
 
@@ -112,7 +113,7 @@ export class UsersService {
 	}
 
 	async validateUserAlreadySignUp(user: User) {
-		if (user.avatar && user.nickname)
+		if (user.nickname)
 			throw new BadRequestException(`${user.id} is already signed up`);
 	}
 
