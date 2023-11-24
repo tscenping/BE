@@ -6,6 +6,7 @@ import { UserProfileResponseDto } from './dto/user-profile.dto';
 import { User } from './entities/user.entity';
 import { FriendsRepository } from './friends.repository';
 import { UsersRepository } from './users.repository';
+import { UserStatus } from 'src/common/enum';
 
 @Injectable()
 export class UsersService {
@@ -122,6 +123,13 @@ export class UsersService {
 			throw new BadRequestException(
 				`nickname '${nickname}' is already exist! Try again`,
 			);
+	}
+
+	async signout(userId: number) {
+		await this.userRepository.update(userId, {
+			refreshToken: undefined,
+			status: UserStatus.OFFLINE,
+		});
 	}
 
 	// TODO: test용 메서드. 추후 삭제

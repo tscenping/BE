@@ -270,12 +270,12 @@ export class ChannelsService {
 		}
 
 		// 이미 DM 채널이 존재하는지 확인
-		const dmChannel = await this.channelsRepository.findDmChannelUser(
+		const dmChannelUser = await this.channelsRepository.findDmChannelUser(
 			userId,
 			targetUserId,
 		);
 
-		if (dmChannel && dmChannel.length > 0) {
+		if (dmChannelUser) {
 			throw new BadRequestException(
 				`DM channel already exists between ${userId} and ${targetUserId}`,
 			);
