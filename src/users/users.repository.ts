@@ -17,6 +17,7 @@ export class UsersRepository extends Repository<User> {
 	async findMyProfile(userId: number): Promise<MyProfileResponseDto> {
 		const myProfile = await this.findOne({
 			select: [
+				'id',
 				'nickname',
 				'avatar',
 				'statusMessage',
