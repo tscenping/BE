@@ -6,3 +6,6 @@ export const NICKNAME_REGEXP = /^[가-힣a-zA-Z0-9]$/;
 export const STATUS_MESSAGE_REGEXP = /^[가-힣a-zA-Z0-9]$/;
 
 export const STATUS_MESSAGE_STRING = '^[가-힣a-zA-Z0-9|\\s]+$';
+
+export const CHANNEL_PASSWORD_REGEXP = /^[a-zA-Z0-9`~₩;'"!@#$%^&*()_+|<>?:{}]$/;
+export const CHANNEL_NAME_REGEXP = /^[a-zA-Z0-9ㄱ-ㅎ가-힣]$/;
