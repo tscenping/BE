@@ -133,6 +133,26 @@ export class UsersService {
 		});
 	}
 
+	async updateMyStatusMessage(userId: number, statusMessage: string) {
+		const updateRes = await this.userRepository.update(userId, {
+			statusMessage: statusMessage,
+		});
+
+		if (updateRes.affected !== 1) {
+			throw DBUpdateFailureException(`user ${userId} update failed`);
+		}
+	}
+
+	async updateMyAvatar(userId: number, avatar: string) {
+		const updateRes = await this.userRepository.update(userId, {
+			avatar: avatar,
+		});
+
+		if (updateRes.affected !== 1) {
+			throw DBUpdateFailureException(`user ${userId} update failed`);
+		}
+	}
+
 	// TODO: test용 메서드. 추후 삭제
 	async isNicknameExists(nickname: string) {
 		const user = await this.userRepository.findOne({
