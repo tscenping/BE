@@ -10,7 +10,6 @@ import { User } from 'src/users/entities/user.entity';
 import { UsersRepository } from 'src/users/users.repository';
 import { ChannelInvitationRepository } from './channel-invitation.repository';
 import { ChannelInvitation } from './entities/channel-invitation.entity';
-import { ChannelInvitationService } from './channel-invitation.service';
 
 @Module({
 	imports: [
@@ -24,7 +23,6 @@ import { ChannelInvitationService } from './channel-invitation.service';
 	controllers: [ChannelsController],
 	providers: [
 		ChannelsService,
-		ChannelInvitationService,
 		ChannelsRepository,
 		ChannelUsersRepository,
 		ChannelInvitationRepository,

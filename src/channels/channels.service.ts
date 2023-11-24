@@ -207,11 +207,7 @@ export class ChannelsService {
 			);
 
 		await this.channelInvitationRepository.createChannelInvitation(
-			new CreateInvitationParamDto(
-				invitingUserId,
-				channelId,
-				invitedUserId,
-			),
+			createInvitationParamDto,
 		);
 	}
 
@@ -236,7 +232,9 @@ export class ChannelsService {
 			);
 		// channel의 owner였으면 channel 인포에서 ownerId null로 만들기
 		if (userId === channel.ownerId)
-			await this.channelsRepository.updateOwnerId(channelId);
+			await this.channelsRepository.update(channelId, {
+				ownerId: null,
+			});
 
 		// channel에서 user 지우기
 		await this.channelUsersRepository.softDeleteUserFromChannel(
@@ -244,9 +242,11 @@ export class ChannelsService {
 		);
 
 		// dm이거나 마지막 사람이라면 => channel까지 삭제
-		const cnt = await this.channelUsersRepository.countChannelById(
-			channelId,
-		);
+		const cnt = await this.channelUsersRepository.count({
+			where: {
+				channelId: channelId,
+			},
+		});
 
 		if (channel.channelType === ChannelType.DM || cnt === 0) {
 			await this.channelsRepository.softDeleteChannel(channel.id);

@@ -79,18 +79,9 @@ export class ChannelUsersRepository extends Repository<ChannelUser> {
 		return channelUserInfoList;
 	}
 
-	async countChannelById(channelId: number) {
-		const cnt = await this.count({
-			where: {
-				channelId: channelId,
-			},
-		});
-		return cnt;
-	}
-
 	async softDeleteUserFromChannel(channelId: number) {
 		const result = await this.softDelete(channelId);
-		if (result.affected != 1)
+		if (result.affected !== 1)
 			throw DBUpdateFailureException('delete user from channel failed');
 	}
 }

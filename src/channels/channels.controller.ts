@@ -18,16 +18,13 @@ import { JoinChannelRequestDto } from './dto/join-channel-request.dto';
 import { CreateInvitationRequestDto } from './dto/create-invitation-request.dto';
 import { PositiveIntPipe } from '../common/pipes/positiveInt.pipe';
 import { ChannelsService } from './channels.service';
-import { ChannelInvitationService } from './channel-invitation.service';
-import { ChannelUsersResponseDto } from './dto/channel-users-response.dto';
+import { CreatChannelUserParamDto } from './dto/creat-channel-user-param.dto';
+import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
 
 @Controller('channels')
 @UseGuards(JwtAuthGuard)
 export class ChannelsController {
-	constructor(
-		private readonly channelsService: ChannelsService,
-		private readonly channelInvitationService: ChannelInvitationService,
-	) {}
+	constructor(private readonly channelsService: ChannelsService) {}
 
 	@Post('/')
 	async createChannel(
@@ -73,12 +70,14 @@ export class ChannelsController {
 		const channelId = joinChannelRequestDto.channelId;
 		const password = joinChannelRequestDto.password;
 
+		const channelUserParamDto = new CreatChannelUserParamDto(
+			channelId,
+			userId,
+			password,
+		);
+
 		const channelUsersResponseDto =
-			await this.channelsService.createChannelUser({
-				channelId,
-				userId,
-				password,
-			});
+			await this.channelsService.createChannelUser(channelUserParamDto);
 
 		return channelUsersResponseDto;
 	}
@@ -93,11 +92,12 @@ export class ChannelsController {
 		const channelId = createInvitationRequestDto.channelId;
 		const invitedUserId = createInvitationRequestDto.invitedUserId;
 
-		await this.channelsService.createChannelInvitation({
+		const invitationParamDto = new CreateInvitationParamDto(
 			invitingUserId,
 			channelId,
 			invitedUserId,
-		});
+		);
+		await this.channelsService.createChannelInvitation(invitationParamDto);
 	}
 
 	@Patch('/exit')

@@ -9,12 +9,6 @@ export class ChannelsRepository extends Repository<Channel> {
 		super(Channel, dataSource.manager);
 	}
 
-	async updateOwnerId(channelId: number) {
-		await this.update(channelId, {
-			ownerId: null,
-		});
-	}
-
 	async findDmChannelUser(
 		userId: number,
 		targetUserId: number,
