@@ -1,6 +1,6 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { Channel } from './entities/channel.entity';
-import { Repository, DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { ChannelUser } from './entities/channel-user.entity';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 
