@@ -10,7 +10,7 @@ export class UsersRepository extends Repository<User> {
 		super(User, dataSource.manager);
 	}
 
-	async findOneByNickname(nickname: string) {
+	async findUserByNickname(nickname: string) {
 		return await this.findOne({ where: { nickname } });
 	}
 

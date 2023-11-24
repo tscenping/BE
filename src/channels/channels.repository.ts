@@ -1,7 +1,8 @@
 import { InjectRepository } from '@nestjs/typeorm';
+import { Channel } from './entities/channel.entity';
 import { DataSource, Repository } from 'typeorm';
 import { ChannelUser } from './entities/channel-user.entity';
-import { Channel } from './entities/channel.entity';
+import { DBUpdateFailureException } from '../common/exception/custom-exception';
 
 export class ChannelsRepository extends Repository<Channel> {
 	constructor(@InjectRepository(Channel) private dataSource: DataSource) {
@@ -33,5 +34,11 @@ export class ChannelsRepository extends Repository<Channel> {
 		console.log(dmChannelUser);
 
 		return dmChannelUser;
+	}
+
+	async softDeleteChannel(channelId: number) {
+		const result = await this.softDelete(channelId);
+		if (result.affected !== 1)
+			throw DBUpdateFailureException('delete channel failed');
 	}
 }

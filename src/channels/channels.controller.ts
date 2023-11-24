@@ -5,16 +5,21 @@ import {
 	Get,
 	Param,
 	ParseIntPipe,
+	Patch,
 	Post,
 	UseGuards,
 } from '@nestjs/common';
 import { GetUser } from 'src/auth/get-user.decorator';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { ChannelType } from 'src/common/enum';
 import { User } from 'src/users/entities/user.entity';
-import { ChannelsService } from './channels.service';
 import { CreateChannelRequestDto } from './dto/create-channel-request.dto';
-import { PositiveIntPipe } from 'src/common/pipes/positiveInt.pipe';
+import { ChannelType } from 'src/common/enum';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { JoinChannelRequestDto } from './dto/join-channel-request.dto';
+import { CreateInvitationRequestDto } from './dto/create-invitation-request.dto';
+import { PositiveIntPipe } from '../common/pipes/positiveInt.pipe';
+import { ChannelsService } from './channels.service';
+import { CreatChannelUserParamDto } from './dto/creat-channel-user-param.dto';
+import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
 
 @Controller('channels')
 @UseGuards(JwtAuthGuard)
@@ -54,5 +59,52 @@ export class ChannelsController {
 		@Param('channelId', ParseIntPipe, PositiveIntPipe) channelId: number,
 	) {
 		return await this.channelsService.enterChannel(user.id, channelId);
+	}
+
+	@Post('/join')
+	async createChannelUser(
+		@GetUser() user: User,
+		@Body() joinChannelRequestDto: JoinChannelRequestDto,
+	) {
+		const userId = user.id;
+		const channelId = joinChannelRequestDto.channelId;
+		const password = joinChannelRequestDto.password;
+
+		const channelUserParamDto = new CreatChannelUserParamDto(
+			channelId,
+			userId,
+			password,
+		);
+
+		const channelUsersResponseDto =
+			await this.channelsService.createChannelUser(channelUserParamDto);
+
+		return channelUsersResponseDto;
+	}
+
+	@Post('/invite')
+	async createChannelInvitation(
+		@GetUser() user: User,
+		@Body()
+		createInvitationRequestDto: CreateInvitationRequestDto,
+	) {
+		const invitingUserId = user.id;
+		const channelId = createInvitationRequestDto.channelId;
+		const invitedUserId = createInvitationRequestDto.invitedUserId;
+
+		const invitationParamDto = new CreateInvitationParamDto(
+			invitingUserId,
+			channelId,
+			invitedUserId,
+		);
+		await this.channelsService.createChannelInvitation(invitationParamDto);
+	}
+
+	@Patch('/exit')
+	async updateChannel(
+		@GetUser() user: User,
+		@Body('channelId') channelId: number,
+	) {
+		await this.channelsService.updateChannel(user.id, channelId);
 	}
 }
