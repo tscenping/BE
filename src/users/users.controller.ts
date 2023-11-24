@@ -1,4 +1,5 @@
 import {
+	BadRequestException,
 	Body,
 	Controller,
 	Delete,
@@ -6,6 +7,7 @@ import {
 	Logger,
 	Param,
 	ParseIntPipe,
+	Patch,
 	Post,
 	Query,
 	UseGuards,
@@ -13,10 +15,11 @@ import {
 import { GetUser } from 'src/auth/get-user.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { PositiveIntPipe } from 'src/common/pipes/positiveInt.pipe';
+import { BlocksService } from './blocks.service';
 import { User } from './entities/user.entity';
 import { FriendsService } from './friends.service';
 import { UsersService } from './users.service';
-import { BlocksService } from './blocks.service';
+import { STATUS_MESSAGE_STRING } from 'src/common/constants';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -121,5 +124,33 @@ export class UsersController {
 			await this.blocksService.findBlockUserListWithPage(user.id, page);
 
 		return BlockUserResponseDto;
+	}
+
+	@Patch('/me/statusMessage')
+	async updateMyStatusMessage(
+		@GetUser() user: User,
+		@Body('statusMessage') statusMessage: string,
+	) {
+		// statusMessage 정규식 검사
+		if (statusMessage.length > 20) {
+			throw new BadRequestException(
+				'20자 이하의 statusMessage를 입력해주세요.',
+			);
+		}
+		if (statusMessage.match(STATUS_MESSAGE_STRING) === null) {
+			throw new BadRequestException(
+				'한글, 영문, 숫자만 입력 가능합니다.',
+			);
+		}
+
+		await this.usersService.updateMyStatusMessage(user.id, statusMessage);
+	}
+
+	@Patch('/me/avatar')
+	async updateMyAvatar(
+		@GetUser() user: User,
+		@Body('avatar') avatar: string,
+	) {
+		await this.usersService.updateMyAvatar(user.id, avatar);
 	}
 }

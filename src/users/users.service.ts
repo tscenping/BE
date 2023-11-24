@@ -89,10 +89,11 @@ export class UsersService {
 		const updateRes = await this.userRepository.update(userId, {
 			avatar: avatar,
 			nickname: nickname,
+			status: UserStatus.ONLINE,
 		});
 
 		if (updateRes.affected !== 1) {
-			throw DBUpdateFailureException(UsersService.name);
+			throw DBUpdateFailureException(`user ${userId} update failed`);
 		}
 	}
 
@@ -112,7 +113,7 @@ export class UsersService {
 	}
 
 	async validateUserAlreadySignUp(user: User) {
-		if (user.avatar && user.nickname)
+		if (user.nickname)
 			throw new BadRequestException(`${user.id} is already signed up`);
 	}
 
@@ -130,6 +131,26 @@ export class UsersService {
 			refreshToken: undefined,
 			status: UserStatus.OFFLINE,
 		});
+	}
+
+	async updateMyStatusMessage(userId: number, statusMessage: string) {
+		const updateRes = await this.userRepository.update(userId, {
+			statusMessage: statusMessage,
+		});
+
+		if (updateRes.affected !== 1) {
+			throw DBUpdateFailureException(`user ${userId} update failed`);
+		}
+	}
+
+	async updateMyAvatar(userId: number, avatar: string) {
+		const updateRes = await this.userRepository.update(userId, {
+			avatar: avatar,
+		});
+
+		if (updateRes.affected !== 1) {
+			throw DBUpdateFailureException(`user ${userId} update failed`);
+		}
 	}
 
 	// TODO: test용 메서드. 추후 삭제
