@@ -1,10 +1,9 @@
-import { Length } from 'class-validator';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ChannelType, ChannelUserType } from 'src/common/enum';
+import { UsersRepository } from 'src/users/users.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
 import { ChannelsRepository } from './channels.repository';
 import { CreateChannelRequestDto } from './dto/create-channel-request.dto';
-import { UsersRepository } from 'src/users/users.repository';
 
 @Injectable()
 export class ChannelsService {
@@ -113,12 +112,12 @@ export class ChannelsService {
 		}
 
 		// 이미 DM 채널이 존재하는지 확인
-		const dmChannel = await this.channelsRepository.findDmChannelUser(
+		const dmChannelUser = await this.channelsRepository.findDmChannelUser(
 			userId,
 			targetUserId,
 		);
 
-		if (dmChannel && dmChannel.length > 0) {
+		if (dmChannelUser) {
 			throw new BadRequestException(
 				`DM channel already exists between ${userId} and ${targetUserId}`,
 			);
