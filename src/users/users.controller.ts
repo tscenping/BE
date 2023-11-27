@@ -19,7 +19,7 @@ import { BlocksService } from './blocks.service';
 import { User } from './entities/user.entity';
 import { FriendsService } from './friends.service';
 import { UsersService } from './users.service';
-import { STATUS_MESSAGE_STRING } from 'src/common/constants';
+import { STATUS_MESSAGE_STRING } from '../common/constants';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
