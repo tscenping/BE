@@ -20,6 +20,9 @@ import { PositiveIntPipe } from '../common/pipes/positiveInt.pipe';
 import { ChannelsService } from './channels.service';
 import { CreatChannelUserParamDto } from './dto/creat-channel-user-param.dto';
 import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
+import { UpdateChannelUserRequestDto } from './dto/update-channel-user-request.dto';
+import { UpdateChannelPwdReqeustDto } from './dto/update-channel-pwd-reqeust.dto';
+import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
 
 @Controller('channels')
 @UseGuards(JwtAuthGuard)
@@ -69,6 +72,25 @@ export class ChannelsController {
 		return await this.channelsService.enterChannel(user.id, channelId);
 	}
 
+	@Patch('/password')
+	async updateChannelPassword(
+		@GetUser() user: User,
+		@Body() updateChannelPwdRequestDto: UpdateChannelPwdReqeustDto,
+	) {
+		const channelId = updateChannelPwdRequestDto.channelId;
+		const userId = user.id;
+		const password = updateChannelPwdRequestDto.password;
+
+		const updateChannelPwdParam = new UpdateChannelPwdParamDto(
+			channelId,
+			userId,
+			password,
+		);
+		await this.channelsService.updateChannelTypeAndPassword(
+			updateChannelPwdParam,
+		);
+	}
+
 	@Post('/join')
 	async createChannelUser(
 		@GetUser() user: User,
@@ -90,6 +112,14 @@ export class ChannelsController {
 		return channelUsersResponseDto;
 	}
 
+	@Patch('/exit')
+	async updateChannelUser(
+		@GetUser() user: User,
+		@Body('channelId') channelId: number,
+	) {
+		await this.channelsService.updateChannelUser(user.id, channelId);
+	}
+
 	@Post('/invite')
 	async createChannelInvitation(
 		@GetUser() user: User,
@@ -108,11 +138,59 @@ export class ChannelsController {
 		await this.channelsService.createChannelInvitation(invitationParamDto);
 	}
 
-	@Patch('/exit')
-	async updateChannel(
+	@Patch('/admin')
+	async updateChannelUserType(
 		@GetUser() user: User,
-		@Body('channelId') channelId: number,
+		@Body() updateChannelUserRequestDto: UpdateChannelUserRequestDto,
 	) {
-		await this.channelsService.updateChannel(user.id, channelId);
+		const giverUserId = user.id;
+		const receiverChannelUserId = updateChannelUserRequestDto.channelUserId;
+
+		await this.channelsService.updateChannelUserType(
+			giverUserId,
+			receiverChannelUserId,
+		);
+	}
+
+	@Patch('/kick')
+	async kickChannelUser(
+		@GetUser() user: User,
+		@Body() updateChannelUserRequestDto: UpdateChannelUserRequestDto,
+	) {
+		const giverUserId = user.id;
+		const receiverChannelUserId = updateChannelUserRequestDto.channelUserId;
+
+		await this.channelsService.kickChannelUser(
+			giverUserId,
+			receiverChannelUserId,
+		);
+	}
+
+	@Patch('/ban')
+	async banChannelUser(
+		@GetUser() user: User,
+		@Body() updateChannelUserRequestDto: UpdateChannelUserRequestDto,
+	) {
+		const giverUserId = user.id;
+		const receiverChannelUserId = updateChannelUserRequestDto.channelUserId;
+
+		await this.channelsService.banChannelUser(
+			giverUserId,
+			receiverChannelUserId,
+		);
+	}
+
+	@Patch('/mute')
+	async muteChannelUser(
+		@GetUser() user: User,
+		@Body() updateChannelUserRequestDto: UpdateChannelUserRequestDto,
+	) {
+		const giverUserId = user.id;
+		const receiverChannelUserId = updateChannelUserRequestDto.channelUserId;
+
+		await this.channelsService.muteChannelUser(
+			giverUserId,
+			receiverChannelUserId,
+		);
 	}
 }

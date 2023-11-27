@@ -9,6 +9,8 @@ import * as bycrypt from 'bcrypt';
 import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
 import { ChannelInvitationRepository } from './channel-invitation.repository';
 import { ChannelUsersResponseDto } from './dto/channel-users-response.dto';
+import { DBUpdateFailureException } from '../common/exception/custom-exception';
+import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
 
 @Injectable()
 export class ChannelsService {
@@ -87,6 +89,7 @@ export class ChannelsService {
 				`user ${userId} is not in channel ${channelId}`,
 			);
 		}
+		// TODO: isBanned 확인하기
 
 		// 채널 유저 정보 조회
 		const channelUserInfoList =
@@ -101,6 +104,43 @@ export class ChannelsService {
 		};
 	}
 
+	async updateChannelTypeAndPassword(
+		updateChannelPwdParamDto: UpdateChannelPwdParamDto,
+	) {
+		// channel 유효성 확인
+		const channelId = updateChannelPwdParamDto.channelId;
+		const channel = await this.checkChannelExist(channelId);
+
+		// 요청한 user의 유효성 확인 (채널에 있는지, owner인지)
+		const userId = updateChannelPwdParamDto.userId;
+		const channelUser = await this.checkUserExistInChannel(
+			userId,
+			channelId,
+		);
+
+		if (channelUser.channelUserType !== ChannelUserType.OWNER)
+			throw new BadRequestException(
+				`user ${userId} does not have authority`,
+			);
+
+		const password = updateChannelPwdParamDto.password;
+		if (!password) {
+			// input password가 null일 때
+			if (channel.channelType === ChannelType.PROTECTED) {
+				await this.updateChannelType(channelId, ChannelType.PUBLIC);
+			}
+		} else {
+			if (channel.channelType === ChannelType.PUBLIC) {
+				await this.updateChannelType(channelId, ChannelType.PROTECTED);
+			}
+			const channelPassword = channel.password as string;
+			if (!(await bycrypt.compare(password, channelPassword))) {
+				await this.updateChannelPassword(channelId, password);
+			}
+			// 수정 전이랑 후 같은거 무시 및 처리는 프롱트에서 하자
+		}
+	}
+
 	async createChannelUser(
 		channelUserParamDto: CreatChannelUserParamDto,
 	): Promise<ChannelUsersResponseDto> {
@@ -109,22 +149,10 @@ export class ChannelsService {
 		const password = channelUserParamDto.password;
 
 		// 존재하는 channel인지 확인
-		const channel = await this.channelsRepository.findOne({
-			where: { id: channelId },
-		});
-		if (!channel)
-			throw new BadRequestException(
-				`channel ${channelId} does not exist`,
-			);
+		const channel = await this.checkChannelExist(channelId);
 
 		// user가 channel에 없는지 확인
-		const channelUser = await this.channelUsersRepository.findOne({
-			where: { channelId: channelId, userId: userId },
-		});
-		if (channelUser)
-			throw new BadRequestException(
-				`user already in this channel ${channelId}`,
-			);
+		await this.checkUserExistInChannel(userId, channelId);
 
 		// channel이 프로텍티드라면 비밀번호가 맞는지 확인
 		if (channel.channelType === ChannelType.PROTECTED) {
@@ -134,14 +162,14 @@ export class ChannelsService {
 				);
 
 			const channelPassword = channel.password as string;
-			if (await bycrypt.compare(password, channelPassword)) {
+			if (!(await bycrypt.compare(password, channelPassword))) {
 				throw new BadRequestException(
 					'user cannot join this protected channel. check password',
 				);
 			}
 		}
 		// channel이 프라이빗이라면 초대 받은적이 있는지 확인
-		if (channel.channelType === ChannelType.PRIVATE) {
+		else if (channel.channelType === ChannelType.PRIVATE) {
 			const channelInvitation =
 				await this.channelInvitationRepository.findOne({
 					where: {
@@ -172,64 +200,41 @@ export class ChannelsService {
 		createInvitationParamDto: CreateInvitationParamDto,
 	) {
 		const invitingUserId = createInvitationParamDto.invitingUserId;
+		const channelId = createInvitationParamDto.channelId;
 		const invitedUserId = createInvitationParamDto.invitedUserId;
+
+		// 존재하는 channel인지 확인
+		await this.checkChannelExist(channelId);
 
 		if (invitingUserId === invitedUserId)
 			throw new BadRequestException('cannot invite yourself');
 
 		// 초대받은 user가 존재하는지 확인
-		const user = this.usersRepository.findOne({
-			where: { id: invitedUserId },
-		});
-		if (!user)
-			throw new BadRequestException(
-				`user ${invitedUserId} doesn't exist`,
-			);
-
-		const channelId = createInvitationParamDto.channelId;
+		await this.checkUserExist(invitedUserId);
 
 		// 초대한 user가 channel에 있는지 확인
-		const invitingChannelUser = await this.channelUsersRepository.findOne({
-			where: { userId: invitingUserId, channelId: channelId },
-		});
-		if (!invitingChannelUser)
-			throw new BadRequestException(
-				`inviting user ${invitingUserId} not in this channel ${channelId}`,
-			);
+		await this.checkUserExistInChannel(invitingUserId, channelId);
 
 		// 초대받은 user가 channel에 없는지 확인
-		const invitedChannelUser = await this.channelUsersRepository.findOne({
-			where: { userId: invitedUserId, channelId: channelId },
-		});
-		if (invitedChannelUser)
-			throw new BadRequestException(
-				`invited user ${invitedUserId} already in this channel ${channelId}`,
-			);
+		await this.checkUserExistInChannel(invitedUserId, channelId);
 
 		await this.channelInvitationRepository.createChannelInvitation(
 			createInvitationParamDto,
 		);
+
+		// TODO: 알람 보내기
 	}
 
-	async updateChannel(userId: number, channelId: number) {
+	async updateChannelUser(userId: number, channelId: number) {
 		// 존재하는 channel인지 확인
-		const channel = await this.channelsRepository.findOne({
-			where: { id: channelId },
-		});
-
-		if (!channel)
-			throw new BadRequestException(
-				`channel ${channelId} does not exist`,
-			);
+		const channel = await this.checkChannelExist(channelId);
 
 		// user가 channel에 있는지 확인
-		const channelUser = await this.channelUsersRepository.findOne({
-			where: { userId, channelId },
-		});
-		if (!channelUser)
-			throw new BadRequestException(
-				`user does not in this channel ${channelId}`,
-			);
+		const channelUser = await this.checkUserExistInChannel(
+			userId,
+			channelId,
+		);
+
 		// channel의 owner였으면 channel 인포에서 ownerId null로 만들기
 		if (userId === channel.ownerId)
 			await this.channelsRepository.update(channelId, {
@@ -251,6 +256,174 @@ export class ChannelsService {
 		if (channel.channelType === ChannelType.DM || cnt === 0) {
 			await this.channelsRepository.softDeleteChannel(channel.id);
 		}
+	}
+
+	/**
+	 * 관리자 임명
+	 * @param giverUserId 권한을 주는
+	 * @param receiverChannelUserId 권한을 받는
+	 */
+	async updateChannelUserType(
+		giverUserId: number,
+		receiverChannelUserId: number,
+	) {
+		// 유효한 channelUserId인지 확인
+		const receiverChannelUser = await this.checkChannelUserExist(
+			receiverChannelUserId,
+		);
+
+		// channel 유효성 확인
+		const channelId = receiverChannelUser.channelId;
+		await this.checkChannelExist(channelId);
+
+		// giver user 유효성 확인 (channel에 속한 user인지, owner인지)
+		const giverChannelUser = await this.checkUserExistInChannel(
+			giverUserId,
+			channelId,
+		);
+		if (giverChannelUser.channelUserType !== ChannelUserType.OWNER)
+			throw new BadRequestException(
+				`giver ${giverUserId} does not have authority`,
+			);
+
+		// receiver user 유효성 확인 (존재하는 user인지)
+		const receiverUserId = receiverChannelUser.userId;
+		await this.checkUserExist(receiverUserId);
+
+		// 임명 / 해제 처리
+		await this.channelUsersRepository.updateChannelUserType(
+			receiverChannelUserId,
+		);
+	}
+
+	async kickChannelUser(giverUserId: number, receiverChannelUserId: number) {
+		// 유효한 channelUserId인지 확인
+		const receiverChannelUser = await this.checkChannelUserExist(
+			receiverChannelUserId,
+		);
+
+		// channel 유효성 확인
+		const channelId = receiverChannelUser.channelId;
+		await this.checkChannelExist(channelId);
+
+		// giver user 유효성 확인 (channel에 속한 user인지, 권한 없는 member인지)
+		const giverChannelUser = await this.checkUserExistInChannel(
+			giverUserId,
+			channelId,
+		);
+
+		if (giverChannelUser.channelUserType === ChannelUserType.MEMBER)
+			throw new BadRequestException(
+				`kicker ${giverUserId} does not have authority`,
+			);
+
+		// receiver user 유효성 확인 (존재하는 user인지)
+		const receiverUserId = receiverChannelUser.userId;
+		await this.checkUserExist(receiverUserId);
+
+		// admin -> owner/admin 권한 행사 불가
+		if (giverChannelUser.channelUserType === ChannelUserType.ADMIN) {
+			if (
+				receiverChannelUser.channelUserType === ChannelUserType.OWNER ||
+				receiverChannelUser.channelUserType === ChannelUserType.ADMIN
+			)
+				throw new BadRequestException(
+					`admin user ${giverUserId} cannot mute the owner/admin user ${receiverUserId}`,
+				);
+		}
+
+		await this.channelUsersRepository.softDeleteUserFromChannel(
+			receiverChannelUserId,
+		);
+	}
+
+	async banChannelUser(giverUserId: number, receiverChannelUserId: number) {
+		// 유효한 channelUserId인지 확인
+		const receiverChannelUser = await this.checkChannelUserExist(
+			receiverChannelUserId,
+		);
+
+		// channel 유효성 확인
+		const channelId = receiverChannelUser.channelId;
+		await this.checkChannelExist(channelId);
+
+		// giver user 유효성 확인 (channel에 속한 user인지, 권한 없는 member인지)
+		const giverChannelUser = await this.checkUserExistInChannel(
+			giverUserId,
+			channelId,
+		);
+
+		if (giverChannelUser.channelUserType === ChannelUserType.MEMBER)
+			throw new BadRequestException(
+				`kicker ${giverUserId} does not have authority`,
+			);
+
+		// receiver user 유효성 확인 (존재하는 user인지)
+		const receiverUserId = receiverChannelUser.userId;
+		await this.checkUserExist(receiverUserId);
+
+		// admin -> owner/admin 권한 행사 불가
+		if (giverChannelUser.channelUserType === ChannelUserType.ADMIN) {
+			if (
+				receiverChannelUser.channelUserType === ChannelUserType.OWNER ||
+				receiverChannelUser.channelUserType === ChannelUserType.ADMIN
+			)
+				throw new BadRequestException(
+					`admin user ${giverUserId} cannot mute the owner/admin user ${receiverUserId}`,
+				);
+		}
+
+		const result = await this.channelUsersRepository.update(
+			receiverChannelUserId,
+			{
+				isBanned: true,
+			},
+		);
+		if (result.affected !== 1)
+			throw DBUpdateFailureException('update isBanned field failed');
+
+		// await this.channelUsersRepository.softDeleteUserFromChannel(
+		// 	receiverChannelUserId,
+		// );
+	}
+
+	async muteChannelUser(giverUserId: number, receiverChannelUserId: number) {
+		// 유효한 channelUserId인지 확인
+		const receiverChannelUser = await this.checkChannelUserExist(
+			receiverChannelUserId,
+		);
+
+		// channel 유효성 확인
+		const channelId = receiverChannelUser.channelId;
+		await this.checkChannelExist(channelId);
+
+		// giver user 유효성 확인 (channel에 속한 user인지, 권한 없는 member인지)
+		const giverChannelUser = await this.checkUserExistInChannel(
+			giverUserId,
+			channelId,
+		);
+
+		if (giverChannelUser.channelUserType === ChannelUserType.MEMBER)
+			throw new BadRequestException(
+				`kicker ${giverUserId} does not have authority`,
+			);
+
+		// receiver user 유효성 확인 (존재하는 user인지)
+		const receiverUserId = receiverChannelUser.userId;
+		await this.checkUserExist(receiverUserId);
+
+		// admin -> owner/admin 권한 행사 불가
+		if (giverChannelUser.channelUserType === ChannelUserType.ADMIN) {
+			if (
+				receiverChannelUser.channelUserType === ChannelUserType.OWNER ||
+				receiverChannelUser.channelUserType === ChannelUserType.ADMIN
+			)
+				throw new BadRequestException(
+					`admin user ${giverUserId} cannot mute the owner/admin user ${receiverUserId}`,
+				);
+		}
+
+		// TODO: cache 생성
 	}
 
 	async validateDmChannel(userId: number, targetUserId: number) {
@@ -280,5 +453,63 @@ export class ChannelsService {
 				`DM channel already exists between ${userId} and ${targetUserId}`,
 			);
 		}
+	}
+
+	private async checkUserExist(userId: number) {
+		const user = this.usersRepository.findOne({
+			where: { id: userId },
+		});
+		if (!user)
+			throw new BadRequestException(`user ${userId} doesn't exist`);
+	}
+
+	private async checkChannelExist(channelId: number) {
+		const channel = await this.channelsRepository.findOne({
+			where: { id: channelId },
+		});
+		if (!channel)
+			throw new BadRequestException(
+				`channel ${channelId} does not exist`,
+			);
+		return channel;
+	}
+
+	private async checkChannelUserExist(channelUserId: number) {
+		const channelUser = await this.channelUsersRepository.findOne({
+			where: { id: channelUserId },
+		});
+		if (!channelUser)
+			throw new BadRequestException(`this ${channelUserId} is invalid`);
+		return channelUser;
+	}
+
+	private async checkUserExistInChannel(userId: number, channelId: number) {
+		const channelUser = await this.channelUsersRepository.findOne({
+			where: { userId, channelId },
+		});
+		if (!channelUser)
+			throw new BadRequestException(
+				`user does not in this channel ${channelId}`,
+			);
+		return channelUser;
+	}
+
+	private async updateChannelType(channelId: number, newType: ChannelType) {
+		const typeResult = await this.channelsRepository.update(channelId, {
+			channelType: newType,
+		});
+		if (typeResult.affected !== 1)
+			throw DBUpdateFailureException('update channel type failed');
+	}
+
+	private async updateChannelPassword(
+		channelId: number,
+		newPassword: string,
+	) {
+		const pwdResult = await this.channelsRepository.update(channelId, {
+			password: newPassword,
+		});
+		if (pwdResult.affected !== 1)
+			throw DBUpdateFailureException('update channel password failed');
 	}
 }
