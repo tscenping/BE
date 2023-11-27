@@ -44,6 +44,14 @@ export class ChannelsController {
 			throw new BadRequestException(`userId is required`);
 		}
 
+		// DM 채널이 아닌데 channel name이 NULL인 경우 예외 처리
+		if (
+			channelInfo.channelType !== ChannelType.DM &&
+			channelInfo.name === null
+		) {
+			throw new BadRequestException(`channel name is required`);
+		}
+
 		return await this.channelsService.createChannel(user.id, channelInfo);
 	}
 
