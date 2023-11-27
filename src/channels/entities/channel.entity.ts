@@ -19,7 +19,7 @@ import { BeforeInsert, Column, Entity } from 'typeorm';
 
 @Entity()
 export class Channel extends BaseEntity {
-	@Column({ default: true, type: 'varchar' })
+	@Column({ default: null, type: 'varchar' })
 	@IsString()
 	@Length(1, 10)
 	@Matches(CHANNEL_NAME_REGEXP)

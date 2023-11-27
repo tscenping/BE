@@ -16,6 +16,7 @@ import { ChannelType } from 'src/common/enum';
 export class CreateChannelRequestDto {
 	@IsString()
 	@IsOptional()
+	@Length(1, 10)
 	@Matches(CHANNEL_NAME_REGEXP)
 	name: string | null;
 
