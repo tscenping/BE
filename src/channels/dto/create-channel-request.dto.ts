@@ -26,7 +26,7 @@ export class CreateChannelRequestDto {
 
 	@IsString()
 	@IsOptional()
-	@Length(1, 10)
+	@Length(8, 16)
 	@Matches(CHANNEL_PASSWORD_REGEXP)
 	password: string | null;
 
