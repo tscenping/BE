@@ -12,8 +12,12 @@ export class RedisService {
     return topTwenty;
   }
 
-  async findOneById(id: number) {
+  async findOneById(id: string) {
     const redisOneData = await this.redis.zscore('rank', `user:${id}`);
     return redisOneData;
+  }
+
+  async updateRanking(id: string, score: number) {
+    await this.redis.zadd('rank', score, `user:${id}`);
   }
 }

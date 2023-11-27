@@ -1,5 +1,5 @@
 import { InjectRepository } from '@nestjs/typeorm';
-import { DEFAULT_PAGE_SIZE } from 'src/common/constants';
+import { GAME_DEFAULT_PAGE_SIZE } from 'src/common/constants';
 import { DataSource, Repository } from 'typeorm';
 import { Game } from './entities/game.entity';
 export class GameRepository extends Repository<Game> {
@@ -30,7 +30,7 @@ export class GameRepository extends Repository<Game> {
             ORDER BY g."updatedAt" DESC
             LIMIT $2 OFFSET $3;
             `,
-			[userId, DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
+			[userId, GAME_DEFAULT_PAGE_SIZE, (page - 1) * GAME_DEFAULT_PAGE_SIZE],
 		);
 		return gameHistories;
 	}

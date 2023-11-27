@@ -1,8 +1,7 @@
 import {
-  RedisModuleOptions, RedisOptionsFactory
+  RedisModuleOptions
 } from '@liaoliaots/nestjs-redis';
-import { Injectable } from '@nestjs/common';
-import { ConfigService, registerAs } from '@nestjs/config';
+import { registerAs } from '@nestjs/config';
 import { z } from 'zod';
 
 export default registerAs('redis', () => {
@@ -17,18 +16,3 @@ export default registerAs('redis', () => {
     url: REDIS_URL, }
   } satisfies RedisModuleOptions;
 });
-
-@Injectable()
-export class RedisConfigService implements RedisOptionsFactory {
-  constructor(private configService: ConfigService) {}
-
-  async createRedisOptions(): Promise<RedisModuleOptions> {
-    return {
-      config: {
-        host: this.configService.get<string>('REDIS_HOSTNAME'),
-        port: this.configService.get<number>('REDIS_PORT'),
-        // password: this.configService.get<string>('REDIS_PASSWORD'),
-      },
-    };
-  }
-}

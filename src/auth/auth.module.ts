@@ -17,6 +17,7 @@ import { Friend } from 'src/users/entities/friend.entity';
 import { Block } from 'src/users/entities/block.entity';
 import { FriendsRepository } from 'src/users/friends.repository';
 import { BlocksRepository } from 'src/users/blocks.repository';
+import { AppService } from 'src/app.service';
 
 @Module({
 	imports: [
@@ -38,6 +39,7 @@ import { BlocksRepository } from 'src/users/blocks.repository';
 		GameRepository,
 		FriendsRepository,
 		BlocksRepository,
+		AppService,
 	],
 })
 export class AuthModule {}
