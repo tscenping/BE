@@ -7,6 +7,7 @@ import {
 	Length,
 	Matches,
 } from 'class-validator';
+import { CHANNEL_PASSWORD_REGEXP } from 'src/common/constants';
 import { ChannelType } from 'src/common/enum';
 
 export class CreateChannelRequestDto {
@@ -20,7 +21,7 @@ export class CreateChannelRequestDto {
 	@IsString()
 	@IsOptional()
 	@Length(1, 10)
-	@Matches(/^[a-zA-Z0-9]*$/, {
+	@Matches(CHANNEL_PASSWORD_REGEXP, {
 		message: 'password must be alphanumeric',
 	})
 	password: string | null;
