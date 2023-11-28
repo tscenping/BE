@@ -18,14 +18,17 @@ import { UsersModule } from './users/users.module';
 	imports: [
 		ConfigModule.forRoot({
 			isGlobal: true,
-			envFilePath: './BE-config/.env',
+			envFilePath:
+				process.env.NODE_ENV === 'test'
+					? './BE-config/.env.test'
+					: './BE-config/.env',
 			load: [
+				redisConfig,
 				ftConfig,
 				// userConfig,
 				pgadminConfig,
 				jwtConfig,
 				typeOrmConfig,
-				redisConfig
 			],
 		}),
 		TypeOrmModule.forRootAsync({
@@ -38,7 +41,6 @@ import { UsersModule } from './users/users.module';
 			imports: [ConfigModule.forFeature(redisConfig)],
 			useFactory: (redisConfigure: ConfigType<typeof redisConfig>) =>
 				redisConfigure,
-			
 		}),
 		AuthModule,
 		UsersModule,

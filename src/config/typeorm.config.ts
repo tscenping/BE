@@ -12,7 +12,13 @@ export default registerAs('typeorm', () => {
 	);
 	const POSTGRES_USER = z.string().parse(process.env.POSTGRES_USER);
 	const POSTGRES_PASSWORD = z.string().parse(process.env.POSTGRES_PASSWORD);
-	const POSTGRES_DB = z.string().parse(process.env.POSTGRES_DB);
+	const POSTGRES_DB = z
+		.string()
+		.parse(
+			process.env.NODE_ENV === 'test'
+				? process.env.POSTGRES_TEST_DB
+				: process.env.POSTGRES_DB,
+		);
 	const ENTITIES = [__dirname + '/../**/entities/*.entity.{js,ts}'];
 	const SYNCHRONIZE = true;
 
