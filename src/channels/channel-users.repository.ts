@@ -8,6 +8,7 @@ import {
 	DBUpdateFailureException,
 } from '../common/exception/custom-exception';
 import { ChannelUserType } from '../common/enum';
+import { number } from 'zod';
 
 export class ChannelUsersRepository extends Repository<ChannelUser> {
 	constructor(@InjectRepository(ChannelUser) private dataSource: DataSource) {
@@ -88,18 +89,21 @@ export class ChannelUsersRepository extends Repository<ChannelUser> {
 			`
 			UPDATE channel_user
 			SET
-  			  channelUserType = CASE
-    			WHEN "channelUserType" = 'MEMBER' THEN 'ADMIN' //MEMBER -> ChannelUserType.MEMBER ?
+  			  "channelUserType" = CASE
+    			WHEN "channelUserType" = 'MEMBER' THEN 'ADMIN'
     			WHEN "channelUserType" = 'ADMIN' THEN 'MEMBER'
   			  END
 			WHERE id = $1
-				AND "deletedAt" IS NULL;
+			AND "deletedAt" IS NULL
+			RETURNING "channelUserType";
 			`,
 			[channelUserId],
 		);
 
-		if (result.affected !== 1)
+		if (result[1] !== 1)
 			throw DBQueryErrorException('update channelUserType failed');
+
+		return result[0][0];
 
 		// 임명 / 해제 분기 처리
 		// let result;

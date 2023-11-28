@@ -4,60 +4,111 @@ import { Channel } from './entities/channel.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ChannelUser } from './entities/channel-user.entity';
 import { Repository } from 'typeorm';
+import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
+import { ChannelType, ChannelUserType } from '../common/enum';
+import { ChannelsRepository } from './channels.repository';
+import { ChannelUsersRepository } from './channel-users.repository';
+import { ChannelInvitationRepository } from './channel-invitation.repository';
+import { UsersRepository } from '../users/users.repository';
+import * as bycrypt from 'bcrypt';
 
 describe('ChannelsService', () => {
 	let channelsService: ChannelsService;
-	let channelsRepository: Repository<Channel>;
+	let channelRepository: Repository<Channel>;
 	let channelUsersRepository: Repository<ChannelUser>;
 
-	beforeEach(async () => {
+	const mockChannelRepository = {
+		findOne: jest.fn(),
+		update: jest.fn(),
+	};
+
+	const mockChannelUserRepository = {
+		findOne: jest.fn(),
+	};
+
+	const mockChannelInvitationRepository = {
+		findOne: jest.fn(),
+	};
+
+	const mockUsersRepository = {
+		findOne: jest.fn(),
+	};
+
+	beforeAll(async () => {
 		const module: TestingModule = await Test.createTestingModule({
-			// imports: [
-			// 	TypeOrmModule.forRootAsync({
-			// 		inject: [typeOrmConfig.KEY],
-			// 		useFactory: (
-			// 			typeOrmConfigure: ConfigType<typeof typeOrmConfig>,
-			// 		) => typeOrmConfigure,
-			// 	}),
-			// 	TypeOrmModule.forFeature([Channel, ChannelUser]),
-			// 	ChannelsModule,
-			// ],
 			providers: [
 				ChannelsService,
 				{
-					provide: getRepositoryToken(Channel),
-					useValue: {
-						findOne: jest.fn(),
-						update: jest.fn(),
-					},
+					provide: getRepositoryToken(ChannelsRepository),
+					useValue: mockChannelRepository,
 				},
 				{
-					provide: getRepositoryToken(ChannelUser),
-					useValue: {
-						findOne: jest.fn(),
-					},
+					provide: getRepositoryToken(ChannelUsersRepository),
+					useValue: mockChannelUserRepository,
+				},
+				{
+					provide: getRepositoryToken(ChannelInvitationRepository),
+					useValue: mockChannelInvitationRepository,
+				},
+				{
+					provide: getRepositoryToken(UsersRepository),
+					useValue: mockUsersRepository,
 				},
 			],
 		}).compile();
 
 		channelsService = module.get<ChannelsService>(ChannelsService);
-		channelsRepository = module.get<Repository<Channel>>(
-			getRepositoryToken(Channel),
+		channelRepository = module.get<Repository<Channel>>(
+			getRepositoryToken(ChannelsRepository),
 		);
 		channelUsersRepository = module.get<Repository<ChannelUser>>(
-			getRepositoryToken(ChannelUser),
+			getRepositoryToken(ChannelUsersRepository),
 		);
 	});
 
-	afterEach(() => {
-		jest.resetAllMocks();
-	});
-
-	describe('update password', () => {
+	describe('[success] update password', () => {
 		it('should modify password and chnnel type', async () => {
-			it('should update channel password', async () => {
-				// 해보자.
-			});
+			const mockUser = {
+				id: 1,
+			};
+
+			const mockChannel = {
+				id: 2,
+				channelType: ChannelType.PUBLIC,
+				password: null,
+			};
+
+			const mockChannelUser = {
+				id: 3,
+				channelId: 2,
+				userId: 1,
+				channelUserType: ChannelUserType.OWNER,
+			};
+
+			const updateResult = {
+				affected: 1,
+			};
+			jest.spyOn(mockChannelRepository, 'findOne').mockResolvedValue(
+				mockChannel,
+			);
+			jest.spyOn(mockChannelRepository, 'update').mockResolvedValue(
+				updateResult,
+			);
+			jest.spyOn(mockChannelUserRepository, 'findOne').mockResolvedValue(
+				mockChannelUser,
+			);
+			jest.spyOn(bycrypt, 'compare').mockImplementation(() =>
+				Promise.resolve(false),
+			);
+			const updateChannelPwdParamDto = new UpdateChannelPwdParamDto(
+				mockChannel.id,
+				mockUser.id,
+				'1234',
+			);
+			const result = await channelsService.updateChannelTypeAndPassword(
+				updateChannelPwdParamDto,
+			);
+			expect(result).toBe(200);
 		});
 	});
 });

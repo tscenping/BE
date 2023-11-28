@@ -1,7 +1,7 @@
 import { IsNotEmpty } from 'class-validator';
 
 export class BlockUserReturnDto {
-	id: string;
+	id: number;
 	nickname: string;
 	@IsNotEmpty()
 	avatar: string;

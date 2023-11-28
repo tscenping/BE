@@ -1,16 +1,26 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+	BadRequestException,
+	HttpStatus,
+	Injectable,
+	InternalServerErrorException,
+	Logger,
+} from '@nestjs/common';
 import { ChannelType, ChannelUserType } from 'src/common/enum';
 import { ChannelUsersRepository } from './channel-users.repository';
 import { ChannelsRepository } from './channels.repository';
-import { CreateChannelRequestDto } from './dto/create-channel-request.dto';
+import { CreateChannelRequestDto } from './dto/creat-channel-request.dto';
 import { UsersRepository } from 'src/users/users.repository';
-import { CreatChannelUserParamDto } from './dto/creat-channel-user-param.dto';
 import * as bycrypt from 'bcrypt';
 import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
 import { ChannelInvitationRepository } from './channel-invitation.repository';
 import { ChannelUsersResponseDto } from './dto/channel-users-response.dto';
-import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
+import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
+import { DBUpdateFailureException } from '../common/exception/custom-exception';
+import { ChannelListResponseDto } from './dto/channel-list-response.dto';
+import { ChannelListReturnDto } from './dto/channel-list-return.dto';
+import { DmChannelListResponseDto } from './dto/dmchannel-list-response.dto';
+import { DmChannelListReturnDto } from './dto/dmchannel-list-return.dto';
 
 @Injectable()
 export class ChannelsService {
@@ -123,26 +133,31 @@ export class ChannelsService {
 				`user ${userId} does not have authority`,
 			);
 
-		const password = updateChannelPwdParamDto.password;
-		if (!password) {
+		const newPassword = updateChannelPwdParamDto.password;
+		if (!newPassword) {
 			// input password가 null일 때
 			if (channel.channelType === ChannelType.PROTECTED) {
 				await this.updateChannelType(channelId, ChannelType.PUBLIC);
 			}
 		} else {
+			const channelPassword = channel.password as string | null;
+			if (channelPassword) {
+				// input password !== null && origin password !== null
+				if (bycrypt.compareSync(newPassword, channelPassword)) {
+					throw new BadRequestException(
+						'new password is same as the older one',
+					);
+				}
+			}
+			await this.updateChannelPassword(channelId, newPassword);
 			if (channel.channelType === ChannelType.PUBLIC) {
 				await this.updateChannelType(channelId, ChannelType.PROTECTED);
 			}
-			const channelPassword = channel.password as string;
-			if (!(await bycrypt.compare(password, channelPassword))) {
-				await this.updateChannelPassword(channelId, password);
-			}
-			// 수정 전이랑 후 같은거 무시 및 처리는 프롱트에서 하자
 		}
 	}
 
 	async createChannelUser(
-		channelUserParamDto: CreatChannelUserParamDto,
+		channelUserParamDto: CreateChannelUserParamDto,
 	): Promise<ChannelUsersResponseDto> {
 		const channelId = channelUserParamDto.channelId;
 		const userId = channelUserParamDto.userId;
@@ -152,7 +167,13 @@ export class ChannelsService {
 		const channel = await this.checkChannelExist(channelId);
 
 		// user가 channel에 없는지 확인
-		await this.checkUserExistInChannel(userId, channelId);
+		const channelUser = await this.channelUsersRepository.findOne({
+			where: { userId, channelId },
+		});
+		if (channelUser)
+			throw new BadRequestException(
+				`user already in this channel ${channelId}`,
+			);
 
 		// channel이 프로텍티드라면 비밀번호가 맞는지 확인
 		if (channel.channelType === ChannelType.PROTECTED) {
@@ -291,9 +312,11 @@ export class ChannelsService {
 		await this.checkUserExist(receiverUserId);
 
 		// 임명 / 해제 처리
-		await this.channelUsersRepository.updateChannelUserType(
+		const result = await this.channelUsersRepository.updateChannelUserType(
 			receiverChannelUserId,
 		);
+
+		return result.channelUserType === ChannelUserType.ADMIN;
 	}
 
 	async kickChannelUser(giverUserId: number, receiverChannelUserId: number) {
@@ -426,6 +449,43 @@ export class ChannelsService {
 		// TODO: cache 생성
 	}
 
+	async findAllChannels(page: number): Promise<ChannelListResponseDto> {
+		const channels: ChannelListReturnDto[] =
+			await this.channelsRepository.findAllChannels(page);
+		const totalDataSize: number = await channels.length;
+		if (!channels) {
+			throw new InternalServerErrorException(`There is no channel`);
+		}
+		return { channels, totalDataSize };
+	}
+
+	async findMyChannels(
+		userId: number,
+		page: number,
+	): Promise<ChannelListResponseDto> {
+		const channels: ChannelListReturnDto[] =
+			await this.channelsRepository.findMyChannels(userId, page);
+		const totalDataSize: number = await channels.length;
+		if (!channels) {
+			throw new InternalServerErrorException(`There is no 'my channel'`);
+		}
+
+		return { channels, totalDataSize };
+	}
+
+	async findDmChannels(
+		userId: number,
+		page: number,
+	): Promise<DmChannelListResponseDto> {
+		const dmChannels: DmChannelListReturnDto[] =
+			await this.channelsRepository.findDmChannels(userId, page);
+		const totalItemCount: number = await dmChannels.length;
+		if (!dmChannels) {
+			throw new InternalServerErrorException(`There is no 'dm channel'`);
+		}
+		return { dmChannels, totalItemCount };
+	}
+
 	async validateDmChannel(userId: number, targetUserId: number) {
 		// 자기 자신에게 DM 채널을 생성할 수 없음
 		if (userId === targetUserId) {
@@ -433,8 +493,10 @@ export class ChannelsService {
 		}
 
 		// target user가 존재하는지 확인
-		const targetUser = await this.usersRepository.findOneBy({
-			id: targetUserId,
+		const targetUser = await this.usersRepository.findOne({
+			where: {
+				id: targetUserId,
+			},
 		});
 		if (!targetUser) {
 			throw new BadRequestException(

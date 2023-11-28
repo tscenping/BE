@@ -18,8 +18,9 @@ import { PositiveIntPipe } from 'src/common/pipes/positiveInt.pipe';
 import { BlocksService } from './blocks.service';
 import { User } from './entities/user.entity';
 import { FriendsService } from './friends.service';
+import { RanksService } from './ranks.service';
 import { UsersService } from './users.service';
-import { STATUS_MESSAGE_STRING } from '../common/constants';
+import { STATUS_MESSAGE_STRING } from 'src/common/constants';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -27,8 +28,8 @@ export class UsersController {
 	constructor(
 		private readonly usersService: UsersService,
 		private readonly friendsService: FriendsService,
-
 		private readonly blocksService: BlocksService,
+		private readonly ranksServices: RanksService,
 	) {}
 
 	private readonly logger = new Logger(UsersController.name);
@@ -124,6 +125,17 @@ export class UsersController {
 			await this.blocksService.findBlockUserListWithPage(user.id, page);
 
 		return BlockUserResponseDto;
+	}
+
+	@Get('/rank')
+	async paging(
+		@Query('page', ParseIntPipe, PositiveIntPipe) page: number,
+	) {
+		const rankResponseDto = await this.ranksServices.findRanksWithPage(
+			page,
+		);
+
+		return rankResponseDto;
 	}
 
 	@Patch('/me/statusMessage')

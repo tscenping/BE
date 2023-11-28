@@ -12,6 +12,7 @@ import { BlocksService } from './blocks.service';
 import { BlocksRepository } from './blocks.repository';
 import { GameRepository } from 'src/game/game.repository';
 import { Game } from 'src/game/entities/game.entity';
+import { RanksService } from './ranks.service';
 
 @Module({
 	imports: [TypeOrmModule.forFeature([User, Friend, Block, Game])],
@@ -20,6 +21,7 @@ import { Game } from 'src/game/entities/game.entity';
 		UsersService,
 		FriendsService,
 		BlocksService,
+		RanksService,
 		UsersRepository,
 		FriendsRepository,
 		BlocksRepository,
