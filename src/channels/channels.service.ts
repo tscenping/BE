@@ -1,19 +1,18 @@
-import { Length } from 'class-validator';
 import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import * as bycrypt from 'bcrypt';
 import { ChannelType, ChannelUserType } from 'src/common/enum';
+import { UsersRepository } from 'src/users/users.repository';
+import { ChannelInvitationRepository } from './channel-invitation.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
 import { ChannelsRepository } from './channels.repository';
-import { CreateChannelRequestDto } from './dto/creat-channel-request.dto';
-import { UsersRepository } from 'src/users/users.repository';
-import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
-import * as bycrypt from 'bcrypt';
-import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
-import { ChannelInvitationRepository } from './channel-invitation.repository';
-import { ChannelUsersResponseDto } from './dto/channel-users-response.dto';
-import { ChannelListReturnDto } from './dto/channel-list-return.dto';
 import { ChannelListResponseDto } from './dto/channel-list-response.dto';
-import { DmChannelListReturnDto } from './dto/dmchannel-list-return.dto';
+import { ChannelListReturnDto } from './dto/channel-list-return.dto';
+import { ChannelUsersResponseDto } from './dto/channel-users-response.dto';
+import { CreateChannelRequestDto } from './dto/creat-channel-request.dto';
+import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
+import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
 import { DmChannelListResponseDto } from './dto/dmchannel-list-response.dto';
+import { DmChannelListReturnDto } from './dto/dmchannel-list-return.dto';
 
 @Injectable()
 export class ChannelsService {

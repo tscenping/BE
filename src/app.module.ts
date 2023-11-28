@@ -9,11 +9,10 @@ import { ChannelsModule } from './channels/channels.module';
 import ftConfig from './config/ft.config';
 import jwtConfig from './config/jwt.config';
 import pgadminConfig from './config/pgadmin.config';
+import redisConfig from './config/redis.config';
 import typeOrmConfig from './config/typeorm.config';
-// import userConfig from './config/user.config';
 import { GameModule } from './game/game.module';
 import { UsersModule } from './users/users.module';
-import redisConfig from './config/redis.config';
 
 @Module({
 	imports: [

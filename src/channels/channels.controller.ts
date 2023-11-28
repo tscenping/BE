@@ -11,16 +11,16 @@ import {
 	UseGuards,
 } from '@nestjs/common';
 import { GetUser } from 'src/auth/get-user.decorator';
-import { User } from 'src/users/entities/user.entity';
-import { CreateChannelRequestDto } from './dto/creat-channel-request.dto';
-import { ChannelType } from 'src/common/enum';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { JoinChannelRequestDto } from './dto/join-channel-request.dto';
-import { CreateInvitationRequestDto } from './dto/create-invitation-request.dto';
+import { ChannelType } from 'src/common/enum';
+import { User } from 'src/users/entities/user.entity';
 import { PositiveIntPipe } from '../common/pipes/positiveInt.pipe';
 import { ChannelsService } from './channels.service';
+import { CreateChannelRequestDto } from './dto/creat-channel-request.dto';
 import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
 import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
+import { CreateInvitationRequestDto } from './dto/create-invitation-request.dto';
+import { JoinChannelRequestDto } from './dto/join-channel-request.dto';
 
 @Controller('channels')
 @UseGuards(JwtAuthGuard)
@@ -43,6 +43,14 @@ export class ChannelsController {
 		// DM 채널인 경우 userId가 필수
 		if (channelInfo.channelType === ChannelType.DM && !channelInfo.userId) {
 			throw new BadRequestException(`userId is required`);
+		}
+
+		// DM 채널이 아닌데 channel name이 NULL인 경우 예외 처리
+		if (
+			channelInfo.channelType !== ChannelType.DM &&
+			channelInfo.name === null
+		) {
+			throw new BadRequestException(`channel name is required`);
 		}
 
 		return await this.channelsService.createChannel(user.id, channelInfo);

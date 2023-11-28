@@ -1,9 +1,9 @@
 import { InjectRepository } from '@nestjs/typeorm';
-import { Channel } from './entities/channel.entity';
-import { DataSource, Repository } from 'typeorm';
-import { ChannelUser } from './entities/channel-user.entity';
-import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { DEFAULT_PAGE_SIZE } from 'src/common/constants';
+import { DataSource, Repository } from 'typeorm';
+import { DBUpdateFailureException } from '../common/exception/custom-exception';
+import { ChannelUser } from './entities/channel-user.entity';
+import { Channel } from './entities/channel.entity';
 
 export class ChannelsRepository extends Repository<Channel> {
 	constructor(@InjectRepository(Channel) private dataSource: DataSource) {
