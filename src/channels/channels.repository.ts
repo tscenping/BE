@@ -4,7 +4,7 @@ import { DataSource, Repository } from 'typeorm';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { ChannelUser } from './entities/channel-user.entity';
 import { Channel } from './entities/channel.entity';
-
+import { User } from 'src/users/entities/user.entity';
 export class ChannelsRepository extends Repository<Channel> {
 	constructor(@InjectRepository(Channel) private dataSource: DataSource) {
 		super(Channel, dataSource.manager);
@@ -48,10 +48,13 @@ export class ChannelsRepository extends Repository<Channel> {
 	){
 		const channels = await this.dataSource.query(
 			`
-			SELECT "channelId", "name", "channelType"
+			SELECT "channelId", "name", "channelType", count("userId") as "userCount"
 			FROM Channel c JOIN channel_user cu
 			ON c.id = cu."channelId"
-			WHERE c."deletedAt" IS NULL
+			WHERE c."deletedAt" IS NULL 
+			AND c."channelType" != 'PRIVATE'
+			GROUP BY "channelId", "name", "channelType"
+			ORDER BY c."channelType" DESC
 			LIMIT $1 OFFSET $2;
 			`,
 			[DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
@@ -66,19 +69,18 @@ export class ChannelsRepository extends Repository<Channel> {
 	){
 		const channels = await this.dataSource.query(
 			`
-			SELECT "channelId", "name", "channelType"
+			SELECT "channelId", "name", "channelType", count("userId") as "userCount"
 			FROM Channel c JOIN channel_user cu
 			ON c.id = cu."channelId"
 			WHERE cu."userId" = $1
 			AND c."deletedAt" IS NULL
+			GROUP BY "channelId", "name", "channelType"
 			ORDER BY c."channelType" DESC
 			LIMIT $2 OFFSET $3;
 			`,
 			[userId, DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
 		);
 		
-		console.log("channels: ", channels);
-
 		return channels;
 	}
 
@@ -88,13 +90,17 @@ export class ChannelsRepository extends Repository<Channel> {
 	){
 		const channels = await this.dataSource.query(
 			`
-			SELECT "channelId", "name", "channelType"
-			FROM Channel c JOIN channel_user cu
-			ON c.id = cu."channelId"
-			WHERE c."channelType" = 'DM'
-			AND cu."userId" = $1
-			AND c."deletedAt" IS NULL
-			LIMIT $2 OFFSET $3;
+			SELECT "channelId", "partnerName", "status"
+			FROM User u JOIN channel_user cu
+			ON u.id = cu."userId"
+			WHERE cu."channelId" IN
+				(SELECT c.id
+				FROM channel_user cu2
+						JOIN channel c
+							ON cu2."channelId" = c.id
+				WHERE cu2."userId" = $1
+					AND c."channelType" = 'DM'
+					AND c."deletedAt" IS NULL)
 			`,
 			[userId, DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
 		);
