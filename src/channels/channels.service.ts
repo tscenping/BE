@@ -351,7 +351,7 @@ export class ChannelsService {
 				receiverChannelUser.channelUserType === ChannelUserType.ADMIN
 			)
 				throw new BadRequestException(
-					`admin user ${giverUserId} cannot mute the owner/admin user ${receiverUserId}`,
+					`admin user ${giverUserId} cannot kick the owner/admin user ${receiverUserId}`,
 				);
 		}
 
@@ -392,7 +392,7 @@ export class ChannelsService {
 				receiverChannelUser.channelUserType === ChannelUserType.ADMIN
 			)
 				throw new BadRequestException(
-					`admin user ${giverUserId} cannot mute the owner/admin user ${receiverUserId}`,
+					`admin user ${giverUserId} cannot ban the owner/admin user ${receiverUserId}`,
 				);
 		}
 
@@ -405,9 +405,9 @@ export class ChannelsService {
 		if (result.affected !== 1)
 			throw DBUpdateFailureException('update isBanned field failed');
 
-		// await this.channelUsersRepository.softDeleteUserFromChannel(
-		// 	receiverChannelUserId,
-		// );
+		await this.channelUsersRepository.softDeleteUserFromChannel(
+			receiverChannelUserId,
+		);
 	}
 
 	async muteChannelUser(giverUserId: number, receiverChannelUserId: number) {
