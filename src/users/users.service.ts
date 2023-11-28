@@ -1,11 +1,12 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
-import { GameRepository } from './../game/game.repository';
+import { GameRepository } from '../game/game.repository';
 import { BlocksRepository } from './blocks.repository';
-import { LoginRequestDto } from './dto/login-request.dto';
+import { UserProfileResponseDto } from './dto/user-profile.dto';
+import { User } from './entities/user.entity';
 import { FriendsRepository } from './friends.repository';
 import { UsersRepository } from './users.repository';
-import { UserProfileResponseDto } from './dto/user-profile.dto';
+import { UserStatus } from 'src/common/enum';
 
 @Injectable()
 export class UsersService {
@@ -20,7 +21,7 @@ export class UsersService {
 
 	async findGameHistoriesWithPage(nickname: string, page: number) {
 		// 유저 id 조회
-		const targetUser = await this.userRepository.findOneByNickname(
+		const targetUser = await this.userRepository.findUserByNickname(
 			nickname,
 		);
 		if (!targetUser) {
@@ -45,26 +46,6 @@ export class UsersService {
 			gameHistories,
 			totalItemCount,
 		};
-	}
-	// TODO: test용 메서드. 추후 삭제
-	async isNicknameExists(nickname: string) {
-		const user = await this.userRepository.findOne({
-			where: { nickname },
-		});
-
-		return !!user;
-	}
-
-	// TODO: test용 메서드. 추후 삭제
-	async createUser(nickname: string, email: string) {
-		const user = this.userRepository.create({
-			nickname,
-			email,
-		});
-
-		await this.userRepository.save(user);
-
-		return user;
 	}
 
 	async findMyProfile(userId: number) {
@@ -98,22 +79,98 @@ export class UsersService {
 		};
 	}
 
-	async login(userId: number, loginRequestDto: LoginRequestDto) {
-		const avatar = loginRequestDto.avatar;
-		const nickname = loginRequestDto.nickname;
+	async signup(userId: number, nickname: string, avatar: string) {
+		const user = await this.validateUserExist(userId);
 
-		const user = await this.userRepository.findOne({
-			where: { id: userId },
-		});
-		if (!user) throw new BadRequestException(`there is no user`);
+		await this.validateUserAlreadySignUp(user);
 
-		const result = await this.userRepository.update(userId, {
+		await this.validateNickname(nickname);
+
+		const updateRes = await this.userRepository.update(userId, {
 			avatar: avatar,
 			nickname: nickname,
+			status: UserStatus.ONLINE,
 		});
 
-		if (result.affected !== 1) {
-			throw DBUpdateFailureException(UsersService.name);
+		if (updateRes.affected !== 1) {
+			throw DBUpdateFailureException(`user ${userId} update failed`);
 		}
+	}
+
+	async validateUserExist(userId: number) {
+		const user = await this.userRepository.findOne({
+			where: {
+				id: userId,
+			},
+		});
+
+		if (!user) {
+			throw new BadRequestException(
+				`User with id ${userId} doesn't exist`,
+			);
+		}
+		return user;
+	}
+
+	async validateUserAlreadySignUp(user: User) {
+		if (user.nickname)
+			throw new BadRequestException(`${user.id} is already signed up`);
+	}
+
+	async validateNickname(nickname: string) {
+		const user = await this.userRepository.findUserByNickname(nickname);
+
+		if (user)
+			throw new BadRequestException(
+				`nickname '${nickname}' is already exist! Try again`,
+			);
+	}
+
+	async signout(userId: number) {
+		await this.userRepository.update(userId, {
+			refreshToken: undefined,
+			status: UserStatus.OFFLINE,
+		});
+	}
+
+	async updateMyStatusMessage(userId: number, statusMessage: string) {
+		const updateRes = await this.userRepository.update(userId, {
+			statusMessage: statusMessage,
+		});
+
+		if (updateRes.affected !== 1) {
+			throw DBUpdateFailureException(`user ${userId} update failed`);
+		}
+	}
+
+	async updateMyAvatar(userId: number, avatar: string) {
+		const updateRes = await this.userRepository.update(userId, {
+			avatar: avatar,
+		});
+
+		if (updateRes.affected !== 1) {
+			throw DBUpdateFailureException(`user ${userId} update failed`);
+		}
+	}
+
+	// TODO: test용 메서드. 추후 삭제
+	async isNicknameExists(nickname: string) {
+		const user = await this.userRepository.findOne({
+			where: { nickname },
+		});
+
+		return !!user;
+	}
+
+	// TODO: test용 메서드. 추후 삭제
+	async createUser(nickname: string, email: string) {
+		const user = this.userRepository.create({
+			nickname,
+			email,
+		});
+
+		await this.userRepository.save(user);
+
+		return user;
 	}
 }

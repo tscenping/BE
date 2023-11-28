@@ -1,4 +1,5 @@
 import {
+	BadRequestException,
 	Body,
 	Controller,
 	Delete,
@@ -6,6 +7,7 @@ import {
 	Logger,
 	Param,
 	ParseIntPipe,
+	Patch,
 	Post,
 	Query,
 	UseGuards,
@@ -18,6 +20,7 @@ import { FriendsService } from './friends.service';
 import { UsersService } from './users.service';
 import { BlocksService } from './blocks.service';
 import { RanksService } from './ranks.service';
+import { STATUS_MESSAGE_STRING } from 'src/common/constants';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)
@@ -134,5 +137,32 @@ export class UsersController {
 		);
 
 		return rankResponseDto;
+	}
+	@Patch('/me/statusMessage')
+	async updateMyStatusMessage(
+		@GetUser() user: User,
+		@Body('statusMessage') statusMessage: string,
+	) {
+		// statusMessage 정규식 검사
+		if (statusMessage.length > 20) {
+			throw new BadRequestException(
+				'20자 이하의 statusMessage를 입력해주세요.',
+			);
+		}
+		if (statusMessage.match(STATUS_MESSAGE_STRING) === null) {
+			throw new BadRequestException(
+				'한글, 영문, 숫자만 입력 가능합니다.',
+			);
+		}
+
+		await this.usersService.updateMyStatusMessage(user.id, statusMessage);
+	}
+
+	@Patch('/me/avatar')
+	async updateMyAvatar(
+		@GetUser() user: User,
+		@Body('avatar') avatar: string,
+	) {
+		await this.usersService.updateMyAvatar(user.id, avatar);
 	}
 }

@@ -8,17 +8,18 @@ import {
 	Matches,
 } from 'class-validator';
 import { BaseEntity } from 'src/common/base-entity';
+import { NICKNAME_REGEXP, STATUS_MESSAGE_REGEXP } from 'src/common/constants';
 import { UserStatus } from 'src/common/enum';
 import { Column, Entity, Unique } from 'typeorm';
 
 @Entity()
 @Unique(['nickname'])
 export class User extends BaseEntity {
-	@Column({ unique: true })
+	@Column({ unique: true, default: null })
 	@IsString()
 	@Length(1, 10)
 	@IsNotEmpty()
-	@Matches(/^[ㄱ-ㅎ가-힣a-zA-Z0-9!]+$/)
+	@Matches(NICKNAME_REGEXP)
 	nickname: string;
 
 	@Column({ default: null })
@@ -75,7 +76,7 @@ export class User extends BaseEntity {
 	@Length(1, 20)
 	@IsString()
 	@IsOptional()
-	@Matches(/^[ㄱ-ㅎ가-힣a-zA-Z0-9]+$/)
+	@Matches(STATUS_MESSAGE_REGEXP)
 	statusMessage: string;
 
 	@Column({ default: UserStatus.OFFLINE })

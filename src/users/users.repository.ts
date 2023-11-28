@@ -10,13 +10,14 @@ export class UsersRepository extends Repository<User> {
 		super(User, dataSource.manager);
 	}
 
-	async findOneByNickname(nickname: string) {
+	async findUserByNickname(nickname: string) {
 		return await this.findOne({ where: { nickname } });
 	}
 
 	async findMyProfile(userId: number): Promise<MyProfileResponseDto> {
 		const myProfile = await this.findOne({
 			select: [
+				'id',
 				'nickname',
 				'avatar',
 				'statusMessage',
@@ -80,12 +81,11 @@ export class UsersRepository extends Repository<User> {
 				id: In(users),
 			},
 		});
-		// if (!rankUsers || rankUsers.length === 0) {
-		// 	throw new BadRequestException(
-		// 		`there is no user with nickname`,
-		// 	);
-		// }
-
+		if (!rankUsers) {
+			throw new BadRequestException(
+				`there is no user with nickname ${users}`,
+			);
+		}
 		return rankUsers;
 	}
 }

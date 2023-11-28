@@ -2,18 +2,15 @@ import {
 	Body,
 	ConflictException,
 	Controller,
-	Inject,
 	Logger,
 	Patch,
 	Post,
 	Res,
 	UseGuards,
 } from '@nestjs/common';
-import { ConfigType } from '@nestjs/config';
 import { Response } from 'express';
-import userConfig from 'src/config/user.config';
 import { User } from 'src/users/entities/user.entity';
-import { LoginRequestDto } from '../users/dto/login-request.dto';
+import { SignupRequestDto } from '../users/dto/signup-request.dto';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 import { UserSigninResponseDto } from './dto/user-signin-response.dto';
@@ -23,17 +20,11 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-	private readonly nicknamePrefix: string;
-
 	constructor(
 		private readonly authService: AuthService,
 		private readonly ftAuthService: FtAuthService,
 		private readonly usersService: UsersService,
-		@Inject(userConfig.KEY)
-		private readonly userConfigure: ConfigType<typeof userConfig>,
-	) {
-		this.nicknamePrefix = this.userConfigure.FIRST_NICKNAME_PREFIX;
-	}
+	) {}
 	private readonly logger = new Logger(AuthController.name);
 
 	@Post('/signin')
@@ -68,7 +59,7 @@ export class AuthController {
 
 		const userSigninResponseDto: UserSigninResponseDto = {
 			userId: user.id,
-			isFirstLogin: user.nickname.at(0) === this.nicknamePrefix,
+			isFirstLogin: user.nickname === null,
 			isMfaEnabled: user.isMfaEnabled,
 			mfaCode,
 		};
@@ -76,14 +67,16 @@ export class AuthController {
 		return res.send(userSigninResponseDto);
 	}
 
-	@Patch('/login')
+	@Patch('/signup')
 	@UseGuards(JwtAuthGuard)
-	async login(
+	async signup(
 		@GetUser() user: User,
-		@Body() loginRequestDto: LoginRequestDto,
+		@Body() signupRequestDto: SignupRequestDto,
 	) {
-		// try catch 처리 대신 exception filter로 처리 예정
-		await this.usersService.login(user.id, loginRequestDto);
+		const nickname = signupRequestDto.nickname;
+		const avatar = signupRequestDto.avatar;
+
+		await this.usersService.signup(user.id, nickname, avatar);
 	}
 
 	@Post('/test/signin')
@@ -120,5 +113,17 @@ export class AuthController {
 		};
 
 		return res.send(userSigninResponseDto);
+	}
+
+	@Patch('/signout')
+	@UseGuards(JwtAuthGuard)
+	async signout(@GetUser() user: User, @Res() res: Response) {
+		await this.usersService.signout(user.id);
+
+		// TODO: 해당 유저의 상태 변경을 알리는 소켓 이벤트 전송
+
+		res.clearCookie('accessToken');
+		res.clearCookie('refreshToken');
+		return res.send();
 	}
 }

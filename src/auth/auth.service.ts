@@ -1,24 +1,16 @@
-import { ConflictException, Inject, Injectable } from '@nestjs/common';
-import { ConfigType } from '@nestjs/config';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import userConfig from 'src/config/user.config';
 import { User } from 'src/users/entities/user.entity';
-import { UsersRepository } from './../users/users.repository';
+import { UsersRepository } from '../users/users.repository';
 import { FtUserParamDto } from './dto/ft-user-param.dto';
 import { UserFindReturnDto } from './dto/user-find-return.dto';
 
 @Injectable()
 export class AuthService {
-	private readonly nicknamePrefix: string;
-
 	constructor(
 		private readonly userRepository: UsersRepository,
 		private readonly jwtService: JwtService,
-		@Inject(userConfig.KEY)
-		private readonly userConfigure: ConfigType<typeof userConfig>,
-	) {
-		this.nicknamePrefix = this.userConfigure.FIRST_NICKNAME_PREFIX;
-	}
+	) {}
 
 	private async createMfaCode(): Promise<string> {
 		return Promise.resolve('mfaCode'); // TODO: 2FA 코드 생성
@@ -33,7 +25,6 @@ export class AuthService {
 
 		if (!user) {
 			const user = this.userRepository.create(userData);
-			user.nickname = this.nicknamePrefix + userData.nickname;
 			await this.userRepository.save(user);
 
 			return { user };
@@ -64,7 +55,7 @@ export class AuthService {
 	}
 
 	async validateNickname(nickname: string) {
-		const user = await this.userRepository.findOneByNickname(nickname);
+		const user = await this.userRepository.findUserByNickname(nickname);
 		if (user) {
 			throw new ConflictException('이미 존재하는 닉네임입니다.');
 		}

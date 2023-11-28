@@ -4,7 +4,6 @@ import { UsersRepository } from './users.repository';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { BlockUserResponseDto } from './dto/block-user-response.dto';
 import { BlockUserReturnDto } from './dto/block-user-return.dto';
-import { UUID } from 'crypto';
 
 class BlockDto {
 	id: number;
@@ -34,7 +33,7 @@ export class BlocksService {
 			},
 		});
 		if (block)
-			throw new BadRequestException(`${toUserId}} is already blocked`);
+			throw new BadRequestException(`${toUserId} is already blocked`);
 
 		//block 하기
 		const newBlock = this.blockRepository.create({
@@ -81,7 +80,7 @@ export class BlocksService {
 			},
 		});
 
-		return { friends: blockUsers, totalItemCount };
+		return { blocks: blockUsers, totalItemCount };
 	}
 
 	async validateUserExists(userId: number) {
