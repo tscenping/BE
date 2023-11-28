@@ -1,14 +1,18 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import * as bycrypt from 'bcrypt';
 import { ChannelType, ChannelUserType } from 'src/common/enum';
+import { UsersRepository } from 'src/users/users.repository';
+import { ChannelInvitationRepository } from './channel-invitation.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
 import { ChannelsRepository } from './channels.repository';
-import { CreateChannelRequestDto } from './dto/create-channel-request.dto';
-import { UsersRepository } from 'src/users/users.repository';
-import { CreatChannelUserParamDto } from './dto/creat-channel-user-param.dto';
-import * as bycrypt from 'bcrypt';
-import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
-import { ChannelInvitationRepository } from './channel-invitation.repository';
+import { ChannelListResponseDto } from './dto/channel-list-response.dto';
+import { ChannelListReturnDto } from './dto/channel-list-return.dto';
 import { ChannelUsersResponseDto } from './dto/channel-users-response.dto';
+import { CreateChannelRequestDto } from './dto/creat-channel-request.dto';
+import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
+import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
+import { DmChannelListResponseDto } from './dto/dmchannel-list-response.dto';
+import { DmChannelListReturnDto } from './dto/dmchannel-list-return.dto';
 
 @Injectable()
 export class ChannelsService {
@@ -102,7 +106,7 @@ export class ChannelsService {
 	}
 
 	async createChannelUser(
-		channelUserParamDto: CreatChannelUserParamDto,
+		channelUserParamDto: CreateChannelUserParamDto,
 	): Promise<ChannelUsersResponseDto> {
 		const channelId = channelUserParamDto.channelId;
 		const userId = channelUserParamDto.userId;
@@ -280,5 +284,50 @@ export class ChannelsService {
 				`DM channel already exists between ${userId} and ${targetUserId}`,
 			);
 		}
+	}
+
+	async findAllChannels(
+		page: number,
+	): Promise<ChannelListResponseDto> {
+		const channels: ChannelListReturnDto[] = await this.channelsRepository.findAllChannels(
+			page,
+		);
+		const totalDataSize: number = await channels.length;
+		if (!channels) {
+			throw new InternalServerErrorException(`There is no channel`);
+		};
+		return { channels, totalDataSize };
+	}
+
+	async findMyChannels(
+		userId: number, 
+		page: number,
+	): Promise<ChannelListResponseDto> {
+		const channels: ChannelListReturnDto[] = await this.channelsRepository.findMyChannels(
+			userId,
+			page,
+		);
+		const totalDataSize: number = await channels.length;
+		if (!channels) {
+			throw new InternalServerErrorException(`There is no 'my channel'`);
+		};
+
+		return { channels, totalDataSize };
+	}
+
+	async findDmChannels(
+		userId: number, 
+		page: number,
+	): Promise<DmChannelListResponseDto> {
+		const dmChannels: DmChannelListReturnDto[] = await this.channelsRepository.findDmChannels(
+			userId,
+			page,
+		);
+		const totalItemCount: number = await dmChannels.length;
+		if (!dmChannels) {
+			throw new InternalServerErrorException(`There is no 'dm channel'`);
+		};
+		return { dmChannels, totalItemCount };
+
 	}
 }

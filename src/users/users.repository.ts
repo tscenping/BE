@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { MyProfileResponseDto } from './dto/my-profile-response.dto';
 import { UserProfileReturnDto } from './dto/user-profile.dto';
 import { User } from './entities/user.entity';
@@ -68,5 +68,24 @@ export class UsersRepository extends Repository<User> {
 			totalCount: userProfile.loseCount + userProfile.winCount,
 			ladderRank: 1, // TODO: ladderRank cache에서 조회하기,
 		};
+	}
+
+	async findRanksInfos(users: string[]) {
+		const rankUsers = await this.find({
+			select: [
+				'nickname',
+				'avatar',
+				'ladderScore',
+			],
+			where: {
+				id: In(users),
+			},
+		});
+		if (!rankUsers) {
+			throw new BadRequestException(
+				`there is no user with nickname ${users}`,
+			);
+		}
+		return rankUsers;
 	}
 }

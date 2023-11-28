@@ -7,19 +7,20 @@ import {
 	ParseIntPipe,
 	Patch,
 	Post,
+	Query,
 	UseGuards,
 } from '@nestjs/common';
 import { GetUser } from 'src/auth/get-user.decorator';
-import { User } from 'src/users/entities/user.entity';
-import { CreateChannelRequestDto } from './dto/create-channel-request.dto';
-import { ChannelType } from 'src/common/enum';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { JoinChannelRequestDto } from './dto/join-channel-request.dto';
-import { CreateInvitationRequestDto } from './dto/create-invitation-request.dto';
+import { ChannelType } from 'src/common/enum';
+import { User } from 'src/users/entities/user.entity';
 import { PositiveIntPipe } from '../common/pipes/positiveInt.pipe';
 import { ChannelsService } from './channels.service';
-import { CreatChannelUserParamDto } from './dto/creat-channel-user-param.dto';
+import { CreateChannelRequestDto } from './dto/creat-channel-request.dto';
+import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
 import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
+import { CreateInvitationRequestDto } from './dto/create-invitation-request.dto';
+import { JoinChannelRequestDto } from './dto/join-channel-request.dto';
 
 @Controller('channels')
 @UseGuards(JwtAuthGuard)
@@ -78,7 +79,7 @@ export class ChannelsController {
 		const channelId = joinChannelRequestDto.channelId;
 		const password = joinChannelRequestDto.password;
 
-		const channelUserParamDto = new CreatChannelUserParamDto(
+		const channelUserParamDto = new CreateChannelUserParamDto(
 			channelId,
 			userId,
 			password,
@@ -115,4 +116,32 @@ export class ChannelsController {
 	) {
 		await this.channelsService.updateChannel(user.id, channelId);
 	}
+
+	// 채널 목록 조회
+	@Get('/all')
+	async findAllChannels(
+		@Query('page', ParseIntPipe, PositiveIntPipe) page: number,
+	) {
+		return await this.channelsService.findAllChannels(page);
+	}
+
+	// 내 참여 채널 목록 조회
+	@Get('/me')
+	async findMyChannels(
+		@GetUser() user: User,
+		@Query('page', ParseIntPipe, PositiveIntPipe) page: number,		
+	) {
+		return await this.channelsService.findMyChannels(user.id, page);
+	}
+
+	// 디엠 채널 목록 조회
+	@Get('/dm')
+	async findDmChannels(
+		@GetUser() user: User,
+		@Query('page', ParseIntPipe, PositiveIntPipe) page: number,
+	) {
+		return await this.channelsService.findDmChannels(user.id, page);
+	}
+
 }
+
