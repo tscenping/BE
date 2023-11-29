@@ -32,6 +32,8 @@ export class ChannelsRepository extends Repository<Channel> {
 			[userId, targetUserId],
 		);
 
+		console.log(dmChannelUser);
+
 		return dmChannelUser;
 	}
 
@@ -68,13 +70,13 @@ export class ChannelsRepository extends Repository<Channel> {
 			`
 			SELECT "channelId", "name", "channelType", 
 			(SELECT count(*)
-				FROM channel_user cu2 
-				WHERE cu2."channelId" = c.id) as "userCount"
-			FROM Channel c JOIN channel_user cu
-			ON c.id = cu."channelId"
+			FROM channel_user cu2 
+			WHERE cu2."channelId" = cu."channelId") as "userCount"
+			FROM channel_user cu
+			JOIN channel c ON cu."channelId" = c.id
 			WHERE cu."userId" = $1
 			AND c."deletedAt" IS NULL
-			GROUP BY "channelId", "name", "channelType", c.id
+			GROUP BY "channelId", "name", "channelType"
 			LIMIT $2 OFFSET $3;
 			`,
 			[userId, DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
@@ -83,9 +85,7 @@ export class ChannelsRepository extends Repository<Channel> {
 		return channels;
 	}
 
-	async countInvolved(
-		userId: number
-	) {
+	async countInvolved(userId: number) {
 		const [totalDataSize] = await this.dataSource.query(
 			`
 			SELECT count(*)
@@ -93,7 +93,8 @@ export class ChannelsRepository extends Repository<Channel> {
 			ON c.id = cu."channelId"
 			WHERE cu."userId" = $1
 			AND c."deletedAt" IS NULL;
-		  `, [userId],
+		  `,
+			[userId],
 		);
 		const realSize = parseInt(totalDataSize.count, 10);
 
