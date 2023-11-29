@@ -74,13 +74,28 @@ export class ChannelsRepository extends Repository<Channel> {
 			ON c.id = cu."channelId"
 			WHERE cu."userId" = $1
 			AND c."deletedAt" IS NULL
-			GROUP BY "channelId", "name", "channelType"
+			GROUP BY "channelId", "name", "channelType", c.id
 			LIMIT $2 OFFSET $3;
 			`,
 			[userId, DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
 		);
 		
 		return channels;
+	}
+
+	async countInvolved(
+		userId: number
+	) {
+		const [totalDataSize] = await this.dataSource.query(
+			`
+			SELECT COUNT(DISTINCT cu."channelId") 
+			FROM channel_user cu 
+			WHERE cu."userId" = $1
+		  `, [userId],
+		);
+		const realSize: number = parseInt(totalDataSize.count, 10);
+
+		return realSize;
 	}
 
 	async findDmChannels(
