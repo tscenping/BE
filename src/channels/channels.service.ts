@@ -1,26 +1,25 @@
 import {
 	BadRequestException,
-	HttpStatus,
 	Injectable,
 	InternalServerErrorException,
 	Logger,
 } from '@nestjs/common';
 import { ChannelType, ChannelUserType } from 'src/common/enum';
+import { UsersRepository } from 'src/users/users.repository';
+import { ChannelInvitationRepository } from './channel-invitation.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
 import { ChannelsRepository } from './channels.repository';
-import { CreateChannelRequestDto } from './dto/creat-channel-request.dto';
-import { UsersRepository } from 'src/users/users.repository';
 import * as bycrypt from 'bcrypt';
-import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
-import { ChannelInvitationRepository } from './channel-invitation.repository';
-import { ChannelUsersResponseDto } from './dto/channel-users-response.dto';
-import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
-import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
-import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { ChannelListResponseDto } from './dto/channel-list-response.dto';
 import { ChannelListReturnDto } from './dto/channel-list-return.dto';
+import { ChannelUsersResponseDto } from './dto/channel-users-response.dto';
+import { CreateChannelRequestDto } from './dto/creat-channel-request.dto';
+import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
+import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
 import { DmChannelListResponseDto } from './dto/dmchannel-list-response.dto';
 import { DmChannelListReturnDto } from './dto/dmchannel-list-return.dto';
+import { DBUpdateFailureException } from '../common/exception/custom-exception';
+import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
 
 @Injectable()
 export class ChannelsService {
@@ -318,7 +317,6 @@ export class ChannelsService {
 
 		return result.channelUserType === ChannelUserType.ADMIN;
 	}
-
 	async kickChannelUser(giverUserId: number, receiverChannelUserId: number) {
 		// 유효한 channelUserId인지 확인
 		const receiverChannelUser = await this.checkChannelUserExist(
@@ -409,7 +407,6 @@ export class ChannelsService {
 			receiverChannelUserId,
 		);
 	}
-
 	async muteChannelUser(giverUserId: number, receiverChannelUserId: number) {
 		// 유효한 channelUserId인지 확인
 		const receiverChannelUser = await this.checkChannelUserExist(
@@ -452,7 +449,11 @@ export class ChannelsService {
 	async findAllChannels(page: number): Promise<ChannelListResponseDto> {
 		const channels: ChannelListReturnDto[] =
 			await this.channelsRepository.findAllChannels(page);
-		const totalDataSize: number = await channels.length;
+		const totalDataSize: number = await this.channelsRepository.count({
+			where: {
+				channelType: ChannelType.PUBLIC || ChannelType.PROTECTED,
+			},
+		});
 		if (!channels) {
 			throw new InternalServerErrorException(`There is no channel`);
 		}
@@ -465,7 +466,7 @@ export class ChannelsService {
 	): Promise<ChannelListResponseDto> {
 		const channels: ChannelListReturnDto[] =
 			await this.channelsRepository.findMyChannels(userId, page);
-		const totalDataSize: number = await channels.length;
+		const totalDataSize: number = await this.channelsRepository.count();
 		if (!channels) {
 			throw new InternalServerErrorException(`There is no 'my channel'`);
 		}
@@ -479,7 +480,11 @@ export class ChannelsService {
 	): Promise<DmChannelListResponseDto> {
 		const dmChannels: DmChannelListReturnDto[] =
 			await this.channelsRepository.findDmChannels(userId, page);
-		const totalItemCount: number = await dmChannels.length;
+		const totalItemCount: number = await this.channelsRepository.count({
+			where: {
+				channelType: ChannelType.DM,
+			},
+		});
 		if (!dmChannels) {
 			throw new InternalServerErrorException(`There is no 'dm channel'`);
 		}

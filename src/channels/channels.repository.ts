@@ -37,19 +37,16 @@ export class ChannelsRepository extends Repository<Channel> {
 		return dmChannelUser;
 	}
 
-	async softDeleteChannel(channelId: number) {
-		const result = await this.softDelete(channelId);
-		if (result.affected !== 1)
-			throw DBUpdateFailureException('delete channel failed');
-	}
-
 	async findAllChannels(page: number) {
 		const channels = await this.dataSource.query(
 			`
-			SELECT "channelId", "name", "channelType"
+			SELECT "channelId", "name", "channelType", count("userId") as "userCount"
 			FROM Channel c JOIN channel_user cu
 			ON c.id = cu."channelId"
-			WHERE c."deletedAt" IS NULL
+			WHERE c."deletedAt" IS NULL 
+			AND c."channelType" != 'PRIVATE' 
+			AND c."channelType" != 'DM'
+			GROUP BY "channelId", "name", "channelType"
 			LIMIT $1 OFFSET $2;
 			`,
 			[DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
@@ -61,18 +58,16 @@ export class ChannelsRepository extends Repository<Channel> {
 	async findMyChannels(userId: number, page: number) {
 		const channels = await this.dataSource.query(
 			`
-			SELECT "channelId", "name", "channelType"
+			SELECT "channelId", "name", "channelType", count("userId") as "userCount"
 			FROM Channel c JOIN channel_user cu
 			ON c.id = cu."channelId"
 			WHERE cu."userId" = $1
 			AND c."deletedAt" IS NULL
-			ORDER BY c."channelType" DESC
+			GROUP BY "channelId", "name", "channelType"
 			LIMIT $2 OFFSET $3;
 			`,
 			[userId, DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
 		);
-
-		console.log('channels: ', channels);
 
 		return channels;
 	}
@@ -80,11 +75,12 @@ export class ChannelsRepository extends Repository<Channel> {
 	async findDmChannels(userId: number, page: number) {
 		const channels = await this.dataSource.query(
 			`
-			SELECT "channelId", "name", "channelType"
-			FROM Channel c JOIN channel_user cu
-			ON c.id = cu."channelId"
-			WHERE c."channelType" = 'DM'
-			AND cu."userId" = $1
+			SELECT cu."channelId", cu."userId" as "PartnerName", u."status"
+			FROM "user" u
+			JOIN channel_user cu ON u."id" = cu."userId"
+			JOIN channel c ON cu."channelId" = c.id
+			WHERE c."channelType" = 'DM' 
+			AND u.id NOT IN ($1)
 			AND c."deletedAt" IS NULL
 			LIMIT $2 OFFSET $3;
 			`,
@@ -92,5 +88,11 @@ export class ChannelsRepository extends Repository<Channel> {
 		);
 
 		return channels;
+	}
+
+	async softDeleteChannel(channelId: number) {
+		const result = await this.softDelete(channelId);
+		if (result.affected !== 1)
+			throw DBUpdateFailureException('delete channel failed');
 	}
 }
