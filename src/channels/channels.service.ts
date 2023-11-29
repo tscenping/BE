@@ -311,7 +311,9 @@ export class ChannelsService {
 			userId,
 			page,
 		);
-		const totalDataSize: number = await this.channelsRepository.count();
+		const totalDataSize: number = await this.channelsRepository.countInvolved(
+			userId,
+		);
 		if (!channels) {
 			throw new InternalServerErrorException(`There is no 'my channel'`);
 		};

@@ -21,8 +21,10 @@ import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
 import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
 import { CreateInvitationRequestDto } from './dto/create-invitation-request.dto';
 import { JoinChannelRequestDto } from './dto/join-channel-request.dto';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('channels')
+@ApiTags('channels')
 @UseGuards(JwtAuthGuard)
 export class ChannelsController {
 	constructor(private readonly channelsService: ChannelsService) {}

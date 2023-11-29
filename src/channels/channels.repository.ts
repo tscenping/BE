@@ -32,8 +32,6 @@ export class ChannelsRepository extends Repository<Channel> {
 			[userId, targetUserId],
 		);
 
-		console.log(dmChannelUser);
-
 		return dmChannelUser;
 	}
 
@@ -59,7 +57,6 @@ export class ChannelsRepository extends Repository<Channel> {
 			`,
 			[DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
 		);
-
 		return channels;
 	}
 
@@ -69,18 +66,38 @@ export class ChannelsRepository extends Repository<Channel> {
 	){
 		const channels = await this.dataSource.query(
 			`
-			SELECT "channelId", "name", "channelType", count("userId") as "userCount"
+			SELECT "channelId", "name", "channelType", 
+			(SELECT count(*)
+				FROM channel_user cu2 
+				WHERE cu2."channelId" = c.id) as "userCount"
 			FROM Channel c JOIN channel_user cu
 			ON c.id = cu."channelId"
 			WHERE cu."userId" = $1
 			AND c."deletedAt" IS NULL
-			GROUP BY "channelId", "name", "channelType"
+			GROUP BY "channelId", "name", "channelType", c.id
 			LIMIT $2 OFFSET $3;
 			`,
 			[userId, DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
 		);
 		
 		return channels;
+	}
+
+	async countInvolved(
+		userId: number
+	) {
+		const [totalDataSize] = await this.dataSource.query(
+			`
+			SELECT count(*)
+			FROM Channel c JOIN channel_user cu
+			ON c.id = cu."channelId"
+			WHERE cu."userId" = $1
+			AND c."deletedAt" IS NULL;
+		  `, [userId],
+		);
+		const realSize = parseInt(totalDataSize.count, 10);
+
+		return realSize;
 	}
 
 	async findDmChannels(
