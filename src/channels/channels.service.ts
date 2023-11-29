@@ -292,7 +292,11 @@ export class ChannelsService {
 		const channels: ChannelListReturnDto[] = await this.channelsRepository.findAllChannels(
 			page,
 		);
-		const totalDataSize: number = await channels.length;
+		const totalDataSize: number = await this.channelsRepository.count({
+			where: {
+				channelType: ChannelType.PUBLIC || ChannelType.PROTECTED,
+			},
+		});
 		if (!channels) {
 			throw new InternalServerErrorException(`There is no channel`);
 		};
@@ -307,7 +311,7 @@ export class ChannelsService {
 			userId,
 			page,
 		);
-		const totalDataSize: number = await channels.length;
+		const totalDataSize: number = await this.channelsRepository.count();
 		if (!channels) {
 			throw new InternalServerErrorException(`There is no 'my channel'`);
 		};
@@ -323,7 +327,11 @@ export class ChannelsService {
 			userId,
 			page,
 		);
-		const totalItemCount: number = await dmChannels.length;
+		const totalItemCount: number = await this.channelsRepository.count({
+			where: {
+				channelType: ChannelType.DM,
+			},
+		});
 		if (!dmChannels) {
 			throw new InternalServerErrorException(`There is no 'dm channel'`);
 		};
