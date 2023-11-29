@@ -32,8 +32,6 @@ export class ChannelsRepository extends Repository<Channel> {
 			[userId, targetUserId],
 		);
 
-		console.log(dmChannelUser);
-
 		return dmChannelUser;
 	}
 
@@ -59,7 +57,6 @@ export class ChannelsRepository extends Repository<Channel> {
 			`,
 			[DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
 		);
-
 		return channels;
 	}
 
@@ -69,7 +66,10 @@ export class ChannelsRepository extends Repository<Channel> {
 	){
 		const channels = await this.dataSource.query(
 			`
-			SELECT "channelId", "name", "channelType", count("userId") as "userCount"
+			SELECT "channelId", "name", "channelType", 
+			(SELECT count(*)
+				FROM channel_user cu2 
+				WHERE cu2."channelId" = c.id) as "userCount"
 			FROM Channel c JOIN channel_user cu
 			ON c.id = cu."channelId"
 			WHERE cu."userId" = $1
