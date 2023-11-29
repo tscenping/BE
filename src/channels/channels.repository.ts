@@ -88,12 +88,14 @@ export class ChannelsRepository extends Repository<Channel> {
 	) {
 		const [totalDataSize] = await this.dataSource.query(
 			`
-			SELECT COUNT(DISTINCT cu."channelId") 
-			FROM channel_user cu 
+			SELECT count(*)
+			FROM Channel c JOIN channel_user cu
+			ON c.id = cu."channelId"
 			WHERE cu."userId" = $1
+			AND c."deletedAt" IS NULL;
 		  `, [userId],
 		);
-		const realSize: number = parseInt(totalDataSize.count, 10);
+		const realSize = parseInt(totalDataSize.count, 10);
 
 		return realSize;
 	}
