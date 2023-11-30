@@ -31,6 +31,7 @@
 		"@nestjs/passport": "^10.0.2",
 		"@nestjs/platform-express": "^9.0.0",
 		"@nestjs/platform-socket.io": "^9.4.3",
+		"@nestjs/swagger": "^7.1.16",
 		"@nestjs/typeorm": "^10.0.0",
 		"@nestjs/websockets": "^9.4.3",
 		"@types/bcrypt": "^5.0.2",
@@ -49,7 +50,6 @@
 		"rimraf": "^3.0.2",
 		"rxjs": "^7.2.0",
 		"typeorm": "^0.3.17",
-		"typeorm-extension": "^3.2.0",
 		"zod": "^3.22.4"
 	},
 	"devDependencies": {
@@ -82,6 +82,9 @@
 			"ts"
 		],
 		"rootDir": "src",
+		"moduleNameMapper": {
+			"^src/(.*)$": "<rootDir>/$1"
+		},
 		"testRegex": ".*\\.spec\\.ts$",
 		"transform": {
 			"^.+\\.(t|j)s$": "ts-jest"

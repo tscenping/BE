@@ -1,5 +1,5 @@
 export type FriendUserReturnDto = {
-	id: number;
+	id: string;
 	nickname: string;
 	avatar: string;
 	status: string;

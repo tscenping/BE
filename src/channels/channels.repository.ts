@@ -47,7 +47,8 @@ export class ChannelsRepository extends Repository<Channel> {
 			AND c."channelType" != 'PRIVATE' 
 			AND c."channelType" != 'DM'
 			AND cu."deletedAt" IS NULL
-			GROUP BY "channelId", "name", "channelType"
+			GROUP BY "channelId", "name", "channelType", c."createdAt"
+      ORDER BY c."createdAt" ASC
 			LIMIT $1 OFFSET $2;
 			`,
 			[DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
@@ -58,7 +59,7 @@ export class ChannelsRepository extends Repository<Channel> {
 	async findMyChannels(userId: number, page: number) {
 		const channels = await this.dataSource.query(
 			`
-			SELECT "channelId", "name", "channelType", 
+			SELECT "channelId", "name", "channelType", c."createdAt",
 			(SELECT count(*)
 			FROM channel_user cu2 
 			WHERE cu2."channelId" = cu."channelId") as "userCount"
@@ -66,8 +67,9 @@ export class ChannelsRepository extends Repository<Channel> {
 			JOIN channel c ON cu."channelId" = c.id
 			WHERE cu."userId" = $1
 			AND c."deletedAt" IS NULL
-			AND cu."deletedAt" IS NULL
-			GROUP BY "channelId", "name", "channelType"
+      AND cu."deletedAt" IS NULL
+			GROUP BY "channelId", "name", "channelType", c."createdAt"
+			ORDER BY c."createdAt" ASC
 			LIMIT $2 OFFSET $3;
 			`,
 			[userId, DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
@@ -103,7 +105,8 @@ export class ChannelsRepository extends Repository<Channel> {
 			WHERE c."channelType" = 'DM' 
 			AND u.id NOT IN ($1)
 			AND c."deletedAt" IS NULL
-			AND cu."deletedAt" IS NULL
+      AND cu."deletedAt" IS NULL
+			ORDER BY c."createdAt" ASC
 			LIMIT $2 OFFSET $3;
 			`,
 			[userId, DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],

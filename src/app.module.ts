@@ -1,3 +1,4 @@
+import { SwaggerModule } from '@nestjs/swagger';
 import { RedisModule } from '@liaoliaots/nestjs-redis';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigType } from '@nestjs/config';
@@ -29,6 +30,7 @@ import { UsersModule } from './users/users.module';
 				pgadminConfig,
 				jwtConfig,
 				typeOrmConfig,
+				redisConfig,
 			],
 		}),
 		TypeOrmModule.forRootAsync({
@@ -47,6 +49,7 @@ import { UsersModule } from './users/users.module';
 		GameModule,
 		ChannelsModule,
 		RedisModule,
+		SwaggerModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],
