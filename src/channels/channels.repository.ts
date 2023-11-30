@@ -4,7 +4,7 @@ import { DataSource, Repository } from 'typeorm';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { ChannelUser } from './entities/channel-user.entity';
 import { Channel } from './entities/channel.entity';
-import { User } from 'src/users/entities/user.entity';
+
 export class ChannelsRepository extends Repository<Channel> {
 	constructor(@InjectRepository(Channel) private dataSource: DataSource) {
 		super(Channel, dataSource.manager);
@@ -37,15 +37,7 @@ export class ChannelsRepository extends Repository<Channel> {
 		return dmChannelUser;
 	}
 
-	async softDeleteChannel(channelId: number) {
-		const result = await this.softDelete(channelId);
-		if (result.affected !== 1)
-			throw DBUpdateFailureException('delete channel failed');
-	}
-
-	async findAllChannels(
-		page: number,
-	){
+	async findAllChannels(page: number) {
 		const channels = await this.dataSource.query(
 			`
 			SELECT "channelId", "name", "channelType", count("userId") as "userCount"
@@ -62,10 +54,7 @@ export class ChannelsRepository extends Repository<Channel> {
 		return channels;
 	}
 
-	async findMyChannels(
-		userId: number,
-		page: number,
-	){
+	async findMyChannels(userId: number, page: number) {
 		const channels = await this.dataSource.query(
 			`
 			SELECT "channelId", "name", "channelType", 
@@ -81,7 +70,7 @@ export class ChannelsRepository extends Repository<Channel> {
 			`,
 			[userId, DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
 		);
-		
+
 		return channels;
 	}
 
@@ -118,7 +107,13 @@ export class ChannelsRepository extends Repository<Channel> {
 			`,
 			[userId, DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
 		);
-	
+
 		return channels;
+	}
+
+	async softDeleteChannel(channelId: number) {
+		const result = await this.softDelete(channelId);
+		if (result.affected !== 1)
+			throw DBUpdateFailureException('delete channel failed');
 	}
 }
