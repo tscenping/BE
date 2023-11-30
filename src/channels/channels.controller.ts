@@ -118,8 +118,9 @@ export class ChannelsController {
 	@Patch('/exit')
 	async updateChannelUser(
 		@GetUser() user: User,
-		@Body('channelId') channelId: number,
+		@Body('channelId', ParseIntPipe, PositiveIntPipe) channelId: number,
 	) {
+		console.log(channelId);
 		await this.channelsService.updateChannelUser(user.id, channelId);
 	}
 

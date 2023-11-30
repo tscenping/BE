@@ -46,6 +46,7 @@ export class ChannelsRepository extends Repository<Channel> {
 			WHERE c."deletedAt" IS NULL 
 			AND c."channelType" != 'PRIVATE' 
 			AND c."channelType" != 'DM'
+			AND cu."deletedAt" IS NULL
 			GROUP BY "channelId", "name", "channelType"
 			LIMIT $1 OFFSET $2;
 			`,
@@ -90,10 +91,7 @@ export class ChannelsRepository extends Repository<Channel> {
 		return realSize;
 	}
 
-	async findDmChannels(
-		userId: number,
-		page: number,
-	){
+	async findDmChannels(userId: number, page: number) {
 		const channels = await this.dataSource.query(
 			`
 			SELECT cu."channelId", cu."userId" as "PartnerName", u."status"
