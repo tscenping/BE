@@ -10,7 +10,7 @@ import {
 } from 'class-validator';
 import { CHANNEL_PASSWORD_REGEXP } from '../../common/constants';
 
-export class JoinChannelRequestDto {
+export class UpdateChannelPwdReqeustDto {
 	@Column()
 	@IsNumber()
 	@IsPositive()

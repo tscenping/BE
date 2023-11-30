@@ -1,7 +1,7 @@
-import { ChannelListReturnDto } from "./channel-list-return.dto";
+import { ChannelListReturnDto } from './channel-list-return.dto';
 
 export type ChannelListResponseDto = {
-    channels: ChannelListReturnDto[];
-    
-    totalDataSize: number;
+	channels: ChannelListReturnDto[];
+
+	totalDataSize: number;
 };

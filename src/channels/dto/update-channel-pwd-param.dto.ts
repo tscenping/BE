@@ -1,4 +1,4 @@
-export class CreatChannelUserParamDto {
+export class UpdateChannelPwdParamDto {
 	channelId: number;
 	userId: number;
 	password: string | null;
