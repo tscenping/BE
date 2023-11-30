@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+	BadRequestException,
+	Injectable,
+	InternalServerErrorException,
+	Logger,
+} from '@nestjs/common';
 import * as bycrypt from 'bcrypt';
 import { ChannelType, ChannelUserType } from 'src/common/enum';
 import { UsersRepository } from 'src/users/users.repository';
@@ -371,7 +376,7 @@ export class ChannelsService {
 
 		if (giverChannelUser.channelUserType === ChannelUserType.MEMBER)
 			throw new BadRequestException(
-				`kicker ${giverUserId} does not have authority`,
+				`banding user ${giverUserId} does not have authority`,
 			);
 
 		// receiver user 유효성 확인 (존재하는 user인지)
@@ -396,7 +401,7 @@ export class ChannelsService {
 			},
 		);
 		if (result.affected !== 1)
-			throw DBUpdateFailureException('update isBanned field failed');
+			throw DBUpdateFailureException('update isBanned property failed');
 
 		await this.channelUsersRepository.softDeleteUserFromChannel(
 			receiverChannelUserId,
@@ -420,7 +425,7 @@ export class ChannelsService {
 
 		if (giverChannelUser.channelUserType === ChannelUserType.MEMBER)
 			throw new BadRequestException(
-				`kicker ${giverUserId} does not have authority`,
+				`muting user ${giverUserId} does not have authority`,
 			);
 
 		// receiver user 유효성 확인 (존재하는 user인지)
@@ -441,12 +446,9 @@ export class ChannelsService {
 		// TODO: cache 생성
 	}
 
-	async findAllChannels(
-		page: number,
-	): Promise<ChannelListResponseDto> {
-		const channels: ChannelListReturnDto[] = await this.channelsRepository.findAllChannels(
-			page,
-		);
+	async findAllChannels(page: number): Promise<ChannelListResponseDto> {
+		const channels: ChannelListReturnDto[] =
+			await this.channelsRepository.findAllChannels(page);
 		const totalDataSize: number = await this.channelsRepository.count({
 			where: {
 				channelType: ChannelType.PUBLIC || ChannelType.PROTECTED,
@@ -454,7 +456,7 @@ export class ChannelsService {
 		});
 		if (!channels) {
 			throw new InternalServerErrorException(`There is no channel`);
-		};
+		}
 		return { channels, totalDataSize };
 	}
 
@@ -462,16 +464,13 @@ export class ChannelsService {
 		userId: number,
 		page: number,
 	): Promise<ChannelListResponseDto> {
-		const channels: ChannelListReturnDto[] = await this.channelsRepository.findMyChannels(
-			userId,
-			page,
-		);
-		const totalDataSize: number = await this.channelsRepository.countInvolved(
-			userId,
-		);
+		const channels: ChannelListReturnDto[] =
+			await this.channelsRepository.findMyChannels(userId, page);
+		const totalDataSize: number =
+			await this.channelsRepository.countInvolved(userId);
 		if (!channels) {
 			throw new InternalServerErrorException(`There is no 'my channel'`);
-		};
+		}
 
 		return { channels, totalDataSize };
 	}
@@ -480,10 +479,8 @@ export class ChannelsService {
 		userId: number,
 		page: number,
 	): Promise<DmChannelListResponseDto> {
-		const dmChannels: DmChannelListReturnDto[] = await this.channelsRepository.findDmChannels(
-			userId,
-			page,
-		);
+		const dmChannels: DmChannelListReturnDto[] =
+			await this.channelsRepository.findDmChannels(userId, page);
 		const totalItemCount: number = await this.channelsRepository.count({
 			where: {
 				channelType: ChannelType.DM,
@@ -491,7 +488,7 @@ export class ChannelsService {
 		});
 		if (!dmChannels) {
 			throw new InternalServerErrorException(`There is no 'dm channel'`);
-		};
+		}
 		return { dmChannels, totalItemCount };
 	}
 
