@@ -21,8 +21,10 @@ import { FriendsService } from './friends.service';
 import { RanksService } from './ranks.service';
 import { UsersService } from './users.service';
 import { STATUS_MESSAGE_STRING } from 'src/common/constants';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('users')
+@ApiTags('users')
 @UseGuards(JwtAuthGuard)
 export class UsersController {
 	constructor(
@@ -35,6 +37,7 @@ export class UsersController {
 	private readonly logger = new Logger(UsersController.name);
 
 	@Post('/friends')
+	@ApiOperation({ summary: '친구추가', description: '친구추가 요청을 보낸다. 존재하지 않는 유저나 본인에게 요청을 보낼 수 없다.' })
 	async createFriend(
 		@GetUser() user: User,
 		@Body('friendId', ParseIntPipe, PositiveIntPipe) toUserId: number,
@@ -44,6 +47,7 @@ export class UsersController {
 	}
 
 	@Delete('/friends')
+	@ApiOperation({ summary: '친구삭제', description: '친구삭제 요청을 보낸다. 존재하지 않는 유저나 본인에게 삭제요청을 보낼 수 없다.' })
 	async deleteFriend(
 		@GetUser() user: User,
 		@Body('friendId', ParseIntPipe, PositiveIntPipe) toUserId: number,
@@ -52,6 +56,7 @@ export class UsersController {
 	}
 
 	@Get('/friends')
+	@ApiOperation({ summary: '친구목록 조회', description: '친구목록을 반환한다.' })
 	async findFriendsWithPage(
 		@GetUser() user: User,
 		@Query('page', ParseIntPipe, PositiveIntPipe) page: number,
@@ -65,6 +70,7 @@ export class UsersController {
 	}
 
 	@Get('/me')
+	@ApiOperation({ summary: '내 정보 조회', description: '저장된 모든 내 정보를 가지고 온다.' })
 	async findMyProfile(@GetUser() user: User) {
 		const myProfile = await this.usersService.findMyProfile(user.id);
 
@@ -72,6 +78,7 @@ export class UsersController {
 	}
 
 	@Get('/profile/:nickname')
+	@ApiOperation({ summary: '유저 정보 조회', description: '랭킹페이지에서 유저 프로필이미지 클릭시 해당 유저의 정보를 가지고 온다.' })
 	async findUserProfile(
 		@GetUser() user: User,
 		@Param('nickname') nickname: string,
@@ -85,6 +92,7 @@ export class UsersController {
 	}
 
 	@Get('/games/:nickname')
+	@ApiOperation({ summary: '게임 정보 조회', description: '게임을 했던 상대방의 정보를 반환한다.' })
 	async findGameHistories(
 		@GetUser() user: User,
 		@Param('nickname') nickname: string,
@@ -101,6 +109,8 @@ export class UsersController {
 	}
 
 	@Post('/blocks')
+	@ApiOperation({ summary: '유저 차단', description: '상대방 유저를 차단한다. 유저 자신인지, 가입 되어있는 유저인지, 차단되어있는 유저인지 체크한다.' })
+	@ApiResponse({ status: 500, description: 'DB에 저장 실패'})
 	async createBlock(
 		@GetUser() user: User,
 		@Body('blockId') toUserId: number,
@@ -109,6 +119,8 @@ export class UsersController {
 	}
 
 	@Delete('/blocks')
+	@ApiOperation({ summary: '유저 차단 해제', description: '상대방 유저의 차단을 해제합니다. ' })
+	@ApiResponse({ status: 500, description: 'DB에 저장 실패'})
 	async deleteBlock(
 		@GetUser() user: User,
 		@Body('blockId') toUserId: number,
@@ -117,6 +129,8 @@ export class UsersController {
 	}
 
 	@Get('/blocks')
+	@ApiOperation({ summary: '유저 차단목록 조회', description: 'pagination된 차단 유저 목록을 제공합니다.' })
+	@ApiResponse({ status: 500, description: '쿼리에러'})
 	async findBlockListWithPage(
 		@GetUser() user: User,
 		@Query('page', ParseIntPipe, PositiveIntPipe) page: number,
@@ -128,6 +142,7 @@ export class UsersController {
 	}
 
 	@Get('/rank')
+	@ApiOperation({ summary: '랭킹 조회', description: '레디스로부터 pagination해 랭킹 목록을 제공합니다.' })
 	async paging(
 		@Query('page', ParseIntPipe, PositiveIntPipe) page: number,
 	) {
@@ -139,6 +154,7 @@ export class UsersController {
 	}
 
 	@Patch('/me/statusMessage')
+	@ApiOperation({ summary: '상태 메세지 변경', description: '내 상태 메세지를 변경한다.' })
 	async updateMyStatusMessage(
 		@GetUser() user: User,
 		@Body('statusMessage') statusMessage: string,
@@ -159,6 +175,7 @@ export class UsersController {
 	}
 
 	@Patch('/me/avatar')
+	@ApiOperation({ summary: '아바타 변경', description: '내 아바타 이미지를 변경한다.' })
 	async updateMyAvatar(
 		@GetUser() user: User,
 		@Body('avatar') avatar: string,

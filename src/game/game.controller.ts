@@ -4,8 +4,11 @@ import { GameInvitationRequestDto } from './dto/game-invitation-request.dto';
 import { GetUser } from '../auth/get-user.decorator';
 import { User } from '../users/entities/user.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('game')
+@ApiTags('game')
+
 @UseGuards(JwtAuthGuard)
 export class GameController {
 	constructor(private readonly gameService: GameService) {}
