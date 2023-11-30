@@ -72,11 +72,7 @@ export class UsersRepository extends Repository<User> {
 
 	async findRanksInfos(users: string[]) {
 		const rankUsers = await this.find({
-			select: [
-				'nickname',
-				'avatar',
-				'ladderScore',
-			],
+			select: ['nickname', 'avatar', 'ladderScore'],
 			where: {
 				id: In(users),
 			},

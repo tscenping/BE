@@ -133,7 +133,7 @@ export class UsersService {
 		});
 	}
 
-	async updateMyStatusMessage(userId: number, statusMessage: string) {
+	async updateMyStatusMessage(userId: number, statusMessage: string | null) {
 		const updateRes = await this.userRepository.update(userId, {
 			statusMessage: statusMessage,
 		});
