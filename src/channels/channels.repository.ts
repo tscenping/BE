@@ -51,16 +51,18 @@ export class ChannelsRepository extends Repository<Channel> {
 			`,
 			[DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
 		);
-
 		return channels;
 	}
 
 	async findMyChannels(userId: number, page: number) {
 		const channels = await this.dataSource.query(
 			`
-			SELECT "channelId", "name", "channelType", count("userId") as "userCount"
-			FROM Channel c JOIN channel_user cu
-			ON c.id = cu."channelId"
+			SELECT "channelId", "name", "channelType", 
+			(SELECT count(*)
+			FROM channel_user cu2 
+			WHERE cu2."channelId" = cu."channelId") as "userCount"
+			FROM channel_user cu
+			JOIN channel c ON cu."channelId" = c.id
 			WHERE cu."userId" = $1
 			AND c."deletedAt" IS NULL
 			GROUP BY "channelId", "name", "channelType"
@@ -72,7 +74,26 @@ export class ChannelsRepository extends Repository<Channel> {
 		return channels;
 	}
 
-	async findDmChannels(userId: number, page: number) {
+	async countInvolved(userId: number) {
+		const [totalDataSize] = await this.dataSource.query(
+			`
+			SELECT count(*)
+			FROM Channel c JOIN channel_user cu
+			ON c.id = cu."channelId"
+			WHERE cu."userId" = $1
+			AND c."deletedAt" IS NULL;
+		  `,
+			[userId],
+		);
+		const realSize = parseInt(totalDataSize.count, 10);
+
+		return realSize;
+	}
+
+	async findDmChannels(
+		userId: number,
+		page: number,
+	){
 		const channels = await this.dataSource.query(
 			`
 			SELECT cu."channelId", cu."userId" as "PartnerName", u."status"

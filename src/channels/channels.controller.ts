@@ -11,21 +11,23 @@ import {
 	UseGuards,
 } from '@nestjs/common';
 import { GetUser } from 'src/auth/get-user.decorator';
-import { User } from 'src/users/entities/user.entity';
-import { CreateChannelRequestDto } from './dto/creat-channel-request.dto';
-import { ChannelType } from 'src/common/enum';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { JoinChannelRequestDto } from './dto/join-channel-request.dto';
-import { CreateInvitationRequestDto } from './dto/create-invitation-request.dto';
+import { ChannelType } from 'src/common/enum';
+import { User } from 'src/users/entities/user.entity';
 import { PositiveIntPipe } from '../common/pipes/positiveInt.pipe';
 import { ChannelsService } from './channels.service';
+import { CreateChannelRequestDto } from './dto/creat-channel-request.dto';
+import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
 import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
+import { CreateInvitationRequestDto } from './dto/create-invitation-request.dto';
+import { JoinChannelRequestDto } from './dto/join-channel-request.dto';
+import { UpdateChannelUserRequestDto } from './dto/update-channel-user-request.dto';
 import { UpdateChannelPwdReqeustDto } from './dto/update-channel-pwd-reqeust.dto';
 import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
-import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
-import { UpdateChannelUserRequestDto } from './dto/update-channel-user-request.dto';
+// import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('channels')
+// @ApiTags('channels')
 @UseGuards(JwtAuthGuard)
 export class ChannelsController {
 	constructor(private readonly channelsService: ChannelsService) {}

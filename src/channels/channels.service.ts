@@ -1,15 +1,10 @@
-import {
-	BadRequestException,
-	Injectable,
-	InternalServerErrorException,
-	Logger,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import * as bycrypt from 'bcrypt';
 import { ChannelType, ChannelUserType } from 'src/common/enum';
 import { UsersRepository } from 'src/users/users.repository';
 import { ChannelInvitationRepository } from './channel-invitation.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
 import { ChannelsRepository } from './channels.repository';
-import * as bycrypt from 'bcrypt';
 import { ChannelListResponseDto } from './dto/channel-list-response.dto';
 import { ChannelListReturnDto } from './dto/channel-list-return.dto';
 import { ChannelUsersResponseDto } from './dto/channel-users-response.dto';
@@ -446,9 +441,12 @@ export class ChannelsService {
 		// TODO: cache 생성
 	}
 
-	async findAllChannels(page: number): Promise<ChannelListResponseDto> {
-		const channels: ChannelListReturnDto[] =
-			await this.channelsRepository.findAllChannels(page);
+	async findAllChannels(
+		page: number,
+	): Promise<ChannelListResponseDto> {
+		const channels: ChannelListReturnDto[] = await this.channelsRepository.findAllChannels(
+			page,
+		);
 		const totalDataSize: number = await this.channelsRepository.count({
 			where: {
 				channelType: ChannelType.PUBLIC || ChannelType.PROTECTED,
@@ -456,7 +454,7 @@ export class ChannelsService {
 		});
 		if (!channels) {
 			throw new InternalServerErrorException(`There is no channel`);
-		}
+		};
 		return { channels, totalDataSize };
 	}
 
@@ -464,12 +462,16 @@ export class ChannelsService {
 		userId: number,
 		page: number,
 	): Promise<ChannelListResponseDto> {
-		const channels: ChannelListReturnDto[] =
-			await this.channelsRepository.findMyChannels(userId, page);
-		const totalDataSize: number = await this.channelsRepository.count();
+		const channels: ChannelListReturnDto[] = await this.channelsRepository.findMyChannels(
+			userId,
+			page,
+		);
+		const totalDataSize: number = await this.channelsRepository.countInvolved(
+			userId,
+		);
 		if (!channels) {
 			throw new InternalServerErrorException(`There is no 'my channel'`);
-		}
+		};
 
 		return { channels, totalDataSize };
 	}
@@ -478,8 +480,10 @@ export class ChannelsService {
 		userId: number,
 		page: number,
 	): Promise<DmChannelListResponseDto> {
-		const dmChannels: DmChannelListReturnDto[] =
-			await this.channelsRepository.findDmChannels(userId, page);
+		const dmChannels: DmChannelListReturnDto[] = await this.channelsRepository.findDmChannels(
+			userId,
+			page,
+		);
 		const totalItemCount: number = await this.channelsRepository.count({
 			where: {
 				channelType: ChannelType.DM,
@@ -487,7 +491,7 @@ export class ChannelsService {
 		});
 		if (!dmChannels) {
 			throw new InternalServerErrorException(`There is no 'dm channel'`);
-		}
+		};
 		return { dmChannels, totalItemCount };
 	}
 
