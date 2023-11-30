@@ -24,15 +24,16 @@ import { JoinChannelRequestDto } from './dto/join-channel-request.dto';
 import { UpdateChannelUserRequestDto } from './dto/update-channel-user-request.dto';
 import { UpdateChannelPwdReqeustDto } from './dto/update-channel-pwd-reqeust.dto';
 import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
-// import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('channels')
-// @ApiTags('channels')
+@ApiTags('channels')
 @UseGuards(JwtAuthGuard)
 export class ChannelsController {
 	constructor(private readonly channelsService: ChannelsService) {}
 
 	@Post('/')
+	@ApiOperation({ summary: '채널생성', description: '채널종류에 따른 채널을 생성한다' })
 	async createChannel(
 		@GetUser() user: User,
 		@Body() channelInfo: CreateChannelRequestDto,
@@ -68,6 +69,8 @@ export class ChannelsController {
 	 * @returns
 	 */
 	@Get('/enter/:channelId')
+	@ApiOperation({ summary: '이미 참여중인 채팅방 입장', description: '채널 유저 정보를 가지고온다. 이미 참여중인 채널인지 확인하고, 밴 이력이 있는지 확인한다.' })
+
 	async enterChannel(
 		@GetUser() user: User,
 		@Param('channelId', ParseIntPipe, PositiveIntPipe) channelId: number,
@@ -76,6 +79,7 @@ export class ChannelsController {
 	}
 
 	@Patch('/password')
+	@ApiOperation({ summary: '비밀번호 설정/삭제', description: '채널 주인은 해당 채널에 합류하기 위한 패스워드를 생성, 삭제, 변경이 가능하다.' })
 	async updateChannelPassword(
 		@GetUser() user: User,
 		@Body() updateChannelPwdRequestDto: UpdateChannelPwdReqeustDto,
@@ -95,6 +99,7 @@ export class ChannelsController {
 	}
 
 	@Post('/join')
+	@ApiOperation({ summary: '채널 참여', description: '존재하는 채널인지 확인하고, 유저가 채널에 존재하는지 확인한다.  Protected로 방이 설정되어 있다면 비밀번호를 확인한다.' })
 	async createChannelUser(
 		@GetUser() user: User,
 		@Body() joinChannelRequestDto: JoinChannelRequestDto,
@@ -116,6 +121,7 @@ export class ChannelsController {
 	}
 
 	@Patch('/exit')
+	@ApiOperation({ summary: '채널 나가기', description: '유저가 채널을 나갈때 사용된다. 만약 유저가 채널에 존재하는 마지막 사람이라면 채널까지 삭제한다.' })
 	async updateChannelUser(
 		@GetUser() user: User,
 		@Body('channelId') channelId: number,
@@ -124,6 +130,7 @@ export class ChannelsController {
 	}
 
 	@Post('/invite')
+	@ApiOperation({ summary: '유저 초대', description: '유저 초대' })
 	async createChannelInvitation(
 		@GetUser() user: User,
 		@Body()
@@ -142,6 +149,7 @@ export class ChannelsController {
 	}
 
 	@Patch('/admin')
+	@ApiOperation({ summary: '관리자 유저 임명/해제', description: '채널주인은 동시에 채널관리인이다. 채널주인은 일반유저를 관리인으로 둘 수 있다.' })
 	async updateChannelUserType(
 		@GetUser() user: User,
 		@Body() updateChannelUserRequestDto: UpdateChannelUserRequestDto,
@@ -161,6 +169,7 @@ export class ChannelsController {
 	}
 
 	@Patch('/kick')
+	@ApiOperation({ summary: '강퇴하기', description: 'giver, receiver에 대한 유효성과 권한을 검증한다.' })
 	async kickChannelUser(
 		@GetUser() user: User,
 		@Body() updateChannelUserRequestDto: UpdateChannelUserRequestDto,
@@ -175,6 +184,7 @@ export class ChannelsController {
 	}
 
 	@Patch('/ban')
+	@ApiOperation({ summary: '밴하기', description: 'giver, receiver에 대한 유효성과 권한을 검증한다.' })
 	async banChannelUser(
 		@GetUser() user: User,
 		@Body() updateChannelUserRequestDto: UpdateChannelUserRequestDto,
@@ -189,6 +199,7 @@ export class ChannelsController {
 	}
 
 	@Patch('/mute')
+	@ApiOperation({ summary: '뮤트하기', description: 'giver, receiver에 대한 유효성과 권한을 검증한다.' })
 	async muteChannelUser(
 		@GetUser() user: User,
 		@Body() updateChannelUserRequestDto: UpdateChannelUserRequestDto,
@@ -204,6 +215,7 @@ export class ChannelsController {
 
 	// 채널 목록 조회
 	@Get('/all')
+	@ApiOperation({ summary: '채널 목록 조회', description: 'Public, Protected 채널에 대한 목록을 조회한다.' })
 	async findAllChannels(
 		@Query('page', ParseIntPipe, PositiveIntPipe) page: number,
 	) {
@@ -212,6 +224,7 @@ export class ChannelsController {
 
 	// 내 참여 채널 목록 조회
 	@Get('/me')
+	@ApiOperation({ summary: '내 채널 목록 조회', description: '내가 참여한 채널에 대한 목록을 조회한다.' })
 	async findMyChannels(
 		@GetUser() user: User,
 		@Query('page', ParseIntPipe, PositiveIntPipe) page: number,
@@ -221,6 +234,7 @@ export class ChannelsController {
 
 	// 디엠 채널 목록 조회
 	@Get('/dm')
+	@ApiOperation({ summary: 'DM 채널 목록 조회', description: 'DM 채널에 대한 목록을 조회한다.' })
 	async findDmChannels(
 		@GetUser() user: User,
 		@Query('page', ParseIntPipe, PositiveIntPipe) page: number,

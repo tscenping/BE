@@ -30,10 +30,8 @@ export class RanksService {
     // redis에서 50~60위까지 조회한 뒤, 51~60위만 반환
     // userID 배열을 가지고 유저 정보를 조회
     // 유저 정보에 ranking 프로퍼티를 추가 ( redis에서 조회한 ranking을 넣어줌)
-    console.log('foundUsers: ', foundUsers); // dbg
 
     const rankUsers: RankUserReturnDto[] = foundUsers.map(user => ({ ...user, ranking: Number(userRanking) }));
-
     const totalItemCount = await this.userRepository.count();
     
     return {rankUsers, totalItemCount};
