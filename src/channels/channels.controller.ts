@@ -124,8 +124,9 @@ export class ChannelsController {
 	@ApiOperation({ summary: '채널 나가기', description: '유저가 채널을 나갈때 사용된다. 만약 유저가 채널에 존재하는 마지막 사람이라면 채널까지 삭제한다.' })
 	async updateChannelUser(
 		@GetUser() user: User,
-		@Body('channelId') channelId: number,
+		@Body('channelId', ParseIntPipe, PositiveIntPipe) channelId: number,
 	) {
+		console.log(channelId);
 		await this.channelsService.updateChannelUser(user.id, channelId);
 	}
 
