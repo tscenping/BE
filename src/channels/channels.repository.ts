@@ -66,6 +66,7 @@ export class ChannelsRepository extends Repository<Channel> {
 			JOIN channel c ON cu."channelId" = c.id
 			WHERE cu."userId" = $1
 			AND c."deletedAt" IS NULL
+			AND cu."deletedAt" IS NULL
 			GROUP BY "channelId", "name", "channelType"
 			LIMIT $2 OFFSET $3;
 			`,
@@ -82,7 +83,8 @@ export class ChannelsRepository extends Repository<Channel> {
 			FROM Channel c JOIN channel_user cu
 			ON c.id = cu."channelId"
 			WHERE cu."userId" = $1
-			AND c."deletedAt" IS NULL;
+			AND c."deletedAt" IS NULL
+			AND cu."deletedAt" IS NULL;
 		  `,
 			[userId],
 		);
@@ -101,6 +103,7 @@ export class ChannelsRepository extends Repository<Channel> {
 			WHERE c."channelType" = 'DM' 
 			AND u.id NOT IN ($1)
 			AND c."deletedAt" IS NULL
+			AND cu."deletedAt" IS NULL
 			LIMIT $2 OFFSET $3;
 			`,
 			[userId, DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
