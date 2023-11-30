@@ -14,13 +14,13 @@ import {
 } from '@nestjs/common';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { STATUS_MESSAGE_STRING } from 'src/common/constants';
 import { PositiveIntPipe } from 'src/common/pipes/positiveInt.pipe';
 import { BlocksService } from './blocks.service';
 import { User } from './entities/user.entity';
 import { FriendsService } from './friends.service';
 import { RanksService } from './ranks.service';
 import { UsersService } from './users.service';
+import { STATUS_MESSAGE_STRING } from 'src/common/constants';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard)

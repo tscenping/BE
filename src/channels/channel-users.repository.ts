@@ -3,7 +3,12 @@ import { DataSource, Repository } from 'typeorm';
 import { ChannelUser } from './entities/channel-user.entity';
 import { Logger } from '@nestjs/common';
 import { ChannelUserInfoReturnDto } from './dto/channel-user-info-return.dto';
-import { DBUpdateFailureException } from '../common/exception/custom-exception';
+import {
+	DBQueryErrorException,
+	DBUpdateFailureException,
+} from '../common/exception/custom-exception';
+import { ChannelUserType } from '../common/enum';
+import { number } from 'zod';
 
 export class ChannelUsersRepository extends Repository<ChannelUser> {
 	constructor(@InjectRepository(ChannelUser) private dataSource: DataSource) {
@@ -79,8 +84,54 @@ export class ChannelUsersRepository extends Repository<ChannelUser> {
 		return channelUserInfoList;
 	}
 
-	async softDeleteUserFromChannel(channelId: number) {
-		const result = await this.softDelete(channelId);
+	async updateChannelUserType(channelUserId: number) {
+		const result = await this.dataSource.query(
+			`
+			UPDATE channel_user
+			SET
+  			  "channelUserType" = CASE
+    			WHEN "channelUserType" = 'MEMBER' THEN 'ADMIN'
+    			WHEN "channelUserType" = 'ADMIN' THEN 'MEMBER'
+  			  END
+			WHERE id = $1
+			AND "deletedAt" IS NULL
+			RETURNING "channelUserType";
+			`,
+			[channelUserId],
+		);
+
+		if (result[1] !== 1)
+			throw DBQueryErrorException('update channelUserType failed');
+
+		return result[0][0];
+
+		// 임명 / 해제 분기 처리
+		// let result;
+		// if (receiverChannelUser.channelUserType === ChannelUserType.MEMBER) {
+		// 	result = await this.channelUsersRepository.update(
+		// 		receiverChannelUserId,
+		// 		{
+		// 			id: receiverChannelUserId,
+		// 			channelUserType: ChannelUserType.ADMIN,
+		// 		},
+		// 	);
+		// } else if (
+		// 	receiverChannelUser.channelUserType === ChannelUserType.ADMIN
+		// ) {
+		// 	result = await this.channelUsersRepository.update(
+		// 		receiverChannelUserId,
+		// 		{
+		// 			id: receiverChannelUserId,
+		// 			channelUserType: ChannelUserType.MEMBER,
+		// 		},
+		// 	);
+		// }
+		// if (!result || result.affected !== 1)
+		// 	throw DBUpdateFailureException('update channelUserType failed');
+	}
+
+	async softDeleteUserFromChannel(channelUserId: number) {
+		const result = await this.softDelete(channelUserId);
 		if (result.affected !== 1)
 			throw DBUpdateFailureException('delete user from channel failed');
 	}
