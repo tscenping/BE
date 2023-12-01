@@ -218,9 +218,10 @@ export class ChannelsController {
 	@Get('/all')
 	@ApiOperation({ summary: '채널 목록 조회', description: 'Public, Protected 채널에 대한 목록을 조회한다.' })
 	async findAllChannels(
+		@GetUser() user: User,
 		@Query('page', ParseIntPipe, PositiveIntPipe) page: number,
 	) {
-		return await this.channelsService.findAllChannels(page);
+		return await this.channelsService.findAllChannels(user.id, page);
 	}
 
 	// 내 참여 채널 목록 조회
