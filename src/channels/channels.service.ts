@@ -446,16 +446,19 @@ export class ChannelsService {
 		// TODO: cache 생성
 	}
 
-	async findAllChannels(page: number): Promise<ChannelListResponseDto> {
+	async findAllChannels(
+		userId: number,
+		page: number
+	): Promise<ChannelListResponseDto> {
 		const channels: ChannelListReturnDto[] =
-			await this.channelsRepository.findAllChannels(page);
+			await this.channelsRepository.findAllChannels(userId, page);
 		const totalDataSize: number = await this.channelsRepository.count({
 			where: {
 				channelType: ChannelType.PUBLIC || ChannelType.PROTECTED,
 			},
 		});
 		if (!channels) {
-			throw new InternalServerErrorException(`There is no channel`);
+			throw new BadRequestException(`There is no channel`);
 		}
 		return { channels, totalDataSize };
 	}
@@ -469,7 +472,7 @@ export class ChannelsService {
 		const totalDataSize: number =
 			await this.channelsRepository.countInvolved(userId);
 		if (!channels) {
-			throw new InternalServerErrorException(`There is no 'my channel'`);
+			throw new BadRequestException(`There is no 'my channel'`);
 		}
 
 		return { channels, totalDataSize };
@@ -487,7 +490,7 @@ export class ChannelsService {
 			},
 		});
 		if (!dmChannels) {
-			throw new InternalServerErrorException(`There is no 'dm channel'`);
+			throw new BadRequestException(`There is no 'dm channel'`);
 		}
 		return { dmChannels, totalItemCount };
 	}
