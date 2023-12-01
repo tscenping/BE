@@ -6,7 +6,9 @@ import {
 } from '@nestjs/common';
 import * as bycrypt from 'bcrypt';
 import { ChannelType, ChannelUserType } from 'src/common/enum';
+import { RedisRepository } from 'src/redis/redis.repository';
 import { UsersRepository } from 'src/users/users.repository';
+import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { ChannelInvitationRepository } from './channel-invitation.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
 import { ChannelsRepository } from './channels.repository';
@@ -18,11 +20,7 @@ import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
 import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
 import { DmChannelListResponseDto } from './dto/dmchannel-list-response.dto';
 import { DmChannelListReturnDto } from './dto/dmchannel-list-return.dto';
-import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
-import { InjectRedis } from '@liaoliaots/nestjs-redis';
-import { Redis } from 'ioredis';
-import { RedisRepository } from 'src/redis/redis.repository';
 
 @Injectable()
 export class ChannelsService {
@@ -450,18 +448,19 @@ export class ChannelsService {
 			if (
 				receiverChannelUser.channelUserType === ChannelUserType.OWNER ||
 				receiverChannelUser.channelUserType === ChannelUserType.ADMIN
-			)
+			) {
 				throw new BadRequestException(
 					`admin user ${giverUserId} cannot mute the owner/admin user ${receiverUserId}`,
 				);
+			}
 		}
 
-		// TODO: cache 생성
-		await this.redisRepository.setMuteUser(
-			receiverUserId.toString(),
-			giverUserId,
+		const createMuteParamDto = {
+			receiverUserId,
 			channelId,
-		);
+			giverUserId,
+		};
+		await this.redisRepository.setMuteUser(createMuteParamDto);
 	}
 
 	async findAllChannels(page: number): Promise<ChannelListResponseDto> {
