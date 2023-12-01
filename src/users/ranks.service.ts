@@ -1,24 +1,28 @@
-import { UsersRepository } from 'src/users/users.repository';
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { InjectRedis } from '@liaoliaots/nestjs-redis';
-import { Redis } from 'ioredis';
+import { UsersRepository } from 'src/users/users.repository';
+import { RedisRepository } from './../redis/redis.repository';
 import { RankUserResponseDto } from './dto/rank-user-response.dto';
 import { RankUserReturnDto } from './dto/rank-user-return.dto';
 
 @Injectable()
 export class RanksService {
 	constructor(
-		@InjectRedis() private readonly redis: Redis,
 		private readonly userRepository: UsersRepository,
+		private readonly redisRepository: RedisRepository,
 	) {}
 
 	async findRanksWithPage(page: number): Promise<RankUserResponseDto> {
 		//userIDRanking: [userId, userId, userId, ...]
-		const userRanking: string[] = await this.redis.zrange(
+		// const userRanking: string[] = await this.redis.zrange(
+		// 	'rankings',
+		// 	(page - 1) * 10,
+		// 	page * 10 - 1,
+		// );
+		const userRanking = await this.redisRepository.getRanking(
 			'rankings',
-			(page - 1) * 10,
-			page * 10 - 1,
+			page,
 		);
+
 		if (!userRanking) {
 			throw new BadRequestException(`unavailable ranking property`);
 		}

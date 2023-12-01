@@ -36,7 +36,7 @@ export class Channel extends BaseEntity {
 	@Length(8, 16)
 	@Matches(CHANNEL_PASSWORD_REGEXP)
 	@IsOptional()
-	password?: string | null;
+	password: string | null;
 
 	@Column({ default: null, type: 'integer' })
 	@IsOptional()

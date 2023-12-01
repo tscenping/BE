@@ -10,6 +10,7 @@ import { User } from 'src/users/entities/user.entity';
 import { UsersRepository } from 'src/users/users.repository';
 import { ChannelInvitationRepository } from './channel-invitation.repository';
 import { ChannelInvitation } from './entities/channel-invitation.entity';
+import { RedisRepository } from 'src/redis/redis.repository';
 
 @Module({
 	imports: [
@@ -27,6 +28,7 @@ import { ChannelInvitation } from './entities/channel-invitation.entity';
 		ChannelUsersRepository,
 		ChannelInvitationRepository,
 		UsersRepository,
+		RedisRepository,
 	],
 })
 export class ChannelsModule {}

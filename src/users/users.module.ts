@@ -13,6 +13,7 @@ import { BlocksRepository } from './blocks.repository';
 import { GameRepository } from 'src/game/game.repository';
 import { Game } from 'src/game/entities/game.entity';
 import { RanksService } from './ranks.service';
+import { RedisRepository } from 'src/redis/redis.repository';
 
 @Module({
 	imports: [TypeOrmModule.forFeature([User, Friend, Block, Game])],
@@ -26,6 +27,7 @@ import { RanksService } from './ranks.service';
 		FriendsRepository,
 		BlocksRepository,
 		GameRepository,
+		RedisRepository,
 	],
 	exports: [UsersService],
 })
