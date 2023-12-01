@@ -1,6 +1,7 @@
+import { InjectRedis } from '@liaoliaots/nestjs-redis';
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { Redis } from 'ioredis';
 import { UsersRepository } from 'src/users/users.repository';
-import { RedisRepository } from './../redis/redis.repository';
 import { RankUserResponseDto } from './dto/rank-user-response.dto';
 import { RankUserReturnDto } from './dto/rank-user-return.dto';
 
@@ -8,7 +9,7 @@ import { RankUserReturnDto } from './dto/rank-user-return.dto';
 export class RanksService {
 	constructor(
 		private readonly userRepository: UsersRepository,
-		private readonly redisRepository: RedisRepository,
+		@InjectRedis() private readonly redis: Redis,
 	) {}
 
 	async findRanksWithPage(page: number): Promise<RankUserResponseDto> {
@@ -18,9 +19,10 @@ export class RanksService {
 		// 	(page - 1) * 10,
 		// 	page * 10 - 1,
 		// );
-		const userRanking = await this.redisRepository.getRanking(
+		const userRanking = await this.redis.zrange(
 			'rankings',
-			page,
+			(page - 1) * 10,
+			page * 10 - 1,
 		);
 
 		if (!userRanking) {

@@ -10,6 +10,7 @@ import {
 	Query,
 	UseGuards,
 } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { ChannelType } from 'src/common/enum';
@@ -21,10 +22,9 @@ import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
 import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
 import { CreateInvitationRequestDto } from './dto/create-invitation-request.dto';
 import { JoinChannelRequestDto } from './dto/join-channel-request.dto';
-import { UpdateChannelUserRequestDto } from './dto/update-channel-user-request.dto';
-import { UpdateChannelPwdReqeustDto } from './dto/update-channel-pwd-reqeust.dto';
 import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { UpdateChannelPwdReqeustDto } from './dto/update-channel-pwd-reqeust.dto';
+import { UpdateChannelUserRequestDto } from './dto/update-channel-user-request.dto';
 
 @Controller('channels')
 @ApiTags('channels')

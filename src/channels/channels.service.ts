@@ -1,3 +1,4 @@
+import { InjectRedis } from '@liaoliaots/nestjs-redis';
 import {
 	BadRequestException,
 	Injectable,
@@ -5,8 +6,9 @@ import {
 	Logger,
 } from '@nestjs/common';
 import * as bycrypt from 'bcrypt';
+import { Redis } from 'ioredis';
+import { MUTE_TIME } from 'src/common/constants';
 import { ChannelType, ChannelUserType } from 'src/common/enum';
-import { RedisRepository } from 'src/redis/redis.repository';
 import { UsersRepository } from 'src/users/users.repository';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { ChannelInvitationRepository } from './channel-invitation.repository';
@@ -29,7 +31,7 @@ export class ChannelsService {
 		private readonly channelUsersRepository: ChannelUsersRepository,
 		private readonly channelInvitationRepository: ChannelInvitationRepository,
 		private readonly usersRepository: UsersRepository,
-		private readonly redisRepository: RedisRepository,
+		@InjectRedis() private readonly redis: Redis,
 	) {}
 
 	private readonly logger = new Logger(ChannelsService.name);
@@ -100,7 +102,6 @@ export class ChannelsService {
 				`user ${userId} is not in channel ${channelId}`,
 			);
 		}
-		// TODO: isBanned 확인하기
 
 		// 채널 유저 정보 조회
 		const channelUserInfoList =
@@ -171,6 +172,7 @@ export class ChannelsService {
 		const channelUser = await this.channelUsersRepository.findOne({
 			where: { userId, channelId },
 			withDeleted: true,
+			order: { createdAt: 'DESC' },
 		});
 		if (
 			channelUser &&
@@ -455,12 +457,19 @@ export class ChannelsService {
 			}
 		}
 
-		const createMuteParamDto = {
-			receiverUserId,
-			channelId,
-			giverUserId,
-		};
-		await this.redisRepository.setMuteUser(createMuteParamDto);
+		// await this.redis.set(`mute:${channelId}:${receiverUserIdKey}:1`, '');
+		// await this.redis.set(`mute:${channelId}:${receiverUserIdKey}:2`, '');
+		// await this.redis.expire(receiverUserIdKey, MUTE_TIME); // TODO: 30초로 변경
+		// const key = `mute:${channelId}:${receiverUserIdKey}:\*`;
+		// const Mutelist = await this.redis.keys(key);
+		// console.log('Mutelist: ', Mutelist);
+		// redis에 mute 정보 저장
+		const muteKey = `mute:${channelId}:${receiverUserId}:${giverUserId}`;
+		// redis에 mute 정보 저장
+		const result = await this.redis.set(muteKey, '');
+		// mute 정보 만료 시간 설정
+		await this.redis.expire(muteKey, MUTE_TIME); // TODO: 30초로 변경
+		console.log('result: ', result);
 	}
 
 	async findAllChannels(page: number): Promise<ChannelListResponseDto> {
