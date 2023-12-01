@@ -1,7 +1,7 @@
-import { SwaggerModule } from '@nestjs/swagger';
 import { RedisModule } from '@liaoliaots/nestjs-redis';
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigType } from '@nestjs/config';
+import { SwaggerModule } from '@nestjs/swagger';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -19,8 +19,12 @@ import { UsersModule } from './users/users.module';
 	imports: [
 		ConfigModule.forRoot({
 			isGlobal: true,
-			envFilePath: './BE-config/.env',
+			envFilePath:
+				process.env.NODE_ENV === 'test'
+					? './BE-config/.env.test'
+					: './BE-config/.env',
 			load: [
+				redisConfig,
 				ftConfig,
 				// userConfig,
 				pgadminConfig,
@@ -39,7 +43,6 @@ import { UsersModule } from './users/users.module';
 			imports: [ConfigModule.forFeature(redisConfig)],
 			useFactory: (redisConfigure: ConfigType<typeof redisConfig>) =>
 				redisConfigure,
-			
 		}),
 		AuthModule,
 		UsersModule,

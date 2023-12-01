@@ -2,7 +2,7 @@ export type UserProfileResponseDto = {
 	id: number;
 	nickname: string;
 	avatar: string;
-	statusMessage: string;
+	statusMessage: string | null;
 	loseCount: number;
 	winCount: number;
 	totalCount: number;
@@ -17,7 +17,7 @@ export type UserProfileReturnDto = {
 	id: number;
 	nickname: string;
 	avatar: string;
-	statusMessage: string;
+	statusMessage: string | null;
 	loseCount: number;
 	winCount: number;
 	totalCount: number;

@@ -72,12 +72,12 @@ export class User extends BaseEntity {
 	@IsString()
 	chatSocketId: string;
 
-	@Column({ default: null })
+	@Column({ default: null, type: 'varchar' })
 	@Length(1, 20)
 	@IsString()
 	@IsOptional()
 	@Matches(STATUS_MESSAGE_REGEXP)
-	statusMessage: string;
+	statusMessage: string | null;
 
 	@Column({ default: UserStatus.OFFLINE })
 	@IsNotEmpty()

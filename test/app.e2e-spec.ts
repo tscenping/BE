@@ -1,24 +1,37 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
-import { AppModule } from '../src/app.module';
+import { DataSource } from 'typeorm';
+import { TestDBInitiator } from './config.e2e';
+import { Test, TestingModule } from '@nestjs/testing';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { AppModule } from 'src/app.module';
 
-describe('AppController (e2e)', () => {
-  let app: INestApplication;
+describe('HelloController (e2e)', () => {
+	let app: INestApplication;
+	let dataSource: DataSource;
+	let databaseConfig: TestDBInitiator;
 
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
+	beforeAll(async () => {
+		databaseConfig = new TestDBInitiator();
+		dataSource = await databaseConfig.createTestDataSource(
+			databaseConfig.dbOptions,
+		);
 
-    app = moduleFixture.createNestApplication();
-    await app.init();
-  });
+		const moduleFixture: TestingModule = await Test.createTestingModule({
+			imports: [
+				TypeOrmModule.forRoot({
+					...databaseConfig.dbOptions,
+					autoLoadEntities: true,
+				}),
+				AppModule,
+			],
+		}).compile();
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
-  });
+		app = moduleFixture.createNestApplication();
+		await app.init();
+	});
+
+	afterAll(async () => {
+		await dataSource.destroy();
+		await app.close();
+	});
 });

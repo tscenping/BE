@@ -1,3 +1,4 @@
+import { InjectRedis } from '@liaoliaots/nestjs-redis';
 import {
 	BadRequestException,
 	Injectable,
@@ -5,8 +6,11 @@ import {
 	Logger,
 } from '@nestjs/common';
 import * as bycrypt from 'bcrypt';
+import { Redis } from 'ioredis';
+import { MUTE_TIME } from 'src/common/constants';
 import { ChannelType, ChannelUserType } from 'src/common/enum';
 import { UsersRepository } from 'src/users/users.repository';
+import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { ChannelInvitationRepository } from './channel-invitation.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
 import { ChannelsRepository } from './channels.repository';
@@ -18,7 +22,6 @@ import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
 import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
 import { DmChannelListResponseDto } from './dto/dmchannel-list-response.dto';
 import { DmChannelListReturnDto } from './dto/dmchannel-list-return.dto';
-import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
 
 @Injectable()
@@ -28,6 +31,7 @@ export class ChannelsService {
 		private readonly channelUsersRepository: ChannelUsersRepository,
 		private readonly channelInvitationRepository: ChannelInvitationRepository,
 		private readonly usersRepository: UsersRepository,
+		@InjectRedis() private readonly redis: Redis,
 	) {}
 
 	private readonly logger = new Logger(ChannelsService.name);
@@ -98,7 +102,6 @@ export class ChannelsService {
 				`user ${userId} is not in channel ${channelId}`,
 			);
 		}
-		// TODO: isBanned 확인하기
 
 		// 채널 유저 정보 조회
 		const channelUserInfoList =
@@ -165,24 +168,31 @@ export class ChannelsService {
 		// 존재하는 channel인지 확인
 		const channel = await this.checkChannelExist(channelId);
 
-		// user가 channel에 없는지 확인
+		// user가 channel에 없는지, ban 당한 적이 없는지 확인
 		const channelUser = await this.channelUsersRepository.findOne({
 			where: { userId, channelId },
+			withDeleted: true,
+			order: { createdAt: 'DESC' },
 		});
-		if (channelUser)
+		if (
+			channelUser &&
+			((channelUser.deletedAt !== null && channelUser.isBanned) ||
+				channelUser.deletedAt === null)
+		) {
 			throw new BadRequestException(
-				`user already in this channel ${channelId}`,
+				`유저는 채널에 이미 참여중이거나, 밴 당한 이력이 있습니다.`,
 			);
+		}
 
 		// channel이 프로텍티드라면 비밀번호가 맞는지 확인
 		if (channel.channelType === ChannelType.PROTECTED) {
-			if (!password)
+			if (!password) {
 				throw new BadRequestException(
 					'this is protected channel. enter password',
 				);
+			}
 
-			const channelPassword = channel.password as string;
-			if (!(await bycrypt.compare(password, channelPassword))) {
+			if (!bycrypt.compare(password, channel.password!)) {
 				throw new BadRequestException(
 					'user cannot join this protected channel. check password',
 				);
@@ -317,6 +327,7 @@ export class ChannelsService {
 
 		return result.channelUserType === ChannelUserType.ADMIN;
 	}
+
 	async kickChannelUser(giverUserId: number, receiverChannelUserId: number) {
 		// 유효한 channelUserId인지 확인
 		const receiverChannelUser = await this.checkChannelUserExist(
@@ -388,10 +399,11 @@ export class ChannelsService {
 			if (
 				receiverChannelUser.channelUserType === ChannelUserType.OWNER ||
 				receiverChannelUser.channelUserType === ChannelUserType.ADMIN
-			)
+			) {
 				throw new BadRequestException(
 					`admin user ${giverUserId} cannot ban the owner/admin user ${receiverUserId}`,
 				);
+			}
 		}
 
 		const result = await this.channelUsersRepository.update(
@@ -407,6 +419,7 @@ export class ChannelsService {
 			receiverChannelUserId,
 		);
 	}
+
 	async muteChannelUser(giverUserId: number, receiverChannelUserId: number) {
 		// 유효한 channelUserId인지 확인
 		const receiverChannelUser = await this.checkChannelUserExist(
@@ -437,13 +450,26 @@ export class ChannelsService {
 			if (
 				receiverChannelUser.channelUserType === ChannelUserType.OWNER ||
 				receiverChannelUser.channelUserType === ChannelUserType.ADMIN
-			)
+			) {
 				throw new BadRequestException(
 					`admin user ${giverUserId} cannot mute the owner/admin user ${receiverUserId}`,
 				);
+			}
 		}
 
-		// TODO: cache 생성
+		// await this.redis.set(`mute:${channelId}:${receiverUserIdKey}:1`, '');
+		// await this.redis.set(`mute:${channelId}:${receiverUserIdKey}:2`, '');
+		// await this.redis.expire(receiverUserIdKey, MUTE_TIME); // TODO: 30초로 변경
+		// const key = `mute:${channelId}:${receiverUserIdKey}:\*`;
+		// const Mutelist = await this.redis.keys(key);
+		// console.log('Mutelist: ', Mutelist);
+		// redis에 mute 정보 저장
+		const muteKey = `mute:${channelId}:${receiverUserId}:${giverUserId}`;
+		// redis에 mute 정보 저장
+		const result = await this.redis.set(muteKey, '');
+		// mute 정보 만료 시간 설정
+		await this.redis.expire(muteKey, MUTE_TIME); // TODO: 30초로 변경
+		console.log('result: ', result);
 	}
 
 	async findAllChannels(
@@ -558,10 +584,12 @@ export class ChannelsService {
 		const channelUser = await this.channelUsersRepository.findOne({
 			where: { userId, channelId },
 		});
-		if (!channelUser)
+
+		if (!channelUser) {
 			throw new BadRequestException(
 				`user does not in this channel ${channelId}`,
 			);
+		}
 		return channelUser;
 	}
 
