@@ -55,7 +55,7 @@ export class ChannelsRepository extends Repository<Channel> {
       		ORDER BY c."createdAt" DESC
 			LIMIT $2 OFFSET $3;
 			`,
-			[userId ,DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
+			[userId, DEFAULT_PAGE_SIZE, (page - 1) * DEFAULT_PAGE_SIZE],
 		);
 		return channels;
 	}
