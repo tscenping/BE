@@ -1,5 +1,6 @@
 import { ConflictException, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Socket } from 'socket.io';
 import { User } from 'src/users/entities/user.entity';
 import { UsersRepository } from '../users/users.repository';
 import { FtUserParamDto } from './dto/ft-user-param.dto';
@@ -59,5 +60,9 @@ export class AuthService {
 		if (user) {
 			throw new ConflictException('이미 존재하는 닉네임입니다.');
 		}
+	}
+
+	async getUserFromSocket(client: Socket) {
+		const token = client.handshake.headers.cookie;
 	}
 }

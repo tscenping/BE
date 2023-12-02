@@ -1,9 +1,9 @@
+import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import * as cookieParser from 'cookie-parser';
 import * as fs from 'fs';
 import { AppModule } from './app.module';
 import { ToHttpFilter } from './common/exception/custom-exception.filter';
-import { ValidationPipe } from '@nestjs/common';
 import { setupSwagger } from './config/swagger.config';
 
 async function bootstrap() {
@@ -21,11 +21,12 @@ async function bootstrap() {
 		origin: 'https://localhost:8001',
 	});
 	app.use(cookieParser());
-	
+
 	// app.useGlobalInterceptors(new LoggingInterceptor());
 	app.useGlobalFilters(new ToHttpFilter());
 	app.useGlobalPipes(new ValidationPipe());
-	
+	// app.useWebSocketAdapter(new IoAdapter(app)); // NestJS에서는 기본적으로 socket.io를 사용하고 있다.
+
 	setupSwagger(app);
 	await app.listen(3000);
 }

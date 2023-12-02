@@ -153,6 +153,10 @@ export class UsersService {
 		}
 	}
 
+	async initAllSocketIdAndUserStatus() {
+		await this.userRepository.initAllSocketIdAndUserStatus();
+	}
+
 	// TODO: test용 메서드. 추후 삭제
 	async findUserByNickname(nickname: string) {
 		const user = await this.userRepository.findOne({
