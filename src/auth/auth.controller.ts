@@ -1,5 +1,5 @@
 import { Body, Controller, Patch, Post, Res, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { User } from 'src/users/entities/user.entity';
 import { SignupRequestDto } from '../users/dto/signup-request.dto';
@@ -88,9 +88,16 @@ export class AuthController {
 		summary: '테스트용 계정 생성',
 		description: '테스트용 계정 생성',
 	})
+	@ApiParam({
+		name: 'nickname',
+		description:
+			'테스트용 닉네임. 이미 존재하는 닉네임이면 해당 유저의 정보를 반환한다.',
+	})
 	@ApiResponse({ status: 201, description: '토큰 발급 성공' })
 	async testSignIn(@Body('nickname') nickname: string, @Res() res: Response) {
+		// 이미 존재하는 유저인지 확인한다.
 		const existUser = await this.usersService.findUserByNickname(nickname);
+		// 이미 존재하는 유저라면 토큰을 발급한다.
 		if (existUser) {
 			const { jwtAccessToken, jwtRefreshToken } =
 				await this.authService.generateJwtToken(existUser);
