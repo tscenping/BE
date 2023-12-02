@@ -16,39 +16,6 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
--- ALTER TABLE IF EXISTS ONLY public."user" DROP CONSTRAINT IF EXISTS "UQ_e2364281027b926b879fa2fa1e0";
--- ALTER TABLE IF EXISTS ONLY public.block DROP CONSTRAINT IF EXISTS "PK_d0925763efb591c2e2ffb267572";
--- ALTER TABLE IF EXISTS ONLY public."user" DROP CONSTRAINT IF EXISTS "PK_cace4a159ff9f2512dd42373760";
--- ALTER TABLE IF EXISTS ONLY public.game_invitation DROP CONSTRAINT IF EXISTS "PK_a05ce7a2b5e34ae69053916df4d";
--- ALTER TABLE IF EXISTS ONLY public.channel_user DROP CONSTRAINT IF EXISTS "PK_7e5d4007402f6c41e35003494f8";
--- ALTER TABLE IF EXISTS ONLY public.channel DROP CONSTRAINT IF EXISTS "PK_590f33ee6ee7d76437acf362e39";
--- ALTER TABLE IF EXISTS ONLY public.game DROP CONSTRAINT IF EXISTS "PK_352a30652cd352f552fef73dec5";
--- ALTER TABLE IF EXISTS ONLY public.channel_invitation DROP CONSTRAINT IF EXISTS "PK_222ad878245e3fdca1e14e52a12";
--- ALTER TABLE IF EXISTS ONLY public.friend DROP CONSTRAINT IF EXISTS "PK_1b301ac8ac5fcee876db96069b6";
--- ALTER TABLE IF EXISTS public."user" ALTER COLUMN id DROP DEFAULT;
--- ALTER TABLE IF EXISTS public.game_invitation ALTER COLUMN id DROP DEFAULT;
--- ALTER TABLE IF EXISTS public.game ALTER COLUMN id DROP DEFAULT;
--- ALTER TABLE IF EXISTS public.friend ALTER COLUMN id DROP DEFAULT;
--- ALTER TABLE IF EXISTS public.channel_user ALTER COLUMN id DROP DEFAULT;
--- ALTER TABLE IF EXISTS public.channel_invitation ALTER COLUMN id DROP DEFAULT;
--- ALTER TABLE IF EXISTS public.channel ALTER COLUMN id DROP DEFAULT;
--- ALTER TABLE IF EXISTS public.block ALTER COLUMN id DROP DEFAULT;
--- DROP SEQUENCE IF EXISTS public.user_id_seq;
--- DROP TABLE IF EXISTS public."user";
--- DROP SEQUENCE IF EXISTS public.game_invitation_id_seq;
--- DROP TABLE IF EXISTS public.game_invitation;
--- DROP SEQUENCE IF EXISTS public.game_id_seq;
--- DROP TABLE IF EXISTS public.game;
--- DROP SEQUENCE IF EXISTS public.friend_id_seq;
--- DROP TABLE IF EXISTS public.friend;
--- DROP SEQUENCE IF EXISTS public.channel_user_id_seq;
--- DROP TABLE IF EXISTS public.channel_user;
--- DROP SEQUENCE IF EXISTS public.channel_invitation_id_seq;
--- DROP TABLE IF EXISTS public.channel_invitation;
--- DROP SEQUENCE IF EXISTS public.channel_id_seq;
--- DROP TABLE IF EXISTS public.channel;
--- DROP SEQUENCE IF EXISTS public.block_id_seq;
--- DROP TABLE IF EXISTS public.block;
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -57,7 +24,7 @@ SET default_table_access_method = heap;
 -- Name: block; Type: TABLE; Schema: public; Owner: jiyun
 --
 
-CREATE TABLE public.block (
+CREATE TABLE IF NOT EXISTS public.block (
     id integer NOT NULL,
     "createdAt" timestamp with time zone DEFAULT now() NOT NULL,
     "updatedAt" timestamp with time zone DEFAULT now() NOT NULL,
@@ -95,7 +62,7 @@ ALTER SEQUENCE public.block_id_seq OWNED BY public.block.id;
 -- Name: channel; Type: TABLE; Schema: public; Owner: jiyun
 --
 
-CREATE TABLE public.channel (
+CREATE TABLE IF NOT EXISTS public.channel (
     id integer NOT NULL,
     "createdAt" timestamp with time zone DEFAULT now() NOT NULL,
     "updatedAt" timestamp with time zone DEFAULT now() NOT NULL,
@@ -135,7 +102,7 @@ ALTER SEQUENCE public.channel_id_seq OWNED BY public.channel.id;
 -- Name: channel_invitation; Type: TABLE; Schema: public; Owner: jiyun
 --
 
-CREATE TABLE public.channel_invitation (
+CREATE TABLE IF NOT EXISTS public.channel_invitation (
     id integer NOT NULL,
     "createdAt" timestamp with time zone DEFAULT now() NOT NULL,
     "updatedAt" timestamp with time zone DEFAULT now() NOT NULL,
@@ -174,7 +141,7 @@ ALTER SEQUENCE public.channel_invitation_id_seq OWNED BY public.channel_invitati
 -- Name: channel_user; Type: TABLE; Schema: public; Owner: jiyun
 --
 
-CREATE TABLE public.channel_user (
+CREATE TABLE IF NOT EXISTS public.channel_user (
     id integer NOT NULL,
     "createdAt" timestamp with time zone DEFAULT now() NOT NULL,
     "updatedAt" timestamp with time zone DEFAULT now() NOT NULL,
@@ -214,7 +181,7 @@ ALTER SEQUENCE public.channel_user_id_seq OWNED BY public.channel_user.id;
 -- Name: friend; Type: TABLE; Schema: public; Owner: jiyun
 --
 
-CREATE TABLE public.friend (
+CREATE TABLE IF NOT EXISTS public.friend (
     id integer NOT NULL,
     "createdAt" timestamp with time zone DEFAULT now() NOT NULL,
     "updatedAt" timestamp with time zone DEFAULT now() NOT NULL,
@@ -252,7 +219,7 @@ ALTER SEQUENCE public.friend_id_seq OWNED BY public.friend.id;
 -- Name: game; Type: TABLE; Schema: public; Owner: jiyun
 --
 
-CREATE TABLE public.game (
+CREATE TABLE IF NOT EXISTS public.game (
     id integer NOT NULL,
     "createdAt" timestamp with time zone DEFAULT now() NOT NULL,
     "updatedAt" timestamp with time zone DEFAULT now() NOT NULL,
@@ -296,7 +263,7 @@ ALTER SEQUENCE public.game_id_seq OWNED BY public.game.id;
 -- Name: game_invitation; Type: TABLE; Schema: public; Owner: jiyun
 --
 
-CREATE TABLE public.game_invitation (
+CREATE TABLE IF NOT EXISTS public.game_invitation (
     id integer NOT NULL,
     "createdAt" timestamp with time zone DEFAULT now() NOT NULL,
     "updatedAt" timestamp with time zone DEFAULT now() NOT NULL,
@@ -335,7 +302,7 @@ ALTER SEQUENCE public.game_invitation_id_seq OWNED BY public.game_invitation.id;
 -- Name: user; Type: TABLE; Schema: public; Owner: jiyun
 --
 
-CREATE TABLE public."user" (
+CREATE TABLE IF NOT EXISTS public."user" (
     id integer NOT NULL,
     "createdAt" timestamp with time zone DEFAULT now() NOT NULL,
     "updatedAt" timestamp with time zone DEFAULT now() NOT NULL,
