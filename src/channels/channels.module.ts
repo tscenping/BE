@@ -18,6 +18,8 @@ import { ChannelsService } from './channels.service';
 import { ChannelInvitation } from './entities/channel-invitation.entity';
 import { ChannelUser } from './entities/channel-user.entity';
 import { Channel } from './entities/channel.entity';
+import { AuthService } from 'src/auth/auth.service';
+import { JwtService } from '@nestjs/jwt';
 
 @Module({
 	imports: [
@@ -35,6 +37,8 @@ import { Channel } from './entities/channel.entity';
 	providers: [
 		ChannelsService,
 		UsersService,
+		AuthService,
+		JwtService,
 		ChannelsRepository,
 		ChannelUsersRepository,
 		ChannelInvitationRepository,

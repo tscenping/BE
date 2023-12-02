@@ -72,7 +72,7 @@ export class User extends BaseEntity {
 	@Column({ default: null, nullable: true, type: 'varchar' })
 	@IsString()
 	@IsOptional()
-	chatSocketId: string | null;
+	channelSocketId: string | null;
 
 	@Column({ default: null, type: 'varchar' })
 	@Length(1, 20)

@@ -91,7 +91,7 @@ export class UsersRepository extends Repository<User> {
 			.update()
 			.set({
 				gameSocketId: null,
-				chatSocketId: null,
+				channelSocketId: null,
 				status: UserStatus.OFFLINE,
 			})
 			.execute();

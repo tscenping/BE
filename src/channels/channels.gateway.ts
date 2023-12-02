@@ -10,6 +10,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { AuthService } from 'src/auth/auth.service';
+import { UsersRepository } from 'src/users/users.repository';
 import { UsersService } from 'src/users/users.service';
 
 @WebSocketGateway({ namespace: 'channels' })
@@ -19,6 +20,7 @@ export class ChannelsGateway
 	constructor(
 		private readonly usersService: UsersService,
 		private readonly authService: AuthService,
+		private readonly usersRepository: UsersRepository,
 	) {}
 
 	@WebSocketServer()
@@ -30,11 +32,16 @@ export class ChannelsGateway
 		this.logger.log('afteInit!');
 		this.server = server;
 		// 모든 유저의 소켓 관련 정보를 초기화한다.
-		this.usersService.initAllSocketIdAndUserStatus();
+		this.usersRepository.initAllSocketIdAndUserStatus();
 	}
 
 	async handleConnection(client: Socket, ...args: any[]) {
-		// const user = await this.authService.getUserFromSocket(client);
+		const user = await this.authService.getUserFromSocket(client);
+		if (!user) {
+			return;
+		}
+		this.logger.log(`Client connected: userId: ${user.id}`);
+		this.usersRepository.update(user.id, { channelSocketId: client.id });
 	}
 
 	handleDisconnect(client: any) {

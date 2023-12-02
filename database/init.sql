@@ -317,7 +317,7 @@ CREATE TABLE IF NOT EXISTS public."user" (
     "loseCount" integer DEFAULT 0 NOT NULL,
     "refreshToken" character varying,
     "gameSocketId" character varying,
-    "chatSocketId" character varying,
+    "channelSocketId" character varying,
     "statusMessage" character varying,
     status character varying DEFAULT 'OFFLINE'::character varying NOT NULL
 );
@@ -421,6 +421,7 @@ INSERT INTO public.block (id, "createdAt", "updatedAt", "deletedAt", "fromUserId
 INSERT INTO public.channel (id, "createdAt", "updatedAt", "deletedAt", name, "channelType", password, "ownerId") VALUES (1, '2023-12-02 03:20:33.185711+00', '2023-12-02 03:20:33.185711+00', NULL, 'publicch1', 'PUBLIC', NULL, 5);
 INSERT INTO public.channel (id, "createdAt", "updatedAt", "deletedAt", name, "channelType", password, "ownerId") VALUES (2, '2023-12-02 05:12:25.658717+00', '2023-12-02 05:12:25.658717+00', NULL, 'protected', 'PROTECTED', '$2b$10$CCF.sHJSpvI79KR3UNus2eC4U2izenVra3c7KjnGA2UFKxwjt.ZCy', 1);
 INSERT INTO public.channel (id, "createdAt", "updatedAt", "deletedAt", name, "channelType", password, "ownerId") VALUES (3, '2023-12-02 05:28:14.898349+00', '2023-12-02 05:28:14.898349+00', NULL, '상예키와디엠', 'DM', NULL, 4);
+INSERT INTO public.channel (id, "createdAt", "updatedAt", "deletedAt", name, "channelType", password, "ownerId") VALUES (4, '2023-12-02 06:28:49.86125+00', '2023-12-02 06:28:49.86125+00', NULL, '윱최와디엠', 'DM', NULL, 4);
 
 
 --
@@ -439,6 +440,8 @@ INSERT INTO public.channel_user (id, "createdAt", "updatedAt", "deletedAt", "cha
 INSERT INTO public.channel_user (id, "createdAt", "updatedAt", "deletedAt", "channelId", "userId", "channelUserType", "isBanned") VALUES (4, '2023-12-02 05:26:15.969314+00', '2023-12-02 05:26:15.969314+00', NULL, 1, 4, 'MEMBER', false);
 INSERT INTO public.channel_user (id, "createdAt", "updatedAt", "deletedAt", "channelId", "userId", "channelUserType", "isBanned") VALUES (5, '2023-12-02 05:28:14.909283+00', '2023-12-02 05:28:14.909283+00', NULL, 3, 4, 'OWNER', false);
 INSERT INTO public.channel_user (id, "createdAt", "updatedAt", "deletedAt", "channelId", "userId", "channelUserType", "isBanned") VALUES (6, '2023-12-02 05:28:14.915778+00', '2023-12-02 05:28:14.915778+00', NULL, 3, 5, 'MEMBER', false);
+INSERT INTO public.channel_user (id, "createdAt", "updatedAt", "deletedAt", "channelId", "userId", "channelUserType", "isBanned") VALUES (7, '2023-12-02 06:28:49.869352+00', '2023-12-02 06:28:49.869352+00', NULL, 4, 4, 'OWNER', false);
+INSERT INTO public.channel_user (id, "createdAt", "updatedAt", "deletedAt", "channelId", "userId", "channelUserType", "isBanned") VALUES (8, '2023-12-02 06:28:49.87205+00', '2023-12-02 06:28:49.87205+00', NULL, 4, 1, 'MEMBER', false);
 
 
 --
@@ -475,11 +478,11 @@ INSERT INTO public.friend (id, "createdAt", "updatedAt", "deletedAt", "fromUserI
 -- Data for Name: user; Type: TABLE DATA; Schema: public; Owner: jiyun
 --
 
-INSERT INTO public."user" (id, "createdAt", "updatedAt", "deletedAt", nickname, avatar, email, "isMfaEnabled", "ladderScore", "ladderMaxScore", "winCount", "loseCount", "refreshToken", "gameSocketId", "chatSocketId", "statusMessage", status) VALUES (1, '2023-12-02 03:19:34.302102+00', '2023-12-02 05:23:40.066913+00', NULL, 'yubchoi', NULL, 'yubchoi@student.42seoul.kr', false, 1200, 1200, 0, 0, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzAxNDk0NjIwLCJleHAiOjE3MDIwOTk0MjB9.oKRM-lR_0G1oB6rFt8UslxwVjaYxNP7kotXgNdqks_g', NULL, NULL, NULL, 'OFFLINE');
-INSERT INTO public."user" (id, "createdAt", "updatedAt", "deletedAt", nickname, avatar, email, "isMfaEnabled", "ladderScore", "ladderMaxScore", "winCount", "loseCount", "refreshToken", "gameSocketId", "chatSocketId", "statusMessage", status) VALUES (2, '2023-12-02 03:19:48.160854+00', '2023-12-02 05:23:43.66131+00', NULL, 'jiyun', NULL, 'jiyun@student.42seoul.kr', false, 1200, 1200, 0, 0, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiaWF0IjoxNzAxNDk0NjIzLCJleHAiOjE3MDIwOTk0MjN9.Q6YigxUyghkzZZWLVnJmXN6nvdY8HPi1aLqGcrH1Qos', NULL, NULL, NULL, 'OFFLINE');
-INSERT INTO public."user" (id, "createdAt", "updatedAt", "deletedAt", nickname, avatar, email, "isMfaEnabled", "ladderScore", "ladderMaxScore", "winCount", "loseCount", "refreshToken", "gameSocketId", "chatSocketId", "statusMessage", status) VALUES (5, '2023-12-02 03:20:03.833044+00', '2023-12-02 05:23:53.352249+00', NULL, 'sangyeki', NULL, 'sangyeki@student.42seoul.kr', false, 1200, 1200, 0, 0, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwiaWF0IjoxNzAxNDk0NjMzLCJleHAiOjE3MDIwOTk0MzN9.vRz9CsHVydWjeIa6Lne7SECZuDOztadWVBugepxYpIQ', NULL, NULL, NULL, 'OFFLINE');
-INSERT INTO public."user" (id, "createdAt", "updatedAt", "deletedAt", nickname, avatar, email, "isMfaEnabled", "ladderScore", "ladderMaxScore", "winCount", "loseCount", "refreshToken", "gameSocketId", "chatSocketId", "statusMessage", status) VALUES (3, '2023-12-02 03:19:53.482907+00', '2023-12-02 05:23:59.041446+00', NULL, 'jang-cho', NULL, 'jang-cho@student.42seoul.kr', false, 1200, 1200, 0, 0, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiaWF0IjoxNzAxNDk0NjM5LCJleHAiOjE3MDIwOTk0Mzl9._d_WJ7XL8l8vdZFOlb7lCc4MRQkVREZm0eqEYtawM_E', NULL, NULL, NULL, 'OFFLINE');
-INSERT INTO public."user" (id, "createdAt", "updatedAt", "deletedAt", nickname, avatar, email, "isMfaEnabled", "ladderScore", "ladderMaxScore", "winCount", "loseCount", "refreshToken", "gameSocketId", "chatSocketId", "statusMessage", status) VALUES (4, '2023-12-02 03:19:59.864485+00', '2023-12-02 05:26:08.345721+00', NULL, 'him', NULL, 'him@student.42seoul.kr', false, 1200, 1200, 0, 0, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaWF0IjoxNzAxNDk0NzY4LCJleHAiOjE3MDIwOTk1Njh9.nNd3mlwIO4BORIM8fbn4PtnpAs84rr9WM_rU-Ee8Sk0', NULL, NULL, NULL, 'OFFLINE');
+INSERT INTO public."user" (id, "createdAt", "updatedAt", "deletedAt", nickname, avatar, email, "isMfaEnabled", "ladderScore", "ladderMaxScore", "winCount", "loseCount", "refreshToken", "gameSocketId", "channelSocketId", "statusMessage", status) VALUES (1, '2023-12-02 03:19:34.302102+00', '2023-12-02 08:34:39.769368+00', NULL, 'yubchoi', NULL, 'yubchoi@student.42seoul.kr', false, 1200, 1200, 0, 0, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwiaWF0IjoxNzAxNDk0NjIwLCJleHAiOjE3MDIwOTk0MjB9.oKRM-lR_0G1oB6rFt8UslxwVjaYxNP7kotXgNdqks_g', NULL, NULL, NULL, 'OFFLINE');
+INSERT INTO public."user" (id, "createdAt", "updatedAt", "deletedAt", nickname, avatar, email, "isMfaEnabled", "ladderScore", "ladderMaxScore", "winCount", "loseCount", "refreshToken", "gameSocketId", "channelSocketId", "statusMessage", status) VALUES (2, '2023-12-02 03:19:48.160854+00', '2023-12-02 08:34:39.769368+00', NULL, 'jiyun', NULL, 'jiyun@student.42seoul.kr', false, 1200, 1200, 0, 0, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MiwiaWF0IjoxNzAxNDk0NjIzLCJleHAiOjE3MDIwOTk0MjN9.Q6YigxUyghkzZZWLVnJmXN6nvdY8HPi1aLqGcrH1Qos', NULL, NULL, NULL, 'OFFLINE');
+INSERT INTO public."user" (id, "createdAt", "updatedAt", "deletedAt", nickname, avatar, email, "isMfaEnabled", "ladderScore", "ladderMaxScore", "winCount", "loseCount", "refreshToken", "gameSocketId", "channelSocketId", "statusMessage", status) VALUES (5, '2023-12-02 03:20:03.833044+00', '2023-12-02 08:34:39.769368+00', NULL, 'sangyeki', NULL, 'sangyeki@student.42seoul.kr', false, 1200, 1200, 0, 0, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NSwiaWF0IjoxNzAxNDk0NjMzLCJleHAiOjE3MDIwOTk0MzN9.vRz9CsHVydWjeIa6Lne7SECZuDOztadWVBugepxYpIQ', NULL, NULL, NULL, 'OFFLINE');
+INSERT INTO public."user" (id, "createdAt", "updatedAt", "deletedAt", nickname, avatar, email, "isMfaEnabled", "ladderScore", "ladderMaxScore", "winCount", "loseCount", "refreshToken", "gameSocketId", "channelSocketId", "statusMessage", status) VALUES (3, '2023-12-02 03:19:53.482907+00', '2023-12-02 08:34:39.769368+00', NULL, 'jang-cho', NULL, 'jang-cho@student.42seoul.kr', false, 1200, 1200, 0, 0, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MywiaWF0IjoxNzAxNDk0NjM5LCJleHAiOjE3MDIwOTk0Mzl9._d_WJ7XL8l8vdZFOlb7lCc4MRQkVREZm0eqEYtawM_E', NULL, NULL, NULL, 'OFFLINE');
+INSERT INTO public."user" (id, "createdAt", "updatedAt", "deletedAt", nickname, avatar, email, "isMfaEnabled", "ladderScore", "ladderMaxScore", "winCount", "loseCount", "refreshToken", "gameSocketId", "channelSocketId", "statusMessage", status) VALUES (4, '2023-12-02 03:19:59.864485+00', '2023-12-02 08:34:41.718081+00', NULL, 'him', NULL, 'him@student.42seoul.kr', false, 1200, 1200, 0, 0, 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NCwiaWF0IjoxNzAxNDk0NzY4LCJleHAiOjE3MDIwOTk1Njh9.nNd3mlwIO4BORIM8fbn4PtnpAs84rr9WM_rU-Ee8Sk0', NULL, NULL, NULL, 'OFFLINE');
 
 
 --
@@ -493,7 +496,7 @@ SELECT pg_catalog.setval('public.block_id_seq', 7, true);
 -- Name: channel_id_seq; Type: SEQUENCE SET; Schema: public; Owner: jiyun
 --
 
-SELECT pg_catalog.setval('public.channel_id_seq', 3, true);
+SELECT pg_catalog.setval('public.channel_id_seq', 4, true);
 
 
 --
@@ -507,7 +510,7 @@ SELECT pg_catalog.setval('public.channel_invitation_id_seq', 1, false);
 -- Name: channel_user_id_seq; Type: SEQUENCE SET; Schema: public; Owner: jiyun
 --
 
-SELECT pg_catalog.setval('public.channel_user_id_seq', 6, true);
+SELECT pg_catalog.setval('public.channel_user_id_seq', 8, true);
 
 
 --
