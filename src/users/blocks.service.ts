@@ -1,9 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { BlocksRepository } from './blocks.repository';
-import { UsersRepository } from './users.repository';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
+import { BlocksRepository } from './blocks.repository';
 import { BlockUserResponseDto } from './dto/block-user-response.dto';
 import { BlockUserReturnDto } from './dto/block-user-return.dto';
+import { FriendsRepository } from './friends.repository';
+import { UsersRepository } from './users.repository';
 
 class BlockDto {
 	id: number;
@@ -14,8 +15,9 @@ class BlockDto {
 @Injectable()
 export class BlocksService {
 	constructor(
-		private readonly userRepository: UsersRepository,
-		private readonly blockRepository: BlocksRepository,
+		private readonly usersRepository: UsersRepository,
+		private readonly blocksRepository: BlocksRepository,
+		private readonly friendsRepository: FriendsRepository,
 	) {}
 
 	async applyBlock(fromUserId: number, toUserId: number) {
@@ -26,7 +28,7 @@ export class BlocksService {
 		await this.validateUserExists(toUserId);
 
 		// 이미 차단했는지 확인하기: fromuser 기준에 해당하는 touser를 찾는다.
-		const block = await this.blockRepository.findOne({
+		const block = await this.blocksRepository.findOne({
 			where: {
 				fromUserId,
 				toUserId,
@@ -35,12 +37,18 @@ export class BlocksService {
 		if (block)
 			throw new BadRequestException(`${toUserId} is already blocked`);
 
-		//block 하기
-		const newBlock = this.blockRepository.create({
+		// 친구라면, 친구 삭제하기
+		await this.friendsRepository.softDelete({
 			fromUserId,
 			toUserId,
 		});
-		const result = await this.blockRepository.save(newBlock);
+
+		//block 하기
+		const newBlock = this.blocksRepository.create({
+			fromUserId,
+			toUserId,
+		});
+		const result = await this.blocksRepository.save(newBlock);
 		if (!result) throw DBUpdateFailureException('Apply block failed');
 	}
 
@@ -52,7 +60,7 @@ export class BlocksService {
 		await this.validateUserExists(toUserId);
 
 		// 이미 차단 취소했는지 확인하기: fromuser 기준에 해당하는 touser를 찾기
-		const block: BlockDto | null = await this.blockRepository.findOne({
+		const block: BlockDto | null = await this.blocksRepository.findOne({
 			where: {
 				fromUserId,
 				toUserId,
@@ -61,7 +69,7 @@ export class BlocksService {
 		if (!block)
 			throw new BadRequestException(`${toUserId}} is now non-blocked`);
 		// block 취소하기
-		const result = await this.blockRepository.softDelete(block.id);
+		const result = await this.blocksRepository.softDelete(block.id);
 		if (result.affected !== 1) {
 			throw DBUpdateFailureException('Cancel block failed');
 		}
@@ -72,9 +80,9 @@ export class BlocksService {
 		page: number,
 	): Promise<BlockUserResponseDto> {
 		const blockUsers: BlockUserReturnDto[] =
-			await this.blockRepository.findBlockUsers(userId, page);
+			await this.blocksRepository.findBlockUsers(userId, page);
 
-		const totalItemCount = await this.blockRepository.count({
+		const totalItemCount = await this.blocksRepository.count({
 			where: {
 				fromUserId: userId,
 			},
@@ -84,7 +92,7 @@ export class BlocksService {
 	}
 
 	async validateUserExists(userId: number) {
-		const user = await this.userRepository.findOne({
+		const user = await this.usersRepository.findOne({
 			where: {
 				id: userId,
 			},

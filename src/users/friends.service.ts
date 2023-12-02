@@ -1,15 +1,17 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BlocksRepository } from './blocks.repository';
+import { FriendUserResponseDto } from './dto/friend-user-response.dto';
 import { FriendsRepository } from './friends.repository';
 import { UsersRepository } from './users.repository';
-import { FriendUserResponseDto } from './dto/friend-user-response.dto';
 
 @Injectable()
 export class FriendsService {
 	private readonly logger = new Logger(FriendsService.name);
 
 	constructor(
-		private readonly friendRepository: FriendsRepository,
-		private readonly userRepository: UsersRepository,
+		private readonly friendsRepository: FriendsRepository,
+		private readonly usersRepository: UsersRepository,
+		private readonly blocksRepository: BlocksRepository,
 	) {}
 
 	/**
@@ -28,13 +30,19 @@ export class FriendsService {
 		// 이미 친구인지 확인
 		await this.checkAlreadyFriends(fromUserId, toUserId);
 
+		// block 상태라면 block 해제
+		await this.blocksRepository.softDelete({
+			fromUserId,
+			toUserId,
+		});
+
 		// 친구 추가
-		const friend = this.friendRepository.create({
+		const friend = this.friendsRepository.create({
 			fromUserId,
 			toUserId,
 		});
 		this.logger.log('friend: ', friend);
-		await this.friendRepository.save(friend);
+		await this.friendsRepository.save(friend);
 	}
 
 	/**
@@ -50,7 +58,7 @@ export class FriendsService {
 		await this.validateUserExists(toUserId);
 
 		// 친구인지 확인
-		const friend = await this.friendRepository.findFriend(
+		const friend = await this.friendsRepository.findFriend(
 			fromUserId,
 			toUserId,
 		);
@@ -59,7 +67,7 @@ export class FriendsService {
 		}
 
 		// 친구 삭제
-		const result = await this.friendRepository.softDelete(friend.id);
+		const result = await this.friendsRepository.softDelete(friend.id);
 		if (result.affected !== 1) {
 			throw new BadRequestException(
 				`Failed to delete friend with ${toUserId}`,
@@ -79,13 +87,13 @@ export class FriendsService {
 		page: number,
 	): Promise<FriendUserResponseDto> {
 		// 친구 목록 조회
-		const friends = await this.friendRepository.findFriendInfos(
+		const friends = await this.friendsRepository.findFriendInfos(
 			userId,
 			page,
 		);
 
 		// 페이지 정보 조회
-		const totalItemCount = await this.friendRepository.count({
+		const totalItemCount = await this.friendsRepository.count({
 			where: {
 				fromUserId: userId,
 			},
@@ -101,7 +109,7 @@ export class FriendsService {
 	 * 유저가 존재하는지 확인
 	 */
 	async validateUserExists(userId: number) {
-		const user = await this.userRepository.findOne({
+		const user = await this.usersRepository.findOne({
 			where: {
 				id: userId,
 			},
@@ -127,7 +135,7 @@ export class FriendsService {
 	 * 이미 친구인지 확인
 	 */
 	private async checkAlreadyFriends(fromUserId: number, toUserId: number) {
-		const isExistFriend = await this.friendRepository.findFriend(
+		const isExistFriend = await this.friendsRepository.findFriend(
 			fromUserId,
 			toUserId,
 		);
