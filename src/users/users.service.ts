@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { UserStatus } from 'src/common/enum';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { GameRepository } from '../game/game.repository';
 import { BlocksRepository } from './blocks.repository';
@@ -6,7 +7,6 @@ import { UserProfileResponseDto } from './dto/user-profile.dto';
 import { User } from './entities/user.entity';
 import { FriendsRepository } from './friends.repository';
 import { UsersRepository } from './users.repository';
-import { UserStatus } from 'src/common/enum';
 
 @Injectable()
 export class UsersService {
@@ -154,12 +154,12 @@ export class UsersService {
 	}
 
 	// TODO: test용 메서드. 추후 삭제
-	async isNicknameExists(nickname: string) {
+	async findUserByNickname(nickname: string) {
 		const user = await this.userRepository.findOne({
 			where: { nickname },
 		});
 
-		return !!user;
+		return user;
 	}
 
 	// TODO: test용 메서드. 추후 삭제

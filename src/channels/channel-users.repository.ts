@@ -1,14 +1,12 @@
+import { Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
-import { ChannelUser } from './entities/channel-user.entity';
-import { Logger } from '@nestjs/common';
-import { ChannelUserInfoReturnDto } from './dto/channel-user-info-return.dto';
 import {
 	DBQueryErrorException,
 	DBUpdateFailureException,
 } from '../common/exception/custom-exception';
-import { ChannelUserType } from '../common/enum';
-import { number } from 'zod';
+import { ChannelUserInfoReturnDto } from './dto/channel-user-info-return.dto';
+import { ChannelUser } from './entities/channel-user.entity';
 
 export class ChannelUsersRepository extends Repository<ChannelUser> {
 	constructor(@InjectRepository(ChannelUser) private dataSource: DataSource) {
@@ -134,5 +132,15 @@ export class ChannelUsersRepository extends Repository<ChannelUser> {
 		const result = await this.softDelete(channelUserId);
 		if (result.affected !== 1)
 			throw DBUpdateFailureException('delete user from channel failed');
+	}
+
+	async findAllChannelByUserId(userId: number) {
+		const channelList = await this.find({
+			select: ['id'],
+			where: {
+				userId,
+			},
+		});
+		return channelList;
 	}
 }

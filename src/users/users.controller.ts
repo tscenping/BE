@@ -135,10 +135,10 @@ export class UsersController {
 		description:
 			'상대방 유저를 차단한다. 유저 자신인지, 가입 되어있는 유저인지, 차단되어있는 유저인지 체크한다.',
 	})
-	@ApiResponse({ status: 500, description: 'DB에 저장 실패' })
+	@ApiResponse({ status: 418, description: 'DB에 저장 실패' })
 	async createBlock(
 		@GetUser() user: User,
-		@Body('blockId') toUserId: number,
+		@Body('blockId', ParseIntPipe, PositiveIntPipe) toUserId: number,
 	) {
 		await this.blocksService.applyBlock(user.id, toUserId);
 	}
@@ -148,10 +148,10 @@ export class UsersController {
 		summary: '유저 차단 해제',
 		description: '상대방 유저의 차단을 해제합니다. ',
 	})
-	@ApiResponse({ status: 500, description: 'DB에 저장 실패' })
+	@ApiResponse({ status: 418, description: 'DB에 저장 실패' })
 	async deleteBlock(
 		@GetUser() user: User,
-		@Body('blockId') toUserId: number,
+		@Body('blockId', ParseIntPipe, PositiveIntPipe) toUserId: number,
 	) {
 		await this.blocksService.cancelBlock(user.id, toUserId);
 	}

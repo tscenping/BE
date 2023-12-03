@@ -1,9 +1,9 @@
-import { DataSource, Repository } from 'typeorm';
-import { Block } from './entities/block.entity';
 import { InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { DEFAULT_PAGE_SIZE } from '../common/constants';
-import { BlockUserReturnDto } from './dto/block-user-return.dto';
 import { DBQueryErrorException } from '../common/exception/custom-exception';
+import { BlockUserReturnDto } from './dto/block-user-return.dto';
+import { Block } from './entities/block.entity';
 
 export class BlocksRepository extends Repository<Block> {
 	constructor(@InjectRepository(Block) private dataSource: DataSource) {

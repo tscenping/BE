@@ -64,13 +64,15 @@ export class User extends BaseEntity {
 	@IsString()
 	refreshToken: string;
 
-	@Column({ default: null })
+	@Column({ default: null, nullable: true, type: 'varchar' })
 	@IsString()
-	gameSocketId: string;
+	@IsOptional()
+	gameSocketId: string | null;
 
-	@Column({ default: null })
+	@Column({ default: null, nullable: true, type: 'varchar' })
 	@IsString()
-	chatSocketId: string;
+	@IsOptional()
+	channelSocketId: string | null;
 
 	@Column({ default: null, type: 'varchar' })
 	@Length(1, 20)

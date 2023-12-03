@@ -1,5 +1,6 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { UserStatus } from 'src/common/enum';
 import { DataSource, In, Repository } from 'typeorm';
 import { MyProfileResponseDto } from './dto/my-profile-response.dto';
 import { UserProfileReturnDto } from './dto/user-profile.dto';
@@ -84,4 +85,25 @@ export class UsersRepository extends Repository<User> {
 		}
 		return rankUsers;
 	}
+
+	async initAllSocketIdAndUserStatus() {
+		await this.createQueryBuilder()
+			.update()
+			.set({
+				gameSocketId: null,
+				channelSocketId: null,
+				status: UserStatus.OFFLINE,
+			})
+			.execute();
+	}
+
+	// async findChannelSocketIdByUserId(userId: number) {
+	// 	const user = await this.findOne({
+	// 		select: ['channelSocketId'],
+	// 		where: {
+	// 			id: userId,
+	// 		},
+	// 	});
+	// 	return user?.channelSocketId;
+	// }
 }

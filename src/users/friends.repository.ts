@@ -1,8 +1,8 @@
 import { InjectRepository } from '@nestjs/typeorm';
-import { Friend } from './entities/friend.entity';
-import { Repository, DataSource } from 'typeorm';
-import { FriendUserReturnDto } from './dto/friend-user-return.dto';
 import { DEFAULT_PAGE_SIZE } from 'src/common/constants';
+import { DataSource, Repository } from 'typeorm';
+import { FriendUserReturnDto } from './dto/friend-user-return.dto';
+import { Friend } from './entities/friend.entity';
 
 export class FriendsRepository extends Repository<Friend> {
 	constructor(@InjectRepository(Friend) private dataSource: DataSource) {
@@ -35,5 +35,20 @@ export class FriendsRepository extends Repository<Friend> {
 		);
 
 		return friends;
+	}
+
+	async findAllFriendChannelSocketIdByUserId(fromUserId: number) {
+		const friendChannelSocketIdList = await this.dataSource.query(
+			`
+			SELECT u."channelSocketId"
+			FROM friend f
+			JOIN "user" u
+			ON u.id = f."toUserId"
+			WHERE f."fromUserId" = $1 AND f."deletedAt" IS NULL AND u."channelSocketId" IS NOT NULL;
+			`,
+			[fromUserId],
+		);
+
+		return friendChannelSocketIdList;
 	}
 }

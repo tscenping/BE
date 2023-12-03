@@ -26,7 +26,6 @@ import { UsersModule } from './users/users.module';
 			load: [
 				redisConfig,
 				ftConfig,
-				// userConfig,
 				pgadminConfig,
 				jwtConfig,
 				typeOrmConfig,
