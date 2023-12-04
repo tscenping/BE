@@ -77,8 +77,36 @@ export class ChannelsGateway
 			.emit(EVENT_USER_STATUS, eventUserStatusEmitDto);
 	}
 
-	handleDisconnect(client: any) {
-		// throw new Error('Method not implemented.');
+	async handleDisconnect(client: Socket) {
+		this.logger.log(`Client disconnected: ${client.id}`);
+
+		const user = await this.authService.getUserFromSocket(client);
+		if (!user || client.id !== user.channelSocketId) {
+			return;
+		}
+
+		// 유저의 channelSocketId와 status를 업데이트한다.
+		await this.usersRepository.update(user.id, {
+			channelSocketId: null,
+			status: UserStatus.OFFLINE,
+		});
+
+		// 유저의 offline 상태를 유저의 친구들에게 알린다.
+		// 유저의 친구 중 channelSocketId가 존재하는 친구들에게만 알린다.
+		const friendChannelSocketIdList =
+			await this.friendsRepository.findAllFriendChannelSocketIdByUserId(
+				user.id,
+			);
+		const eventUserStatusEmitDto = {
+			userId: user.id,
+			status: UserStatus.OFFLINE,
+		};
+		this.server
+			.to(friendChannelSocketIdList)
+			.emit(EVENT_USER_STATUS, eventUserStatusEmitDto);
+
+		// 유저가 속해있던 채널 룸에서 leave한다.
+		client.rooms.clear();
 	}
 
 	@SubscribeMessage('ClientToServer') // TODO: test용 코드. 추후 삭제
