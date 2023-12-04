@@ -35,7 +35,7 @@ export class ChannelsGateway
 	private logger = new Logger(ChannelsGateway.name);
 
 	afterInit(server: Server) {
-		this.logger.log('afteInit!');
+		this.logger.log('afterInit!');
 		this.server = server;
 		// 모든 유저의 소켓 관련 정보를 초기화한다.
 		this.usersRepository.initAllSocketIdAndUserStatus();

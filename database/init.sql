@@ -40,7 +40,7 @@ ALTER TABLE public.block OWNER TO jiyun;
 -- Name: block_id_seq; Type: SEQUENCE; Schema: public; Owner: jiyun
 --
 
-CREATE SEQUENCE public.block_id_seq
+CREATE SEQUENCE IF NOT EXISTS public.block_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -80,7 +80,7 @@ ALTER TABLE public.channel OWNER TO jiyun;
 -- Name: channel_id_seq; Type: SEQUENCE; Schema: public; Owner: jiyun
 --
 
-CREATE SEQUENCE public.channel_id_seq
+CREATE SEQUENCE IF NOT EXISTS public.channel_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -119,7 +119,7 @@ ALTER TABLE public.channel_invitation OWNER TO jiyun;
 -- Name: channel_invitation_id_seq; Type: SEQUENCE; Schema: public; Owner: jiyun
 --
 
-CREATE SEQUENCE public.channel_invitation_id_seq
+CREATE SEQUENCE IF NOT EXISTS public.channel_invitation_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -159,7 +159,7 @@ ALTER TABLE public.channel_user OWNER TO jiyun;
 -- Name: channel_user_id_seq; Type: SEQUENCE; Schema: public; Owner: jiyun
 --
 
-CREATE SEQUENCE public.channel_user_id_seq
+CREATE SEQUENCE IF NOT EXISTS public.channel_user_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -197,7 +197,7 @@ ALTER TABLE public.friend OWNER TO jiyun;
 -- Name: friend_id_seq; Type: SEQUENCE; Schema: public; Owner: jiyun
 --
 
-CREATE SEQUENCE public.friend_id_seq
+CREATE SEQUENCE IF NOT EXISTS public.friend_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -241,7 +241,7 @@ ALTER TABLE public.game OWNER TO jiyun;
 -- Name: game_id_seq; Type: SEQUENCE; Schema: public; Owner: jiyun
 --
 
-CREATE SEQUENCE public.game_id_seq
+CREATE SEQUENCE IF NOT EXISTS public.game_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -280,7 +280,7 @@ ALTER TABLE public.game_invitation OWNER TO jiyun;
 -- Name: game_invitation_id_seq; Type: SEQUENCE; Schema: public; Owner: jiyun
 --
 
-CREATE SEQUENCE public.game_invitation_id_seq
+CREATE SEQUENCE IF NOT EXISTS public.game_invitation_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
@@ -329,7 +329,7 @@ ALTER TABLE public."user" OWNER TO jiyun;
 -- Name: user_id_seq; Type: SEQUENCE; Schema: public; Owner: jiyun
 --
 
-CREATE SEQUENCE public.user_id_seq
+CREATE SEQUENCE IF NOT EXISTS public.user_id_seq
     AS integer
     START WITH 1
     INCREMENT BY 1
