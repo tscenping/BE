@@ -96,14 +96,4 @@ export class UsersRepository extends Repository<User> {
 			},
 		);
 	}
-
-	// async findChannelSocketIdByUserId(userId: number) {
-	// 	const user = await this.findOne({
-	// 		select: ['channelSocketId'],
-	// 		where: {
-	// 			id: userId,
-	// 		},
-	// 	});
-	// 	return user?.channelSocketId;
-	// }
 }

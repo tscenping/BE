@@ -37,7 +37,9 @@ export class FriendsRepository extends Repository<Friend> {
 		return friends;
 	}
 
-	async findAllFriendChannelSocketIdByUserId(fromUserId: number) {
+	async findAllFriendChannelSocketIdByUserId(
+		fromUserId: number,
+	): Promise<string[]> {
 		const friendChannelSocketIdList = await this.dataSource.query(
 			`
 			SELECT u."channelSocketId"
