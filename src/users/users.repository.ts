@@ -87,14 +87,14 @@ export class UsersRepository extends Repository<User> {
 	}
 
 	async initAllSocketIdAndUserStatus() {
-		await this.createQueryBuilder()
-			.update()
-			.set({
-				gameSocketId: null,
-				channelSocketId: null,
+		await this.update(
+			{},
+			{
 				status: UserStatus.OFFLINE,
-			})
-			.execute();
+				channelSocketId: null,
+				gameSocketId: null,
+			},
+		);
 	}
 
 	// async findChannelSocketIdByUserId(userId: number) {
