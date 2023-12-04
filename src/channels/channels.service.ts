@@ -38,9 +38,17 @@ export class ChannelsService {
 				userId,
 				channelInfo.userId!,
 			);
+			// 이미 DM 채널이 존재한다면 해당 채널에 대한 정보를 반환한다.
 			if (channelId) {
-				// 이미 DM 채널이 존재하는 경우
-				return { channelId };
+				const channelUserInfoList =
+					await this.channelUsersRepository.findChannelUserInfoList(
+						userId,
+						channelId,
+					);
+				const myChannelUserType = channelUserInfoList.find(
+					(channelUser) => channelUser.userId === userId,
+				)?.channelUserType;
+				return { channelUser: channelUserInfoList, myChannelUserType };
 			}
 		}
 
@@ -61,6 +69,7 @@ export class ChannelsService {
 
 		let userCount = 1;
 
+		// DM 일 경우 상대방도 channelUsers에 추가
 		if (channel.channelType === ChannelType.DM) {
 			const targetChannelUser = this.channelUsersRepository.create({
 				channelId: channel.id,
@@ -73,13 +82,23 @@ export class ChannelsService {
 			++userCount;
 		}
 
+		// channelUserList 조회
+		const channelUserInfoList =
+			await this.channelUsersRepository.findChannelUserInfoList(
+				userId,
+				channel.id,
+			);
+
 		// TODO: 채널에 소환된 유저에게 알림 전송. DM의 경우에만 해당
 		// TODO: cache에 user count 저장
 		this.logger.log(
 			`channel ${channel.id} is created. user count: ${userCount}`,
 		);
 
-		return { channelId: channel.id };
+		return {
+			channelUser: channelUserInfoList,
+			myChannelUserType: ChannelUserType.OWNER,
+		};
 	}
 
 	async enterChannel(userId: number, channelId: number) {
