@@ -11,11 +11,11 @@ import {
 import { Server, Socket } from 'socket.io';
 import { AuthService } from 'src/auth/auth.service';
 import { UserStatus } from 'src/common/enum';
+import { EVENT_USER_STATUS } from 'src/common/events';
+import { FriendsRepository } from 'src/users/friends.repository';
 import { UsersRepository } from 'src/users/users.repository';
 import { UsersService } from 'src/users/users.service';
 import { ChannelUsersRepository } from './channel-users.repository';
-import { stringify } from 'querystring';
-import { FriendsRepository } from 'src/users/friends.repository';
 
 @WebSocketGateway({ namespace: 'channels' })
 export class ChannelsGateway
@@ -44,8 +44,8 @@ export class ChannelsGateway
 	async handleConnection(client: Socket, ...args: any[]) {
 		// Socket으로부터 user 정보를 가져온다.
 		const user = await this.authService.getUserFromSocket(client);
-		if (!user) {
-			return;
+		if (!user || !client.id || user.channelSocketId) {
+			return client.disconnect();
 		}
 		this.logger.log(`Client connected: userId: ${user.id}`);
 
@@ -63,13 +63,18 @@ export class ChannelsGateway
 		});
 
 		// 유저의 online 상태를 유저의 친구들에게 알린다.
+		// 유저의 친구 중 channelSocketId가 존재하는 친구들에게만 알린다.
 		const friendChannelSocketIdList =
 			await this.friendsRepository.findAllFriendChannelSocketIdByUserId(
 				user.id,
 			);
-		friendChannelSocketIdList.forEach((friendChannelSocketId: string) => {
-			// TODO: online 상태 이벤트
-		});
+		const eventUserStatusEmitDto = {
+			userId: user.id,
+			status: UserStatus.ONLINE,
+		};
+		this.server
+			.to(friendChannelSocketIdList)
+			.emit(EVENT_USER_STATUS, eventUserStatusEmitDto);
 	}
 
 	handleDisconnect(client: any) {
