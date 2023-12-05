@@ -18,17 +18,13 @@ export class RanksService {
 		//userIDRanking: [userId, userId, userId, ...]
 		
 
-		const userRanking = await this.redis.zrange(
+		const userRanking = await this.redis.zrevrange(
 			'rankings',
 			(page - 1) * 10,
 			page * 10 - 1,
 		);
 
-		// console.log('userranking', userRanking);
-
-		if (!userRanking) {
-			throw new BadRequestException(`unavailable ranking property`);
-		}
+		console.log('userranking', userRanking); // ok
 
 		const foundUsers = await this.userRepository.findRanksInfos(
 			userRanking,
@@ -48,7 +44,7 @@ export class RanksService {
 		return { rankUsers, totalItemCount };
 	}
 
-	@Cron(CronExpression.EVERY_10_MINUTES)
+	@Cron(CronExpression.EVERY_MINUTE)
 	async handleCron() {
 		const users = await this.userRepository.find();
 		for (const user of users) {
