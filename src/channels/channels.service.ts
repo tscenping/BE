@@ -13,6 +13,7 @@ import { ChannelListResponseDto } from './dto/channel-list-response.dto';
 import { ChannelListReturnDto } from './dto/channel-list-return.dto';
 import { ChannelUsersResponseDto } from './dto/channel-users-response.dto';
 import { CreateChannelRequestDto } from './dto/creat-channel-request.dto';
+import { CreateChannelResponseDto } from './dto/create-channel-response.dto';
 import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
 import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
 import { DmChannelListResponseDto } from './dto/dmchannel-list-response.dto';
@@ -31,7 +32,10 @@ export class ChannelsService {
 
 	private readonly logger = new Logger(ChannelsService.name);
 
-	async createChannel(userId: number, channelInfo: CreateChannelRequestDto) {
+	async createChannel(
+		userId: number,
+		channelInfo: CreateChannelRequestDto,
+	): Promise<CreateChannelResponseDto> {
 		// DM 채널인 경우 예외 처리
 		if (channelInfo.channelType === ChannelType.DM) {
 			const channelId = await this.validateDmChannel(
@@ -47,8 +51,14 @@ export class ChannelsService {
 					);
 				const myChannelUserType = channelUserInfoList.find(
 					(channelUser) => channelUser.userId === userId,
-				)?.channelUserType;
-				return { channelUser: channelUserInfoList, myChannelUserType };
+				)!.channelUserType;
+
+				const createChannelResponseDto = {
+					channelId,
+					channelUsers: channelUserInfoList,
+					myChannelUserType,
+				};
+				return createChannelResponseDto;
 			}
 		}
 
@@ -95,10 +105,12 @@ export class ChannelsService {
 			`channel ${channel.id} is created. user count: ${userCount}`,
 		);
 
-		return {
-			channelUser: channelUserInfoList,
+		const createChannelResponseDto = {
+			channelId: channel.id,
+			channelUsers: channelUserInfoList,
 			myChannelUserType: ChannelUserType.OWNER,
 		};
+		return createChannelResponseDto;
 	}
 
 	async enterChannel(userId: number, channelId: number) {
