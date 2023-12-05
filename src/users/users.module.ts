@@ -13,9 +13,14 @@ import { RanksService } from './ranks.service';
 import { UsersController } from './users.controller';
 import { UsersRepository } from './users.repository';
 import { UsersService } from './users.service';
+import { ScheduleModule } from '@nestjs/schedule';
+import { AppService } from 'src/app.service';
 
 @Module({
-	imports: [TypeOrmModule.forFeature([User, Friend, Block, Game])],
+	imports: [
+		TypeOrmModule.forFeature([User, Friend, Block, Game]),
+		ScheduleModule.forRoot(),
+	],
 	controllers: [UsersController],
 	providers: [
 		UsersService,
@@ -26,6 +31,7 @@ import { UsersService } from './users.service';
 		FriendsRepository,
 		BlocksRepository,
 		GameRepository,
+		AppService,
 	],
 	exports: [UsersService],
 })

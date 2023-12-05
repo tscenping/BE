@@ -14,6 +14,7 @@ import redisConfig from './config/redis.config';
 import typeOrmConfig from './config/typeorm.config';
 import { GameModule } from './game/game.module';
 import { UsersModule } from './users/users.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
 	imports: [
@@ -43,6 +44,7 @@ import { UsersModule } from './users/users.module';
 			useFactory: (redisConfigure: ConfigType<typeof redisConfig>) =>
 				redisConfigure,
 		}),
+		ScheduleModule.forRoot(),
 		AuthModule,
 		UsersModule,
 		GameModule,

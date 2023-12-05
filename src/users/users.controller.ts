@@ -161,7 +161,7 @@ export class UsersController {
 		summary: '유저 차단목록 조회',
 		description: 'pagination된 차단 유저 목록을 제공합니다.',
 	})
-	@ApiResponse({ status: 500, description: '쿼리에러' })
+	@ApiResponse({ status: 400, description: '쿼리에러' })
 	async findBlockListWithPage(
 		@GetUser() user: User,
 		@Query('page', ParseIntPipe, PositiveIntPipe) page: number,

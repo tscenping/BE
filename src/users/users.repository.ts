@@ -72,28 +72,33 @@ export class UsersRepository extends Repository<User> {
 	}
 
 	async findRanksInfos(users: string[]) {
-		const rankUsers = await this.find({
-			select: ['nickname', 'avatar', 'ladderScore'],
-			where: {
-				id: In(users),
-			},
-		});
-		if (!rankUsers) {
-			throw new BadRequestException(
-				`there is no user with nickname ${users}`,
-			);
+		const rankUsers: User[] = [];
+		// Use forEach to iterate through users array
+		for (const userid of users) {
+			const user = await this.findOne({
+				select: [
+					'nickname',
+					'avatar',
+					'ladderScore',
+				],
+				where: { id: parseInt(userid) },
+			});
+			if (!user) {
+				throw new BadRequestException(`there is no user with id`);
+			}
+			rankUsers.push(user);
 		}
 		return rankUsers;
-	}
+	  }
 
 	async initAllSocketIdAndUserStatus() {
-		await this.update(
-			{},
-			{
-				status: UserStatus.OFFLINE,
-				channelSocketId: null,
+		await this.createQueryBuilder()
+			.update()
+			.set({
 				gameSocketId: null,
-			},
-		);
+				channelSocketId: null,
+				status: UserStatus.OFFLINE,
+			})
+			.execute();
 	}
 }

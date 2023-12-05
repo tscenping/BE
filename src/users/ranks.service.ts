@@ -1,34 +1,30 @@
+import { AppService } from 'src/app.service';
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Redis } from 'ioredis';
 import { UsersRepository } from 'src/users/users.repository';
 import { RankUserResponseDto } from './dto/rank-user-response.dto';
 import { RankUserReturnDto } from './dto/rank-user-return.dto';
-
+import { Cron, CronExpression } from '@nestjs/schedule';
 @Injectable()
 export class RanksService {
 	constructor(
 		private readonly userRepository: UsersRepository,
+		private readonly AppService: AppService,
 		@InjectRedis() private readonly redis: Redis,
 	) {}
 
 	async findRanksWithPage(page: number): Promise<RankUserResponseDto> {
 		//userIDRanking: [userId, userId, userId, ...]
-		// const userRanking: string[] = await this.redis.zrange(
-		// 	'rankings',
-		// 	(page - 1) * 10,
-		// 	page * 10 - 1,
-		// );
-		const userRanking = await this.redis.zrange(
+		
+
+		const userRanking = await this.redis.zrevrange(
 			'rankings',
 			(page - 1) * 10,
 			page * 10 - 1,
 		);
 
-		if (!userRanking) {
-			throw new BadRequestException(`unavailable ranking property`);
-		}
-		console.log('userRanking: ', userRanking); // dbg
+		console.log('userranking', userRanking); // ok
 
 		const foundUsers = await this.userRepository.findRanksInfos(
 			userRanking,
@@ -39,12 +35,21 @@ export class RanksService {
 		// userID 배열을 가지고 유저 정보를 조회
 		// 유저 정보에 ranking 프로퍼티를 추가 ( redis에서 조회한 ranking을 넣어줌)
 
-		const rankUsers: RankUserReturnDto[] = foundUsers.map((user) => ({
+		const rankUsers: RankUserReturnDto[] = foundUsers.map((user, index) => ({
 			...user,
-			ranking: Number(userRanking),
+			ranking: index + 1 + (page - 1) * 10,
 		}));
 		const totalItemCount = await this.userRepository.count(); // TODO: redis에 저장된 총 유저 수를 가져와야 하지 않을까?
 
 		return { rankUsers, totalItemCount };
 	}
+
+	@Cron(CronExpression.EVERY_MINUTE)
+	async handleCron() {
+		const users = await this.userRepository.find();
+		for (const user of users) {
+			Logger.log(`updateRanking: ${user.ladderScore}, ${user.id}`);
+			await this.AppService.updateRanking(user.ladderScore, user.id);
+		}
+	} 
 }
