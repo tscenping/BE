@@ -264,6 +264,9 @@ export class ChannelsService {
 		const invitingUserId = createInvitationParamDto.invitingUserId;
 		const channelId = createInvitationParamDto.channelId;
 		const invitedUserId = createInvitationParamDto.invitedUserId;
+		console.log(invitingUserId);
+		console.log(invitedUserId);
+		console.log(channelId);
 
 		// 존재하는 channel인지 확인
 		await this.checkChannelExist(channelId);
@@ -278,7 +281,15 @@ export class ChannelsService {
 		await this.checkUserExistInChannel(invitingUserId, channelId);
 
 		// 초대받은 user가 channel에 없는지 확인
-		await this.checkUserExistInChannel(invitedUserId, channelId);
+		const channelUser = await this.channelUsersRepository.findOne({
+			where: { userId: invitedUserId, channelId: channelId },
+		});
+
+		if (channelUser) {
+			throw new BadRequestException(
+				`user already in this channel ${channelId}`,
+			);
+		}
 
 		await this.channelInvitationRepository.createChannelInvitation(
 			createInvitationParamDto,

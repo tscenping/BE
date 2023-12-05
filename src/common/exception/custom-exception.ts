@@ -1,4 +1,9 @@
-import { DB_QUERY_ERROR, DB_UPDATE_FAILURE, ErrorCode } from './error-code';
+import {
+	DB_QUERY_ERROR,
+	DB_UPDATE_FAILURE,
+	ErrorCode,
+	WS_UNAUTHORIZED_ERROR,
+} from './error-code';
 export class customException extends Error {
 	readonly errorCode: ErrorCode;
 
@@ -21,4 +26,8 @@ export const DBUpdateFailureException = (message?: string): customException => {
 
 export const DBQueryErrorException = (message?: string): customException => {
 	return new customException(DB_QUERY_ERROR, message);
+};
+
+export const WSUnauthorizedException = (message?: string): customException => {
+	return new customException(WS_UNAUTHORIZED_ERROR, message);
 };
