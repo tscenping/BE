@@ -5,6 +5,7 @@ import { Server, Socket } from 'socket.io';
 import { WSUnauthorizedException } from '../common/exception/custom-exception';
 import { UsersRepository } from '../users/users.repository';
 import { User } from '../users/entities/user.entity';
+import { ConfigService } from '@nestjs/config';
 
 type JwtPayload = {
 	user: User;
@@ -19,6 +20,7 @@ export class SocketIoAdapter extends IoAdapter {
 
 	createIOServer(port: number, options?: any) {
 		const jwtService = this.app.get(JwtService);
+		const configService = this.app.get(ConfigService);
 		const userRepository = this.app.get(UsersRepository);
 
 		const server: Server = super.createIOServer(port, options);
@@ -28,13 +30,23 @@ export class SocketIoAdapter extends IoAdapter {
 		namespaces.forEach((namespace) => {
 			server
 				.of(namespace)
-				.use(wsAuthGuardMiddleware(jwtService, userRepository));
+				.use(
+					wsAuthGuardMiddleware(
+						jwtService,
+						configService,
+						userRepository,
+					),
+				);
 		});
 		return server;
 	}
 }
 const wsAuthGuardMiddleware =
-	(jwtService: JwtService, usersRepository: UsersRepository) =>
+	(
+		jwtService: JwtService,
+		configService: ConfigService,
+		usersRepository: UsersRepository,
+	) =>
 	async (socket: SocketWithAuth, next: any) => {
 		// const token = socket.handshake.auth.token;
 		const cookie = socket.handshake.headers.cookie;
@@ -48,7 +60,7 @@ const wsAuthGuardMiddleware =
 		console.log('accessToken:', accessToken);
 
 		const payload = await jwtService.verifyAsync(accessToken, {
-			secret: 'tscenpingsecret',
+			secret: configService.get<string>('JWT_SECRET'),
 		});
 		if (!payload) return next(WSUnauthorizedException('no payload'));
 		console.log('payload:', JSON.stringify(payload));
