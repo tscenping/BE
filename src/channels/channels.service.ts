@@ -264,9 +264,6 @@ export class ChannelsService {
 		const invitingUserId = createInvitationParamDto.invitingUserId;
 		const channelId = createInvitationParamDto.channelId;
 		const invitedUserId = createInvitationParamDto.invitedUserId;
-		console.log(invitingUserId);
-		console.log(invitedUserId);
-		console.log(channelId);
 
 		// 존재하는 channel인지 확인
 		await this.checkChannelExist(channelId);

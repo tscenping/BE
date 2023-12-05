@@ -1,5 +1,5 @@
 import { IoAdapter } from '@nestjs/platform-socket.io';
-import { INestApplicationContext, Inject } from '@nestjs/common';
+import { INestApplicationContext } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { WSUnauthorizedException } from '../common/exception/custom-exception';
