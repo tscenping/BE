@@ -278,7 +278,15 @@ export class ChannelsService {
 		await this.checkUserExistInChannel(invitingUserId, channelId);
 
 		// 초대받은 user가 channel에 없는지 확인
-		await this.checkUserExistInChannel(invitedUserId, channelId);
+		const channelUser = await this.channelUsersRepository.findOne({
+			where: { userId: invitedUserId, channelId: channelId },
+		});
+
+		if (channelUser) {
+			throw new BadRequestException(
+				`user already in this channel ${channelId}`,
+			);
+		}
 
 		await this.channelInvitationRepository.createChannelInvitation(
 			createInvitationParamDto,

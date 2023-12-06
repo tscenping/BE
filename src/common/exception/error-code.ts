@@ -21,3 +21,8 @@ export const DB_QUERY_ERROR = new ErrorCodeValueObject(
 	HttpStatus.I_AM_A_TEAPOT,
 	'Query task could not be done',
 );
+
+export const WS_UNAUTHORIZED_ERROR = new ErrorCodeValueObject(
+	HttpStatus.UNAUTHORIZED,
+	'WebSocket: unauthorized user detected',
+);

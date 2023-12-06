@@ -1,5 +1,6 @@
 import { Logger } from '@nestjs/common';
 import {
+	ConnectedSocket,
 	MessageBody,
 	OnGatewayConnection,
 	OnGatewayDisconnect,
@@ -8,22 +9,19 @@ import {
 	WebSocketGateway,
 	WebSocketServer,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { AuthService } from 'src/auth/auth.service';
+import { Server } from 'socket.io';
 import { UserStatus } from 'src/common/enum';
 import { EVENT_USER_STATUS } from 'src/common/events';
 import { FriendsRepository } from 'src/users/friends.repository';
 import { UsersRepository } from 'src/users/users.repository';
-import { UsersService } from 'src/users/users.service';
 import { ChannelUsersRepository } from './channel-users.repository';
+import { SocketWithAuth } from '../socket-adapter/socket-io.adapter';
 
 @WebSocketGateway({ namespace: 'channels' })
 export class ChannelsGateway
 	implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
 	constructor(
-		private readonly usersService: UsersService,
-		private readonly authService: AuthService,
 		private readonly usersRepository: UsersRepository,
 		private readonly channelUsersRepository: ChannelUsersRepository,
 		private readonly friendsRepository: FriendsRepository,
@@ -41,9 +39,12 @@ export class ChannelsGateway
 		this.usersRepository.initAllSocketIdAndUserStatus();
 	}
 
-	async handleConnection(client: Socket, ...args: any[]) {
+	async handleConnection(
+		@ConnectedSocket() client: SocketWithAuth,
+		...args: any[]
+	) {
 		// Socket으로부터 user 정보를 가져온다.
-		const user = await this.authService.getUserFromSocket(client);
+		const user = client.user;
 		if (!user || !client.id || user.channelSocketId) {
 			return client.disconnect();
 		}
@@ -77,10 +78,10 @@ export class ChannelsGateway
 			.emit(EVENT_USER_STATUS, eventUserStatusEmitDto);
 	}
 
-	async handleDisconnect(client: Socket) {
+	async handleDisconnect(@ConnectedSocket() client: SocketWithAuth) {
 		this.logger.log(`Client disconnected: ${client.id}`);
 
-		const user = await this.authService.getUserFromSocket(client);
+		const user = client.user;
 		if (!user || client.id !== user.channelSocketId) {
 			return;
 		}

@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import { AppModule } from './app.module';
 import { ToHttpFilter } from './common/exception/custom-exception.filter';
 import { setupSwagger } from './config/swagger.config';
+import { SocketIoAdapter } from './socket-adapter/socket-io.adapter';
 
 async function bootstrap() {
 	const httpsOptions = {
@@ -25,7 +26,7 @@ async function bootstrap() {
 	// app.useGlobalInterceptors(new LoggingInterceptor());
 	app.useGlobalFilters(new ToHttpFilter());
 	app.useGlobalPipes(new ValidationPipe());
-	// app.useWebSocketAdapter(new IoAdapter(app)); // NestJS에서는 기본적으로 socket.io를 사용하고 있다.
+	app.useWebSocketAdapter(new SocketIoAdapter(app)); // NestJS에서는 기본적으로 socket.io를 사용하고 있지만 IoAdapter를 custom했기 때문에 적용시켜줘야한다.
 
 	setupSwagger(app);
 	await app.listen(3000);
