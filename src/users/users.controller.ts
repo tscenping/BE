@@ -25,7 +25,6 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('users')
 @ApiTags('users')
-@UseGuards(JwtAuthGuard)
 export class UsersController {
 	constructor(
 		private readonly usersService: UsersService,
@@ -35,7 +34,8 @@ export class UsersController {
 	) {}
 
 	private readonly logger = new Logger(UsersController.name);
-
+		
+	@UseGuards(JwtAuthGuard)
 	@Post('/friends')
 	@ApiOperation({
 		summary: '친구추가',
@@ -49,7 +49,8 @@ export class UsersController {
 		await this.friendsService.createFriend(user.id, toUserId);
 		// TODO: 친구요청을 받은 유저에게 알림 보내기
 	}
-
+	
+	@UseGuards(JwtAuthGuard)
 	@Delete('/friends')
 	@ApiOperation({
 		summary: '친구삭제',
@@ -62,7 +63,8 @@ export class UsersController {
 	) {
 		await this.friendsService.deleteFriend(user.id, toUserId);
 	}
-
+	
+	@UseGuards(JwtAuthGuard)
 	@Get('/friends')
 	@ApiOperation({
 		summary: '친구목록 조회',
@@ -79,7 +81,8 @@ export class UsersController {
 
 		return friendResponseDto;
 	}
-
+	
+	@UseGuards(JwtAuthGuard)
 	@Get('/me')
 	@ApiOperation({
 		summary: '내 정보 조회',
@@ -90,7 +93,8 @@ export class UsersController {
 
 		return myProfile;
 	}
-
+	
+	@UseGuards(JwtAuthGuard)
 	@Get('/profile/:nickname')
 	@ApiOperation({
 		summary: '유저 정보 조회',
@@ -108,7 +112,8 @@ export class UsersController {
 
 		return userProfile;
 	}
-
+	
+	@UseGuards(JwtAuthGuard)
 	@Get('/games/:nickname')
 	@ApiOperation({
 		summary: '게임 정보 조회',
@@ -128,7 +133,8 @@ export class UsersController {
 
 		return gameHistories;
 	}
-
+	
+	@UseGuards(JwtAuthGuard)
 	@Post('/blocks')
 	@ApiOperation({
 		summary: '유저 차단',
@@ -142,7 +148,8 @@ export class UsersController {
 	) {
 		await this.blocksService.applyBlock(user.id, toUserId);
 	}
-
+	
+	@UseGuards(JwtAuthGuard)
 	@Delete('/blocks')
 	@ApiOperation({
 		summary: '유저 차단 해제',
@@ -156,6 +163,7 @@ export class UsersController {
 		await this.blocksService.cancelBlock(user.id, toUserId);
 	}
 
+	@UseGuards(JwtAuthGuard)
 	@Get('/blocks')
 	@ApiOperation({
 		summary: '유저 차단목록 조회',
@@ -171,20 +179,19 @@ export class UsersController {
 
 		return BlockUserResponseDto;
 	}
-
+	
 	@Get('/rank')
 	@ApiOperation({
 		summary: '랭킹 조회',
 		description: '레디스로부터 pagination해 랭킹 목록을 제공합니다.',
 	})
-	async paging(@Query('page', ParseIntPipe, PositiveIntPipe) page: number) {
-		const rankResponseDto = await this.ranksServices.findRanksWithPage(
-			page,
-		);
+	async paging() {
+		const rankResponseDto = await this.ranksServices.findRanksWithPage();
 
 		return rankResponseDto;
 	}
-
+	
+	@UseGuards(JwtAuthGuard)
 	@Patch('/me/statusMessage')
 	@ApiOperation({
 		summary: '상태 메세지 변경',
@@ -211,7 +218,8 @@ export class UsersController {
 
 		await this.usersService.updateMyStatusMessage(user.id, statusMessage);
 	}
-
+	
+	@UseGuards(JwtAuthGuard)
 	@Patch('/me/avatar')
 	@ApiOperation({
 		summary: '아바타 변경',

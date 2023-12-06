@@ -14,17 +14,14 @@ export class RanksService {
 		@InjectRedis() private readonly redis: Redis,
 	) {}
 
-	async findRanksWithPage(page: number): Promise<RankUserResponseDto> {
+	async findRanksWithPage(): Promise<RankUserResponseDto> {
 		//userIDRanking: [userId, userId, userId, ...]
-		
 
 		const userRanking = await this.redis.zrevrange(
 			'rankings',
-			(page - 1) * 10,
-			page * 10 - 1,
+			0,
+			-1,
 		);
-
-		console.log('userranking', userRanking); // ok
 
 		const foundUsers = await this.userRepository.findRanksInfos(
 			userRanking,
@@ -37,7 +34,7 @@ export class RanksService {
 
 		const rankUsers: RankUserReturnDto[] = foundUsers.map((user, index) => ({
 			...user,
-			ranking: index + 1 + (page - 1) * 10,
+			ranking: index + 1
 		}));
 		const totalItemCount = await this.userRepository.count(); // TODO: redis에 저장된 총 유저 수를 가져와야 하지 않을까?
 
