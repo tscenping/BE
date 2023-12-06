@@ -1,11 +1,11 @@
-import { IoAdapter } from '@nestjs/platform-socket.io';
 import { INestApplicationContext } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 import { Server, Socket } from 'socket.io';
 import { WSUnauthorizedException } from '../common/exception/custom-exception';
-import { UsersRepository } from '../users/users.repository';
 import { User } from '../users/entities/user.entity';
-import { ConfigService } from '@nestjs/config';
+import { UsersRepository } from '../users/users.repository';
 
 type JwtPayload = {
 	user: User;
@@ -41,6 +41,7 @@ export class SocketIoAdapter extends IoAdapter {
 		return server;
 	}
 }
+
 const wsAuthGuardMiddleware =
 	(
 		jwtService: JwtService,
@@ -69,6 +70,7 @@ const wsAuthGuardMiddleware =
 			where: { id: payload.id },
 		});
 		if (!user) return next(WSUnauthorizedException('no user'));
+		console.log('user:', JSON.stringify(user));
 
 		socket.user = user;
 		next();

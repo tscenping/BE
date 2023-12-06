@@ -2,6 +2,7 @@ import {
 	DB_QUERY_ERROR,
 	DB_UPDATE_FAILURE,
 	ErrorCode,
+	WS_BAD_REQUEST_ERROR,
 	WS_UNAUTHORIZED_ERROR,
 } from './error-code';
 export class customException extends Error {
@@ -30,4 +31,8 @@ export const DBQueryErrorException = (message?: string): customException => {
 
 export const WSUnauthorizedException = (message?: string): customException => {
 	return new customException(WS_UNAUTHORIZED_ERROR, message);
+};
+
+export const WSBadRequestException = (message?: string): customException => {
+	return new customException(WS_BAD_REQUEST_ERROR, message);
 };

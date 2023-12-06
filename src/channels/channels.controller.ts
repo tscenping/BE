@@ -236,13 +236,9 @@ export class ChannelsController {
 		@GetUser() user: User,
 		@Body() updateChannelUserRequestDto: UpdateChannelUserRequestDto,
 	) {
-		const giverUserId = user.id;
 		const receiverChannelUserId = updateChannelUserRequestDto.channelUserId;
 
-		await this.channelsService.muteChannelUser(
-			giverUserId,
-			receiverChannelUserId,
-		);
+		await this.channelsService.muteChannelUser(user, receiverChannelUserId);
 	}
 
 	// 채널 목록 조회
