@@ -16,6 +16,7 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { ChannelType } from 'src/common/enum';
 import { User } from 'src/users/entities/user.entity';
 import { PositiveIntPipe } from '../common/pipes/positiveInt.pipe';
+import { ChannelsGateway } from './channels.gateway';
 import { ChannelsService } from './channels.service';
 import { CreateChannelRequestDto } from './dto/creat-channel-request.dto';
 import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
@@ -30,7 +31,10 @@ import { UpdateChannelUserRequestDto } from './dto/update-channel-user-request.d
 @ApiTags('channels')
 @UseGuards(JwtAuthGuard)
 export class ChannelsController {
-	constructor(private readonly channelsService: ChannelsService) {}
+	constructor(
+		private readonly channelsService: ChannelsService,
+		private readonly channelsGateway: ChannelsGateway,
+	) {}
 
 	@Post('/')
 	@ApiOperation({
@@ -62,7 +66,21 @@ export class ChannelsController {
 			throw new BadRequestException(`channel name is required`);
 		}
 
-		return await this.channelsService.createChannel(user.id, channelInfo);
+		const createChannelResponseDto =
+			await this.channelsService.createChannel(user.id, channelInfo);
+
+		// channel room에 join
+		const channelRoomName = createChannelResponseDto.channelId.toString();
+		console.log(`channelRoomName: ${channelRoomName}`);
+		console.log(`user: `, JSON.stringify(user));
+		if (user.channelSocketId) {
+			this.channelsGateway.joinChannel(
+				channelRoomName,
+				user.channelSocketId,
+			);
+		}
+
+		return createChannelResponseDto;
 	}
 
 	/**
@@ -130,6 +148,15 @@ export class ChannelsController {
 
 		const channelUsersResponseDto =
 			await this.channelsService.createChannelUser(channelUserParamDto);
+
+		// channel room에 join
+		const channelRoomName = channelId.toString();
+		if (user.channelSocketId) {
+			this.channelsGateway.joinChannel(
+				channelRoomName,
+				user.channelSocketId,
+			);
+		}
 
 		return channelUsersResponseDto;
 	}

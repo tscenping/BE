@@ -505,7 +505,7 @@ export class ChannelsService {
 		// const Mutelist = await this.redis.keys(key);
 		// console.log('Mutelist: ', Mutelist);
 		// redis에 mute 정보 저장
-		const muteKey = `mute:${channelId}:${receiverUser.channelSocketId}:${giverUser.channelSocketId}`;
+		const muteKey = `mute:${channelId}:${receiverUser.id}`;
 		// redis에 mute 정보 저장
 		const result = await this.redis.set(muteKey, '');
 		// mute 정보 만료 시간 설정
