@@ -4,6 +4,7 @@ import * as bycrypt from 'bcrypt';
 import { Redis } from 'ioredis';
 import { MUTE_TIME } from 'src/common/constants';
 import { ChannelType, ChannelUserType } from 'src/common/enum';
+import { User } from 'src/users/entities/user.entity';
 import { UsersRepository } from 'src/users/users.repository';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { ChannelInvitationRepository } from './channel-invitation.repository';
@@ -460,7 +461,7 @@ export class ChannelsService {
 		);
 	}
 
-	async muteChannelUser(giverUserId: number, receiverChannelUserId: number) {
+	async muteChannelUser(giverUser: User, receiverChannelUserId: number) {
 		// 유효한 channelUserId인지 확인
 		const receiverChannelUser = await this.checkChannelUserExist(
 			receiverChannelUserId,
@@ -472,18 +473,18 @@ export class ChannelsService {
 
 		// giver user 유효성 확인 (channel에 속한 user인지, 권한 없는 member인지)
 		const giverChannelUser = await this.checkUserExistInChannel(
-			giverUserId,
+			giverUser.id,
 			channelId,
 		);
 
 		if (giverChannelUser.channelUserType === ChannelUserType.MEMBER)
 			throw new BadRequestException(
-				`muting user ${giverUserId} does not have authority`,
+				`muting user ${giverUser.id} does not have authority`,
 			);
 
 		// receiver user 유효성 확인 (존재하는 user인지)
 		const receiverUserId = receiverChannelUser.userId;
-		await this.checkUserExist(receiverUserId);
+		const receiverUser = await this.checkUserExist(receiverUserId);
 
 		// admin -> owner/admin 권한 행사 불가
 		if (giverChannelUser.channelUserType === ChannelUserType.ADMIN) {
@@ -492,7 +493,7 @@ export class ChannelsService {
 				receiverChannelUser.channelUserType === ChannelUserType.ADMIN
 			) {
 				throw new BadRequestException(
-					`admin user ${giverUserId} cannot mute the owner/admin user ${receiverUserId}`,
+					`admin user ${giverUser.id} cannot mute the owner/admin user ${receiverUserId}`,
 				);
 			}
 		}
@@ -504,7 +505,7 @@ export class ChannelsService {
 		// const Mutelist = await this.redis.keys(key);
 		// console.log('Mutelist: ', Mutelist);
 		// redis에 mute 정보 저장
-		const muteKey = `mute:${channelId}:${receiverUserId}:${giverUserId}`;
+		const muteKey = `mute:${channelId}:${receiverUser.channelSocketId}:${giverUser.channelSocketId}`;
 		// redis에 mute 정보 저장
 		const result = await this.redis.set(muteKey, '');
 		// mute 정보 만료 시간 설정
@@ -593,12 +594,15 @@ export class ChannelsService {
 		}
 	}
 
-	private async checkUserExist(userId: number) {
-		const user = this.usersRepository.findOne({
+	private async checkUserExist(userId: number): Promise<User> {
+		const user = await this.usersRepository.findOne({
 			where: { id: userId },
 		});
-		if (!user)
+
+		if (!user) {
 			throw new BadRequestException(`user ${userId} doesn't exist`);
+		}
+		return user as User;
 	}
 
 	private async checkChannelExist(channelId: number) {

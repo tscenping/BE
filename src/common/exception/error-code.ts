@@ -26,3 +26,8 @@ export const WS_UNAUTHORIZED_ERROR = new ErrorCodeValueObject(
 	HttpStatus.UNAUTHORIZED,
 	'WebSocket: unauthorized user detected',
 );
+
+export const WS_BAD_REQUEST_ERROR = new ErrorCodeValueObject(
+	HttpStatus.BAD_REQUEST,
+	'WebSocket: bad request',
+);
