@@ -29,7 +29,7 @@ export class SocketIoAdapter extends IoAdapter {
 			origin: [
 				`https://localhost:${clientPort}`,
 				new RegExp(
-					`/^http:\/\/192\.168\.1\.([1-9]|[1-9]\d):${clientPort}$/`,
+					`/^https:\/\/192\.168\.1\.([1-9]|[1-9]\d):${clientPort}$/`,
 				),
 			],
 		};
@@ -41,19 +41,19 @@ export class SocketIoAdapter extends IoAdapter {
 
 		const server: Server = super.createIOServer(port, optionsWithCORS);
 
-		const namespaces = ['channels'];
+		// const namespaces = ['channels'];
 
-		namespaces.forEach((namespace) => {
-			server
-				.of(namespace)
-				.use(
-					wsAuthGuardMiddleware(
-						jwtService,
-						configService,
-						userRepository,
-					),
-				);
-		});
+		// namespaces.forEach((namespace) => {
+		// 	server
+		// 		.of(namespace)
+		// 		.use(
+		// 			wsAuthGuardMiddleware(
+		// 				jwtService,
+		// 				configService,
+		// 				userRepository,
+		// 			),
+		// 		);
+		// });
 		return server;
 	}
 }

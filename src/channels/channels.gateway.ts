@@ -75,13 +75,17 @@ export class ChannelsGateway
 			await this.friendsRepository.findAllFriendChannelSocketIdByUserId(
 				user.id,
 			);
+
 		const eventUserStatusEmitDto = {
 			userId: user.id,
 			status: UserStatus.ONLINE,
 		};
-		this.server
-			.to(friendChannelSocketIdList)
-			.emit(EVENT_USER_STATUS, eventUserStatusEmitDto);
+
+		for (const friendChannelSocketId of friendChannelSocketIdList) {
+			this.server
+				.to(friendChannelSocketId.channelSocketId)
+				.emit(EVENT_USER_STATUS, eventUserStatusEmitDto);
+		}
 	}
 
 	async handleDisconnect(@ConnectedSocket() client: Socket) {
@@ -108,9 +112,12 @@ export class ChannelsGateway
 			userId: user.id,
 			status: UserStatus.OFFLINE,
 		};
-		this.server
-			.to(friendChannelSocketIdList)
-			.emit(EVENT_USER_STATUS, eventUserStatusEmitDto);
+
+		for (const friendChannelSocketId of friendChannelSocketIdList) {
+			this.server
+				.to(friendChannelSocketId.channelSocketId)
+				.emit(EVENT_USER_STATUS, eventUserStatusEmitDto);
+		}
 
 		// 유저가 속해있던 채널 룸에서 leave한다.
 		client.rooms.clear();
@@ -158,6 +165,17 @@ export class ChannelsGateway
 		this.server
 			.to(channelId.toString())
 			.emit('message', eventMessageEmitDto);
+	}
+
+	joinChannel(channelRoomName: string, channelSocketId: string) {
+		this.logger.log(`joinChannel: ${channelRoomName}, ${channelSocketId}`);
+
+		const socket = this.server.sockets.sockets.get(channelSocketId);
+		if (!socket) {
+			throw WSBadRequestException('socket이 존재하지 않습니다.');
+		}
+
+		socket.join(channelRoomName);
 	}
 
 	@SubscribeMessage('ClientToServer') // TODO: test용 코드. 추후 삭제
