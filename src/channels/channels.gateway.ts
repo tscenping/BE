@@ -145,13 +145,18 @@ export class ChannelsGateway
 			message,
 		};
 		// mute된 유저의 socketId List를 가져온다.
-		const muteRedisKey = `mute:${channelId}:${user.channelSocketId}:*`;
-		const muteChannelUserList = await this.redis.keys(muteRedisKey);
+		const muteRedisKey = `mute:${channelId}:${user.id}`;
+		// console.log('muteRedisKey:', muteRedisKey);
+		const isMutedChannelUser = await this.redis.exists(muteRedisKey);
+
+		if (isMutedChannelUser) {
+			throw WSBadRequestException('채널에서 음소거 되었습니다.');
+		}
+		// console.log('muteRedisKey:', muteRedisKey);
 
 		// 채널에 메시지를 emit한다.
 		this.server
 			.to(channelId.toString())
-			.except(muteChannelUserList)
 			.emit('message', eventMessageEmitDto);
 	}
 
