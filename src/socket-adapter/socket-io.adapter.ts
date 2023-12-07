@@ -1,7 +1,7 @@
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { INestApplicationContext } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { Server, Socket } from 'socket.io';
+import { Server, Socket, ServerOptions } from 'socket.io';
 import { WSUnauthorizedException } from '../common/exception/custom-exception';
 import { UsersRepository } from '../users/users.repository';
 import { User } from '../users/entities/user.entity';
@@ -22,8 +22,24 @@ export class SocketIoAdapter extends IoAdapter {
 		const jwtService = this.app.get(JwtService);
 		const configService = this.app.get(ConfigService);
 		const userRepository = this.app.get(UsersRepository);
+		const clientPort = '8001';
 
-		const server: Server = super.createIOServer(port, options);
+		const cors = {
+			credentials: true,
+			origin: [
+				`http://localhost:${clientPort}`,
+				new RegExp(
+					`/^http:\/\/192\.168\.1\.([1-9]|[1-9]\d):${clientPort}$/`,
+				),
+			],
+		};
+
+		const optionsWithCORS: ServerOptions = {
+			...options,
+			cors,
+		};
+
+		const server: Server = super.createIOServer(port, optionsWithCORS);
 
 		const namespaces = ['channels'];
 
