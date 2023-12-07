@@ -25,6 +25,7 @@ export class SocketIoAdapter extends IoAdapter {
 		const clientPort = '8001';
 
 		const cors = {
+			credentials: true,
 			origin: [
 				`http://localhost:${clientPort}`,
 				new RegExp(
