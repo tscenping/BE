@@ -2,7 +2,7 @@ import { INestApplicationContext } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { IoAdapter } from '@nestjs/platform-socket.io';
-import { Server, Socket, ServerOptions } from 'socket.io';
+import { Server, ServerOptions, Socket } from 'socket.io';
 import { WSUnauthorizedException } from '../common/exception/custom-exception';
 import { User } from '../users/entities/user.entity';
 import { UsersRepository } from '../users/users.repository';
