@@ -1,13 +1,15 @@
 import { GameType } from '../../common/enum';
-import { IsIn } from 'class-validator';
+import { IsIn, IsInt, IsPositive, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-
-export class GameInvitationRequestDto {
+export class CreateInvitationRequestDto {
 	@ApiProperty({ description: '초대한 유저id' })
+	@IsInt()
+	@IsPositive()
 	invitedUserId: number;
 
-	// @IsIn([GameType.NORMAL_INVITE, GameType.SPECIAL_INVITE])
 	@ApiProperty({ description: '게임종류' })
+	@IsIn([GameType.NORMAL_INVITE, GameType.SPECIAL_INVITE])
+	@IsString()
 	gameType: GameType;
 }

@@ -293,7 +293,7 @@ export class ChannelsService {
 			createInvitationParamDto,
 		);
 
-		// TODO: 알람 보내기
+		// TODO: 알림 보내기
 	}
 
 	async updateChannelUser(userId: number, channelId: number) {
@@ -600,7 +600,7 @@ export class ChannelsService {
 		});
 
 		if (!user) {
-			throw new BadRequestException(`user ${userId} doesn't exist`);
+			throw new BadRequestException(`user ${userId} does not exist`);
 		}
 		return user as User;
 	}

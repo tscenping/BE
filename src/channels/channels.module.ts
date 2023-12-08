@@ -20,6 +20,8 @@ import { ChannelUser } from './entities/channel-user.entity';
 import { Channel } from './entities/channel.entity';
 import { AuthService } from 'src/auth/auth.service';
 import { JwtService } from '@nestjs/jwt';
+import { GameInvitation } from '../game/entities/game-invitation.entity';
+import { GameInvitationRepository } from '../game/game-invitation.repository';
 
 @Module({
 	imports: [
@@ -29,6 +31,7 @@ import { JwtService } from '@nestjs/jwt';
 			ChannelInvitation,
 			User,
 			Game,
+			GameInvitation,
 			Friend,
 			Block,
 		]),
@@ -45,6 +48,7 @@ import { JwtService } from '@nestjs/jwt';
 		UsersRepository,
 		ChannelsGateway,
 		GameRepository,
+		GameInvitationRepository,
 		FriendsRepository,
 		BlocksRepository,
 	],

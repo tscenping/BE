@@ -15,10 +15,12 @@ import { UsersRepository } from './users.repository';
 import { UsersService } from './users.service';
 import { ScheduleModule } from '@nestjs/schedule';
 import { AppService } from 'src/app.service';
+import { GameInvitation } from '../game/entities/game-invitation.entity';
+import { GameInvitationRepository } from '../game/game-invitation.repository';
 
 @Module({
 	imports: [
-		TypeOrmModule.forFeature([User, Friend, Block, Game]),
+		TypeOrmModule.forFeature([User, Friend, Block, Game, GameInvitation]),
 		ScheduleModule.forRoot(),
 	],
 	controllers: [UsersController],
@@ -31,6 +33,7 @@ import { AppService } from 'src/app.service';
 		FriendsRepository,
 		BlocksRepository,
 		GameRepository,
+		GameInvitationRepository,
 		AppService,
 	],
 	exports: [UsersService],
