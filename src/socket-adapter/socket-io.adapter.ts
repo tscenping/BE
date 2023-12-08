@@ -19,9 +19,9 @@ export class SocketIoAdapter extends IoAdapter {
 	}
 
 	createIOServer(port: number, options?: any) {
-		const jwtService = this.app.get(JwtService);
-		const configService = this.app.get(ConfigService);
-		const userRepository = this.app.get(UsersRepository);
+		// const jwtService = this.app.get(JwtService);
+		// const configService = this.app.get(ConfigService);
+		// const userRepository = this.app.get(UsersRepository);
 		const clientPort = '8001';
 
 		const cors = {
@@ -42,7 +42,7 @@ export class SocketIoAdapter extends IoAdapter {
 		const server: Server = super.createIOServer(port, optionsWithCORS);
 
 		// const namespaces = ['channels'];
-
+		//
 		// namespaces.forEach((namespace) => {
 		// 	server
 		// 		.of(namespace)
@@ -68,19 +68,16 @@ const wsAuthGuardMiddleware =
 		// const token = socket.handshake.auth.token;
 		const cookie = socket.handshake.headers.cookie;
 		if (!cookie) return next(WSUnauthorizedException('no cookie'));
-		console.log('cookie:', cookie);
 
 		const accessToken = cookie.split(';')[0].split('=')[1];
 		if (!accessToken)
 			return next(WSUnauthorizedException('no access token'));
 		// accessToken 유효성 검사
-		console.log('accessToken:', accessToken);
 
 		const payload = await jwtService.verifyAsync(accessToken, {
 			secret: configService.get<string>('JWT_SECRET'),
 		});
 		if (!payload) return next(WSUnauthorizedException('no payload'));
-		console.log('payload:', JSON.stringify(payload));
 
 		const user = await usersRepository.findOne({
 			where: { id: payload.id },
