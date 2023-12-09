@@ -189,8 +189,8 @@ export class AuthController {
 
 	@Patch('/refresh')
 	@ApiOperation({
-		summary: 'jwt access 토큰 및 secret 토큰 재발급',
-		description: `jwt access 토큰 및 secret 토큰 재발급.
+		summary: 'jwt access 토큰 재발급',
+		description: `jwt access 토큰 재발급.
 			refresh token이 유효하지 않으면 401 Unauthorized`,
 	})
 	@UseGuards(AuthGuard('refresh'))
