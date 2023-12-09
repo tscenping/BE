@@ -129,7 +129,7 @@ export class UsersService {
 
 	async signout(userId: number) {
 		await this.userRepository.update(userId, {
-			refreshToken: undefined,
+			refreshToken: null,
 			status: UserStatus.OFFLINE,
 		});
 	}
@@ -165,7 +165,7 @@ export class UsersService {
 
 		const isRefreshTokenMatching = await bcrypt.compare(
 			refreshToken,
-			user.refreshToken,
+			user.refreshToken!,
 		);
 
 		if (!isRefreshTokenMatching) {

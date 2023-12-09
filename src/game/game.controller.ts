@@ -1,15 +1,15 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
-import { GameService } from './game.service';
-import { CreateInvitationRequestDto } from './dto/create-invitation-request.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { ApiTags } from '@nestjs/swagger';
 import { GetUser } from '../auth/get-user.decorator';
 import { User } from '../users/entities/user.entity';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ApiTags } from '@nestjs/swagger';
 import { CreateGameInvitationParamDto } from './dto/create-invitation-param.dto';
+import { CreateInvitationRequestDto } from './dto/create-invitation-request.dto';
+import { GameService } from './game.service';
 
 @Controller('game')
 @ApiTags('game')
-@UseGuards(JwtAuthGuard)
+@UseGuards(AuthGuard('access'))
 export class GameController {
 	constructor(private readonly gameService: GameService) {}
 
