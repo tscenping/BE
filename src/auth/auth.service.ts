@@ -1,6 +1,7 @@
 import { ConflictException, Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
 import { Socket } from 'socket.io';
 import jwtConfig from 'src/config/jwt.config';
 import { User } from 'src/users/entities/user.entity';
@@ -11,7 +12,7 @@ import { UserFindReturnDto } from './dto/user-find-return.dto';
 @Injectable()
 export class AuthService {
 	constructor(
-		private readonly userRepository: UsersRepository,
+		private readonly usersRepository: UsersRepository,
 		private readonly jwtService: JwtService,
 		@Inject(jwtConfig.KEY)
 		private readonly jwtConfigure: ConfigType<typeof jwtConfig>,
@@ -26,13 +27,13 @@ export class AuthService {
 	async findOrCreateUser(
 		userData: FtUserParamDto,
 	): Promise<UserFindReturnDto> {
-		const user = await this.userRepository.findOne({
+		const user = await this.usersRepository.findOne({
 			where: { email: userData.email },
 		});
 
 		if (!user) {
-			const user = this.userRepository.create(userData);
-			await this.userRepository.save(user);
+			const user = this.usersRepository.create(userData);
+			await this.usersRepository.save(user);
 
 			return { user };
 		}
@@ -46,7 +47,7 @@ export class AuthService {
 	}
 
 	async generateJwtToken(user: User) {
-		const payload = { id: user.id };
+		const payload = { id: user.id, email: user.email };
 		// accessToken 생성
 		const accessToken = await this.jwtService.signAsync(payload);
 
@@ -55,14 +56,21 @@ export class AuthService {
 			id: payload.id,
 		});
 
-		// refreshToken을 DB에 저장한다.
-		await this.userRepository.update(user.id, { refreshToken });
+		// 암호화된 refreshToken을 DB에 저장한다.
+		const saltOrRounds = 10;
+		const hashedRefreshToken = await bcrypt.hash(
+			refreshToken,
+			saltOrRounds,
+		);
+		await this.usersRepository.update(user.id, {
+			refreshToken: hashedRefreshToken,
+		});
 
 		return { jwtAccessToken: accessToken, jwtRefreshToken: refreshToken };
 	}
 
 	async validateNickname(nickname: string) {
-		const user = await this.userRepository.findUserByNickname(nickname);
+		const user = await this.usersRepository.findUserByNickname(nickname);
 		if (user) {
 			throw new ConflictException('이미 존재하는 닉네임입니다.');
 		}
@@ -90,7 +98,7 @@ export class AuthService {
 		}
 		this.logger.log(`payload: ${JSON.stringify(payload)}`);
 
-		const user = await this.userRepository.findOne({
+		const user = await this.usersRepository.findOne({
 			where: { id: payload.id },
 		});
 		if (!user) {
@@ -99,5 +107,12 @@ export class AuthService {
 		}
 
 		return user;
+	}
+
+	async generateAccessToken(user: User) {
+		const payload = { id: user.id, email: user.email };
+		const accessToken = await this.jwtService.signAsync(payload);
+
+		return accessToken;
 	}
 }

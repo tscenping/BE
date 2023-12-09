@@ -1,4 +1,3 @@
-import { AppService } from './../app.service';
 import {
 	Body,
 	Controller,
@@ -8,18 +7,18 @@ import {
 	Res,
 	UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { User } from 'src/users/entities/user.entity';
 import { SignupRequestDto } from '../users/dto/signup-request.dto';
 import { UsersService } from '../users/users.service';
+import { AppService } from './../app.service';
 import { AuthService } from './auth.service';
 import { UserSigninResponseDto } from './dto/user-signin-response.dto';
 import { FtAuthService } from './ft-auth.service';
 import { GetUser } from './get-user.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
-import { ChannelsGateway } from '../channels/channels.gateway';
-import { UserStatus } from '../common/enum';
 
 @Controller('auth')
 @ApiTags('auth')
@@ -155,7 +154,7 @@ export class AuthController {
 			httpOnly: true,
 			secure: true,
 			sameSite: 'none',
-			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
+			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14), // 14일
 		});
 
 		const userSigninResponseDto: UserSigninResponseDto = {
@@ -167,7 +166,7 @@ export class AuthController {
 		Logger.log(
 			`updateRanking(ladderScore, id): ${user.ladderScore}, ${user.id}`,
 		);
-		await this.AppService.updateRanking(user.ladderScore, user.id);
+		await this.AppService.updateRanking(user.ladderScore, user.id); // TODO: 필요한 부분인가?
 
 		return res.send(userSigninResponseDto);
 	}
@@ -188,6 +187,25 @@ export class AuthController {
 		res.clearCookie('refreshToken');
 
 		// logout 시에는 프론트가 소켓을 disconnect 해준다.
+		return res.send();
+	}
+
+	@Patch('/refresh')
+	@ApiOperation({
+		summary: 'jwt access 토큰 및 secret 토큰 재발급',
+		description: `jwt access 토큰 및 secret 토큰 재발급.
+			refresh token이 유효하지 않으면 401 Unauthorized`,
+	})
+	@UseGuards(AuthGuard('refresh'))
+	async refresh(@GetUser() user: User, @Res() res: Response) {
+		const jwtAccessToken = await this.authService.generateAccessToken(user);
+		res.cookie('accessToken', jwtAccessToken, {
+			// httpOnly: true,
+			secure: true,
+			sameSite: 'none',
+			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1), // 1일
+		});
+
 		return res.send();
 	}
 }

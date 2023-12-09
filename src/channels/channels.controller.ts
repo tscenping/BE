@@ -10,9 +10,9 @@ import {
 	Query,
 	UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { GetUser } from 'src/auth/get-user.decorator';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { ChannelType } from 'src/common/enum';
 import { User } from 'src/users/entities/user.entity';
 import { PositiveIntPipe } from '../common/pipes/positiveInt.pipe';
@@ -29,7 +29,7 @@ import { UpdateChannelUserRequestDto } from './dto/update-channel-user-request.d
 
 @Controller('channels')
 @ApiTags('channels')
-@UseGuards(JwtAuthGuard)
+@UseGuards(AuthGuard('access'))
 export class ChannelsController {
 	constructor(
 		private readonly channelsService: ChannelsService,

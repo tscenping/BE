@@ -1,7 +1,7 @@
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserStatus } from 'src/common/enum';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { MyProfileResponseDto } from './dto/my-profile-response.dto';
 import { UserProfileReturnDto } from './dto/user-profile.dto';
 import { User } from './entities/user.entity';
@@ -76,11 +76,7 @@ export class UsersRepository extends Repository<User> {
 		// Use forEach to iterate through users array
 		for (const userid of users) {
 			const user = await this.findOne({
-				select: [
-					'nickname',
-					'avatar',
-					'ladderScore',
-				],
+				select: ['nickname', 'avatar', 'ladderScore'],
 				where: { id: parseInt(userid) },
 			});
 			if (!user) {
@@ -89,7 +85,7 @@ export class UsersRepository extends Repository<User> {
 			rankUsers.push(user);
 		}
 		return rankUsers;
-	  }
+	}
 
 	async initAllSocketIdAndUserStatus() {
 		await this.createQueryBuilder()

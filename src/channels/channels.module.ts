@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthService } from 'src/auth/auth.service';
 import { Game } from 'src/game/entities/game.entity';
 import { GameRepository } from 'src/game/game.repository';
 import { BlocksRepository } from 'src/users/blocks.repository';
@@ -9,6 +11,8 @@ import { User } from 'src/users/entities/user.entity';
 import { FriendsRepository } from 'src/users/friends.repository';
 import { UsersRepository } from 'src/users/users.repository';
 import { UsersService } from 'src/users/users.service';
+import { GameInvitation } from '../game/entities/game-invitation.entity';
+import { GameInvitationRepository } from '../game/game-invitation.repository';
 import { ChannelInvitationRepository } from './channel-invitation.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
 import { ChannelsController } from './channels.controller';
@@ -18,10 +22,6 @@ import { ChannelsService } from './channels.service';
 import { ChannelInvitation } from './entities/channel-invitation.entity';
 import { ChannelUser } from './entities/channel-user.entity';
 import { Channel } from './entities/channel.entity';
-import { AuthService } from 'src/auth/auth.service';
-import { JwtService } from '@nestjs/jwt';
-import { GameInvitation } from '../game/entities/game-invitation.entity';
-import { GameInvitationRepository } from '../game/game-invitation.repository';
 
 @Module({
 	imports: [
