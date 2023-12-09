@@ -18,10 +18,22 @@ import { Block } from 'src/users/entities/block.entity';
 import { FriendsRepository } from 'src/users/friends.repository';
 import { BlocksRepository } from 'src/users/blocks.repository';
 import { AppService } from 'src/app.service';
+import { GameInvitationRepository } from '../game/game-invitation.repository';
+import { GameInvitation } from '../game/entities/game-invitation.entity';
+import { ChannelsGateway } from '../channels/channels.gateway';
+import { ChannelUsersRepository } from '../channels/channel-users.repository';
+import { ChannelUser } from '../channels/entities/channel-user.entity';
 
 @Module({
 	imports: [
-		TypeOrmModule.forFeature([User, Game, Friend, Block]),
+		TypeOrmModule.forFeature([
+			User,
+			Game,
+			GameInvitation,
+			Friend,
+			Block,
+			ChannelUser,
+		]),
 		PassportModule,
 		JwtModule.registerAsync({
 			inject: [jwtConfig.KEY],
@@ -37,8 +49,12 @@ import { AppService } from 'src/app.service';
 		UsersRepository,
 		UsersService,
 		GameRepository,
+		GameInvitationRepository,
 		FriendsRepository,
 		BlocksRepository,
+		ChannelsGateway,
+		ChannelUsersRepository,
+		FriendsRepository,
 		AppService,
 	],
 })

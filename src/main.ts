@@ -26,7 +26,9 @@ async function bootstrap() {
 	// app.useGlobalInterceptors(new LoggingInterceptor());
 	app.useGlobalFilters(new ToHttpFilter());
 	app.useGlobalPipes(new ValidationPipe());
-	app.useWebSocketAdapter(new SocketIoAdapter(app)); // NestJS에서는 기본적으로 socket.io를 사용하고 있지만 IoAdapter를 custom했기 때문에 적용시켜줘야한다.
+
+	// NestJS에서는 기본적으로 socket.io를 사용하고 있지만 cors 설정을 위해 IoAdapter를 custom했기 때문에 적용시켜줘야한다.
+	app.useWebSocketAdapter(new SocketIoAdapter(app));
 
 	setupSwagger(app);
 	await app.listen(3000);

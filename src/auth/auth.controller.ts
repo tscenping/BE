@@ -1,5 +1,13 @@
 import { AppService } from './../app.service';
-import { Body, Controller, Logger, Patch, Post, Res, UseGuards } from '@nestjs/common';
+import {
+	Body,
+	Controller,
+	Logger,
+	Patch,
+	Post,
+	Res,
+	UseGuards,
+} from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { User } from 'src/users/entities/user.entity';
@@ -10,6 +18,8 @@ import { UserSigninResponseDto } from './dto/user-signin-response.dto';
 import { FtAuthService } from './ft-auth.service';
 import { GetUser } from './get-user.decorator';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { ChannelsGateway } from '../channels/channels.gateway';
+import { UserStatus } from '../common/enum';
 
 @Controller('auth')
 @ApiTags('auth')
@@ -129,7 +139,7 @@ export class AuthController {
 		}
 
 		const user = await this.usersService.createUser(nickname, 'test@test');
-		
+
 		const { jwtAccessToken, jwtRefreshToken } =
 			await this.authService.generateJwtToken(user);
 
@@ -154,7 +164,9 @@ export class AuthController {
 			isMfaEnabled: false,
 			mfaCode: undefined,
 		};
-		Logger.log(`updateRanking(ladderScore, id): ${user.ladderScore}, ${user.id}`);
+		Logger.log(
+			`updateRanking(ladderScore, id): ${user.ladderScore}, ${user.id}`,
+		);
 		await this.AppService.updateRanking(user.ladderScore, user.id);
 
 		return res.send(userSigninResponseDto);
@@ -166,7 +178,7 @@ export class AuthController {
 		description:
 			'200 OK 만 반환한다. 쿠키에 있는 access,refresh token를 지운다.',
 	})
-	@UseGuards(JwtAuthGuard)	
+	@UseGuards(JwtAuthGuard)
 	async signout(@GetUser() user: User, @Res() res: Response) {
 		await this.usersService.signout(user.id);
 
@@ -174,6 +186,8 @@ export class AuthController {
 
 		res.clearCookie('accessToken');
 		res.clearCookie('refreshToken');
+
+		// logout 시에는 프론트가 소켓을 disconnect 해준다.
 		return res.send();
 	}
 }
