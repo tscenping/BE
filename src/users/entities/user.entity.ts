@@ -60,9 +60,9 @@ export class User extends BaseEntity {
 	//   @IsString()
 	//   accessToken!: string | null;
 
-	@Column({ default: null })
+	@Column({ nullable: true, type: 'varchar' })
 	@IsString()
-	refreshToken: string;
+	refreshToken: string | null;
 
 	@Column({ default: null, nullable: true, type: 'varchar' })
 	@IsString()

@@ -39,7 +39,7 @@ export class ChannelsGateway
 	@WebSocketServer()
 	server: Server;
 
-	private logger = new Logger(ChannelsGateway.name);
+	private readonly logger = new Logger(ChannelsGateway.name);
 
 	afterInit(server: Server) {
 		this.logger.log('afterInit!');
@@ -167,14 +167,21 @@ export class ChannelsGateway
 			.emit('message', eventMessageEmitDto);
 	}
 
-	joinChannel(channelRoomName: string, channelSocketId: string) {
-		this.logger.log(`joinChannel: ${channelRoomName}, ${channelSocketId}`);
+	// 채널을 생성한 경우, 해당 소켓을 채널 룸에 join하는 메서드
+	async joinChannelRoom(channelRoomName: string, channelSocketId: string) {
+		this.logger.log(
+			`joinChannelRoom: ${channelRoomName}, ${channelSocketId}`,
+		);
 
-		const socket = this.server.sockets.sockets.get(channelSocketId);
+		const socket = (await this.server.fetchSockets()).find(
+			(s) => s.id === channelSocketId,
+		);
+
 		if (!socket) {
-			throw WSBadRequestException('socket이 존재하지 않습니다.');
+			return WSBadRequestException('socket이 존재하지 않습니다.');
 		}
 
+		this.logger.log(`socket.id: `, socket.id);
 		socket.join(channelRoomName);
 	}
 

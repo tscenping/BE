@@ -12,16 +12,16 @@ import {
 	Query,
 	UseGuards,
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { GetUser } from 'src/auth/get-user.decorator';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { STATUS_MESSAGE_STRING } from 'src/common/constants';
 import { PositiveIntPipe } from 'src/common/pipes/positiveInt.pipe';
 import { BlocksService } from './blocks.service';
 import { User } from './entities/user.entity';
 import { FriendsService } from './friends.service';
 import { RanksService } from './ranks.service';
 import { UsersService } from './users.service';
-import { STATUS_MESSAGE_STRING } from 'src/common/constants';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @Controller('users')
 @ApiTags('users')
@@ -34,8 +34,8 @@ export class UsersController {
 	) {}
 
 	private readonly logger = new Logger(UsersController.name);
-		
-	@UseGuards(JwtAuthGuard)
+
+	@UseGuards(AuthGuard('access'))
 	@Post('/friends')
 	@ApiOperation({
 		summary: '친구추가',
@@ -49,8 +49,8 @@ export class UsersController {
 		await this.friendsService.createFriend(user.id, toUserId);
 		// TODO: 친구요청을 받은 유저에게 알림 보내기
 	}
-	
-	@UseGuards(JwtAuthGuard)
+
+	@UseGuards(AuthGuard('access'))
 	@Delete('/friends')
 	@ApiOperation({
 		summary: '친구삭제',
@@ -63,8 +63,8 @@ export class UsersController {
 	) {
 		await this.friendsService.deleteFriend(user.id, toUserId);
 	}
-	
-	@UseGuards(JwtAuthGuard)
+
+	@UseGuards(AuthGuard('access'))
 	@Get('/friends')
 	@ApiOperation({
 		summary: '친구목록 조회',
@@ -81,8 +81,8 @@ export class UsersController {
 
 		return friendResponseDto;
 	}
-	
-	@UseGuards(JwtAuthGuard)
+
+	@UseGuards(AuthGuard('access'))
 	@Get('/me')
 	@ApiOperation({
 		summary: '내 정보 조회',
@@ -93,8 +93,8 @@ export class UsersController {
 
 		return myProfile;
 	}
-	
-	@UseGuards(JwtAuthGuard)
+
+	@UseGuards(AuthGuard('access'))
 	@Get('/profile/:nickname')
 	@ApiOperation({
 		summary: '유저 정보 조회',
@@ -112,8 +112,8 @@ export class UsersController {
 
 		return userProfile;
 	}
-	
-	@UseGuards(JwtAuthGuard)
+
+	@UseGuards(AuthGuard('access'))
 	@Get('/games/:nickname')
 	@ApiOperation({
 		summary: '게임 정보 조회',
@@ -133,8 +133,8 @@ export class UsersController {
 
 		return gameHistories;
 	}
-	
-	@UseGuards(JwtAuthGuard)
+
+	@UseGuards(AuthGuard('access'))
 	@Post('/blocks')
 	@ApiOperation({
 		summary: '유저 차단',
@@ -148,8 +148,8 @@ export class UsersController {
 	) {
 		await this.blocksService.applyBlock(user.id, toUserId);
 	}
-	
-	@UseGuards(JwtAuthGuard)
+
+	@UseGuards(AuthGuard('access'))
 	@Delete('/blocks')
 	@ApiOperation({
 		summary: '유저 차단 해제',
@@ -163,7 +163,7 @@ export class UsersController {
 		await this.blocksService.cancelBlock(user.id, toUserId);
 	}
 
-	@UseGuards(JwtAuthGuard)
+	@UseGuards(AuthGuard('access'))
 	@Get('/blocks')
 	@ApiOperation({
 		summary: '유저 차단목록 조회',
@@ -179,7 +179,7 @@ export class UsersController {
 
 		return BlockUserResponseDto;
 	}
-	
+
 	@Get('/rank')
 	@ApiOperation({
 		summary: '랭킹 조회',
@@ -190,8 +190,8 @@ export class UsersController {
 
 		return rankResponseDto;
 	}
-	
-	@UseGuards(JwtAuthGuard)
+
+	@UseGuards(AuthGuard('access'))
 	@Patch('/me/statusMessage')
 	@ApiOperation({
 		summary: '상태 메세지 변경',
@@ -218,8 +218,8 @@ export class UsersController {
 
 		await this.usersService.updateMyStatusMessage(user.id, statusMessage);
 	}
-	
-	@UseGuards(JwtAuthGuard)
+
+	@UseGuards(AuthGuard('access'))
 	@Patch('/me/avatar')
 	@ApiOperation({
 		summary: '아바타 변경',

@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { UserStatus } from 'src/common/enum';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { GameRepository } from '../game/game.repository';
@@ -128,7 +129,7 @@ export class UsersService {
 
 	async signout(userId: number) {
 		await this.userRepository.update(userId, {
-			refreshToken: undefined,
+			refreshToken: null,
 			status: UserStatus.OFFLINE,
 		});
 	}
@@ -151,6 +152,27 @@ export class UsersService {
 		if (updateRes.affected !== 1) {
 			throw DBUpdateFailureException(`user ${userId} update failed`);
 		}
+	}
+
+	async getUserIfRefreshTokenMatches(refreshToken: string, userId: number) {
+		const user = await this.userRepository.findOne({
+			where: { id: userId },
+		});
+
+		if (!user) {
+			return null;
+		}
+
+		const isRefreshTokenMatching = await bcrypt.compare(
+			refreshToken,
+			user.refreshToken!,
+		);
+
+		if (!isRefreshTokenMatching) {
+			return null;
+		}
+
+		return user;
 	}
 
 	// TODO: test용 메서드. 추후 삭제
