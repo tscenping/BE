@@ -8,15 +8,14 @@ import {
 import { UsersRepository } from '../users/users.repository';
 import { Server, Socket } from 'socket.io';
 import { AuthService } from '../auth/auth.service';
-import { GatewayCreateInvitationParamDto } from './dto/gateway-create-invitation-param.dto';
-import { UserStatus } from '../common/enum';
 import { WSBadRequestException } from '../common/exception/custom-exception';
-import { EVENT_GAME_INVITATION } from '../common/events';
-import { UseFilters } from '@nestjs/common';
+import { UseFilters, UsePipes, ValidationPipe } from '@nestjs/common';
 import { WsExceptionFilter } from '../common/exception/custom-ws-exception.filter';
+import { GatewayJoinRoomParamDto } from './dto/gateway-join-room-param.dto';
+import { GameInvitation } from './entities/game-invitation.entity';
 
-@UseFilters(WsExceptionFilter)
 @WebSocketGateway({ namespace: 'game' })
+@UseFilters(WsExceptionFilter)
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	constructor(
 		private readonly authService: AuthService,
@@ -25,6 +24,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 	@WebSocketServer()
 	server: Server;
+	private connectedClients: Map<number, Socket> = new Map();
 
 	async handleConnection(@ConnectedSocket() client: Socket) {
 		const user = await this.authService.getUserFromSocket(client);
@@ -37,47 +37,53 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		await this.usersRepository.update(user.id, {
 			gameSocketId: client.id,
 		});
+		this.connectedClients.set(user.id, client);
 	}
 
 	async handleDisconnect(@ConnectedSocket() client: Socket) {
 		const user = await this.authService.getUserFromSocket(client);
-		if (!user || !client.id || user.gameSocketId) return;
+		if (!user || client.id !== user.gameSocketId) return;
 
 		await this.usersRepository.update(user.id, {
 			gameSocketId: null,
 		});
+		this.connectedClients.delete(user.id);
 		client.rooms.clear();
 	}
 
-	async inviteGame(
-		gatewayInvitationParamDto: GatewayCreateInvitationParamDto,
-	) {
-		const invitationId = gatewayInvitationParamDto.invitationId;
-		const invitingUserNickname =
-			gatewayInvitationParamDto.invitingUserNickname;
-		const invitedUserId = gatewayInvitationParamDto.invitedUserId;
+	gameSetting(invitation: GameInvitation) {
+		// 1. Game DB 생성하기
 
-		const invitedUser = await this.usersRepository.findOne({
-			where: {
-				id: invitedUserId,
-			},
-		});
-		if (!invitedUser) {
-			throw WSBadRequestException(`user ${invitedUserId} does not exist`);
-		}
+		// 2. 초대 해 준 사람이랑 같이 room에 들어가기
+		const invitingUserId = invitation.invitingUserId;
+		const invitedUserId = invitation.invitedUserId;
+		const gatewayJoinRoomParamDto: GatewayJoinRoomParamDto = {
+			invitingUserId: invitingUserId,
+			invitedUserId: invitedUserId,
+			roomName: `${invitingUserId}:${invitedUserId}`,
+		};
+		this.joinGameRoom(gatewayJoinRoomParamDto);
 
-		// 상대가 접속 중인지 => 접속 중인 유저가 아니라면 없던 일이 됨
-		if (
-			invitedUser.status === UserStatus.OFFLINE ||
-			!invitedUser.gameSocketId
-		)
-			throw WSBadRequestException('invited user is now offline');
+		// game start emit ?
+	}
 
-		console.log(`invitation id: ${invitationId}`);
-		console.log(`invited user gameSocketId: ${invitedUser.gameSocketId}`);
-		this.server.to(invitedUser.gameSocketId).emit(EVENT_GAME_INVITATION, {
-			invitationId: invitationId,
-			invitingUserNickname: invitingUserNickname,
-		});
+	joinGameRoom(gatewayJoinRoomParamDto: GatewayJoinRoomParamDto) {
+		const invitingUserId = gatewayJoinRoomParamDto.invitingUserId;
+		const invitedUserId = gatewayJoinRoomParamDto.invitedUserId;
+		const room = gatewayJoinRoomParamDto.roomName;
+
+		const invitingUserSocket = this.connectedClients.get(invitingUserId);
+		if (!invitingUserSocket)
+			throw WSBadRequestException(
+				`${invitingUserId} 는 연결되지 않은 클라이언트입니다`,
+			);
+		const invitedUserSocket = this.connectedClients.get(invitedUserId);
+		if (!invitedUserSocket)
+			throw WSBadRequestException(
+				`${invitedUserId} 는 연결되지 않은 클라이언트입니다`,
+			);
+
+		invitingUserSocket.join(room);
+		invitedUserSocket.join(room);
 	}
 }

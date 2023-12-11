@@ -13,7 +13,7 @@ import { Response } from 'express';
 import { User } from 'src/users/entities/user.entity';
 import { SignupRequestDto } from '../users/dto/signup-request.dto';
 import { UsersService } from '../users/users.service';
-import { AppService } from './../app.service';
+import { AppService } from '../app.service';
 import { AuthService } from './auth.service';
 import { UserSigninResponseDto } from './dto/user-signin-response.dto';
 import { FtAuthService } from './ft-auth.service';

@@ -52,7 +52,6 @@ import { JwtRefreshStrategy } from './jwt-refresh.strategy';
 		GameInvitationRepository,
 		FriendsRepository,
 		BlocksRepository,
-		ChannelsGateway,
 		ChannelUsersRepository,
 		FriendsRepository,
 		AppService,
