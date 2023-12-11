@@ -14,13 +14,14 @@ import Redis from 'ioredis';
 import { Server, Socket } from 'socket.io';
 import { AuthService } from 'src/auth/auth.service';
 import { UserStatus } from 'src/common/enum';
-import { EVENT_USER_STATUS } from 'src/common/events';
+import { EVENT_GAME_INVITATION, EVENT_USER_STATUS } from 'src/common/events';
 import { WSBadRequestException } from 'src/common/exception/custom-exception';
 import { WsExceptionFilter } from 'src/common/exception/custom-ws-exception.filter';
 import { FriendsRepository } from 'src/users/friends.repository';
 import { UsersRepository } from 'src/users/users.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
 import { EventMessageOnDto } from './dto/event-message-on.dto';
+import { GatewayCreateInvitationParamDto } from '../game/dto/gateway-create-invitation-param.dto';
 
 @WebSocketGateway({ namespace: 'channels' })
 @UseFilters(WsExceptionFilter)
@@ -193,5 +194,40 @@ export class ChannelsGateway
 		this.logger.log(`client TEST: `, client);
 		this.logger.log('ClientToServer: ', data);
 		this.server.emit('ServerToClient', 'Hello Client!');
+	}
+
+	async inviteGame(
+		gatewayInvitationParamDto: GatewayCreateInvitationParamDto,
+	) {
+		const invitationId = gatewayInvitationParamDto.invitationId;
+		const invitingUserNickname =
+			gatewayInvitationParamDto.invitingUserNickname;
+		const invitedUserId = gatewayInvitationParamDto.invitedUserId;
+
+		const invitedUser = await this.usersRepository.findOne({
+			where: {
+				id: invitedUserId,
+			},
+		});
+		if (!invitedUser) {
+			throw WSBadRequestException(`user ${invitedUserId} does not exist`);
+		}
+
+		// 상대가 접속 중인지 => 접속 중인 유저가 아니라면 없던 일이 됨
+		if (
+			invitedUser.status === UserStatus.OFFLINE ||
+			!invitedUser.channelSocketId
+		)
+			throw WSBadRequestException('invited user is now offline');
+
+		console.log(`inviting user nickname: ${invitingUserNickname}`);
+
+		this.server
+			.to(invitedUser.channelSocketId)
+			.emit(EVENT_GAME_INVITATION, {
+				invitationId: invitationId,
+				invitingUserNickname: invitingUserNickname,
+				gameType: gatewayInvitationParamDto.gameType,
+			});
 	}
 }

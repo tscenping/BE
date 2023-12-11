@@ -52,5 +52,6 @@ import { Channel } from './entities/channel.entity';
 		FriendsRepository,
 		BlocksRepository,
 	],
+	exports: [ChannelsGateway],
 })
 export class ChannelsModule {}

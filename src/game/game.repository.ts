@@ -2,14 +2,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { GAME_DEFAULT_PAGE_SIZE } from 'src/common/constants';
 import { DataSource, Repository } from 'typeorm';
 import { Game } from './entities/game.entity';
-import { CreateGameInvitationParamDto } from './dto/create-invitation-param.dto';
-import { DBUpdateFailureException } from '../common/exception/custom-exception';
-import { GameInvitationRepository } from './game-invitation.repository';
 export class GameRepository extends Repository<Game> {
-	constructor(
-		@InjectRepository(Game) private dataSource: DataSource,
-		private readonly gameInvitationRepository: GameInvitationRepository,
-	) {
+	constructor(@InjectRepository(Game) private dataSource: DataSource) {
 		super(Game, dataSource.manager);
 	}
 
@@ -43,19 +37,5 @@ export class GameRepository extends Repository<Game> {
 			],
 		);
 		return gameHistories;
-	}
-
-	async createGameInvitation(
-		gameInvitationDto: CreateGameInvitationParamDto,
-	) {
-		const gameInvitation = this.gameInvitationRepository.create({
-			invitingUserId: gameInvitationDto.invitingUser.id,
-			invitedUserId: gameInvitationDto.invitedUserId,
-			gameType: gameInvitationDto.gameType,
-		});
-		const result = await this.gameInvitationRepository.save(gameInvitation);
-		if (!result)
-			throw DBUpdateFailureException('create game invitation failed');
-		return result;
 	}
 }
