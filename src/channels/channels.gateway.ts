@@ -258,11 +258,14 @@ export class ChannelsGateway
 		const invitedUser = await this.usersRepository.findOne({
 			where: { id: data.invitedUserId },
 		});
-		const invitationId = data.invitationId;
 
+		const invitationEmitDto = {
+			invitationId: data.invitationId,
+		};
+		
 		if (!invitedUser || invitedUser.status === UserStatus.OFFLINE || !invitedUser.channelSocketId) {
 			throw WSBadRequestException('유저가 유효하지 않습니다.');
 		}
-		this.server.to(invitedUser.channelSocketId).emit('privateAlert', invitationId);
+		this.server.to(invitedUser.channelSocketId).emit('privateAlert', invitationEmitDto);
 	}
 }
