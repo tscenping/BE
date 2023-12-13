@@ -90,6 +90,12 @@ export class ChannelsController {
 		@GetUser() user: User,
 		@Param('channelId', ParseIntPipe, PositiveIntPipe) channelId: number,
 	) {
+		if (user.channelSocketId) {
+			this.channelsGateway.joinChannelRoom(
+				channelId.toString(),
+				user.channelSocketId,
+			);
+		}
 		return await this.channelsService.enterChannel(user.id, channelId);
 	}
 
