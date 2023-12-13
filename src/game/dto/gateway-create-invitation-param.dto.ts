@@ -1,12 +1,12 @@
 import { IsIn, IsString } from 'class-validator';
 import { GameType } from '../../common/enum';
 
-export class GatewayCreateInvitationParamDto {
+export class GatewayCreateGameInvitationParamDto {
 	invitationId: number;
 
 	invitingUserNickname: string;
 
-	invitedUserId: number;
+	invitedUserChannelSocketId: string;
 
 	@IsIn([GameType.NORMAL_INVITE, GameType.SPECIAL_INVITE])
 	@IsString()

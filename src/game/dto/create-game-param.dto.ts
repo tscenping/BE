@@ -1,4 +1,4 @@
 export class CreateGameParamDto {
+	gameInvitationId: number;
 	invitedUserId: number;
-	invitationId: number;
 }

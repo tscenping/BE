@@ -3,3 +3,5 @@
 export const EVENT_USER_STATUS = 'userStatus'; // 유저의 상태 변경 이벤트
 
 export const EVENT_GAME_INVITATION = 'gameInvitation';
+
+export const EVENT_GAME_INVITATION_REPLY = 'gameInvitationReply';
