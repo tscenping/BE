@@ -2,7 +2,7 @@ import { IsNotEmpty, IsNumber, IsPositive, IsString } from 'class-validator';
 
 export class EventMessageOnDto {
 	@IsString()
-	// @IsNotEmpty()
+	@IsNotEmpty()
 	message: string;
 
 	@IsNumber()
