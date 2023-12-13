@@ -70,6 +70,13 @@ export class ChannelsController {
 		const createChannelResponseDto =
 			await this.channelsService.createChannel(user.id, channelInfo);
 
+		if (user.channelSocketId) {
+			this.channelsGateway.joinChannelRoom(
+				createChannelResponseDto.channelId.toString(),
+				user.channelSocketId,
+			);
+		}
+
 		return createChannelResponseDto;
 	}
 
@@ -132,6 +139,13 @@ export class ChannelsController {
 
 		const channelUsersResponseDto =
 			await this.channelsService.createChannelUser(channelUserParamDto);
+	
+		if (user.channelSocketId) {
+			this.channelsGateway.joinChannelRoom(
+				channelId.toString(),
+				user.channelSocketId,
+			);
+		}
 		
 		return channelUsersResponseDto ;
 	}
