@@ -22,6 +22,7 @@ import { UsersRepository } from 'src/users/users.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
 import { EventMessageOnDto } from './dto/event-message-on.dto';
 import { GatewayCreateInvitationParamDto } from '../game/dto/gateway-create-invitation-param.dto';
+import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
 
 @WebSocketGateway({ namespace: 'channels' })
 @UseFilters(WsExceptionFilter)
@@ -51,6 +52,7 @@ export class ChannelsGateway
 
 	async handleConnection(@ConnectedSocket() client: Socket, ...args: any[]) {
 		// Socket으로부터 user 정보를 가져온다.
+
 		const user = await this.authService.getUserFromSocket(client);
 		if (!user || !client.id || user.channelSocketId) {
 			return client.disconnect();
@@ -129,8 +131,6 @@ export class ChannelsGateway
 		@ConnectedSocket() client: Socket,
 		@MessageBody() data: EventMessageOnDto,
 	) {
-		this.logger.log(`handleMessage: ${JSON.stringify(data)}`); // TODO: test code. 추후 삭제
-
 		// Socket으로부터 user 정보를 가져온다.
 		const user = await this.authService.getUserFromSocket(client);
 
@@ -138,7 +138,7 @@ export class ChannelsGateway
 			throw WSBadRequestException('유저 정보가 일치하지 않습니다.'); // TODO: exception 발생해도 서버 죽지 않는지 확인
 		}
 
-		const { channelId, message } = data;
+		const { channelId, message, notice } = data;
 
 		// 채널유저 유효성 검사
 		const channelUser = await this.channelUsersRepository.findOne({
@@ -151,18 +151,18 @@ export class ChannelsGateway
 		const eventMessageEmitDto = {
 			nickname: user.nickname,
 			message,
+			channelId,
+			notice,
 		};
 		// mute된 유저의 socketId List를 가져온다.
 		const muteRedisKey = `mute:${channelId}:${user.id}`;
-		// console.log('muteRedisKey:', muteRedisKey);
 		const isMutedChannelUser = await this.redis.exists(muteRedisKey);
 
 		if (isMutedChannelUser) {
 			throw WSBadRequestException('채널에서 음소거 되었습니다.');
 		}
-		// console.log('muteRedisKey:', muteRedisKey);
 
-		// 채널에 메시지를 emit한다.
+		// 어떤 user가 보내는지 찾아주기 위해 emit한다. (nickname, message, channelId, notice)
 		this.server
 			.to(channelId.toString())
 			.emit('message', eventMessageEmitDto);
@@ -177,23 +177,11 @@ export class ChannelsGateway
 		const socket = (await this.server.fetchSockets()).find(
 			(s) => s.id === channelSocketId,
 		);
-
 		if (!socket) {
 			return WSBadRequestException('socket이 존재하지 않습니다.');
 		}
-
 		this.logger.log(`socket.id: `, socket.id);
 		socket.join(channelRoomName);
-	}
-
-	@SubscribeMessage('ClientToServer') // TODO: test용 코드. 추후 삭제
-	handleMessageTest(
-		@ConnectedSocket() client: Socket,
-		@MessageBody() data: string,
-	) {
-		this.logger.log(`client TEST: `, client);
-		this.logger.log('ClientToServer: ', data);
-		this.server.emit('ServerToClient', 'Hello Client!');
 	}
 
 	async inviteGame(
@@ -229,5 +217,52 @@ export class ChannelsGateway
 				invitingUserNickname: invitingUserNickname,
 				gameType: gatewayInvitationParamDto.gameType,
 			});
+	}
+
+	//소켓 연결 해제 시, 채널 룸에서 leave하는 메서드
+	@SubscribeMessage('leaveChannelRoom')
+	async handleleaveChannelRoom(
+		@ConnectedSocket() client: Socket,
+		@MessageBody() data: { channelId: number },
+	) {
+		const user = await this.authService.getUserFromSocket(client);
+		if (!user || !client.id || user.channelSocketId !== client.id) {
+			return WSBadRequestException('유저 정보가 일치하지 않습니다.');
+		}
+
+		const { channelId } = data;
+
+		// 채널유저 유효성 검사
+		const channelUser = await this.channelUsersRepository.findOne({
+			where: { userId: user.id, channelId, isBanned: false },
+		});
+		if (!channelUser) {
+			throw WSBadRequestException('채널에 속해있지 않습니다.');
+		}		
+		// 채널에 leave한다.
+		client.leave(channelId.toString());
+
+		this.server
+			.to(channelId.toString())
+			.emit('message', `${user.nickname}님이 퇴장하셨습니다.`);
+		
+		// 어느 채널에 퇴장했는지 알려주기 위해 front에 emit한다.
+		client
+			.emit('leaveChannelRoom', channelId.toString());
+	}	
+	
+	// 알람 구현을 위한 메소드(한명에게만 알람)
+	async PrivateAlert(
+		data: { invitedUserId: number, invitationId: number }
+	) {
+		const invitedUser = await this.usersRepository.findOne({
+			where: { id: data.invitedUserId },
+		});
+		const invitationId = data.invitationId;
+
+		if (!invitedUser || invitedUser.status === UserStatus.OFFLINE || !invitedUser.channelSocketId) {
+			throw WSBadRequestException('유저가 유효하지 않습니다.');
+		}
+		this.server.to(invitedUser.channelSocketId).emit('privateAlert', invitationId);
 	}
 }

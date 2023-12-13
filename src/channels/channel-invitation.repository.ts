@@ -22,5 +22,7 @@ export class ChannelInvitationRepository extends Repository<ChannelInvitation> {
 		const result = await this.save(channelInvitation);
 		if (!result)
 			throw DBUpdateFailureException('create channel invitation failed');
+
+		return result;
 	}
 }
