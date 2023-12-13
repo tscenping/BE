@@ -1,3 +1,4 @@
+import { ChannelsGateway } from './channels.gateway';
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import * as bycrypt from 'bcrypt';
@@ -20,6 +21,7 @@ import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
 import { DmChannelListResponseDto } from './dto/dmchannel-list-response.dto';
 import { DmChannelListReturnDto } from './dto/dmchannel-list-return.dto';
 import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
+import { GatewayCreateChannelInvitationParamDto } from 'src/game/dto/gateway-create-channelInvitation-param-dto';
 
 @Injectable()
 export class ChannelsService {
@@ -28,6 +30,7 @@ export class ChannelsService {
 		private readonly channelUsersRepository: ChannelUsersRepository,
 		private readonly channelInvitationRepository: ChannelInvitationRepository,
 		private readonly usersRepository: UsersRepository,
+		private readonly ChannelsGateway: ChannelsGateway,
 		@InjectRedis() private readonly redis: Redis,
 	) {}
 
@@ -99,8 +102,20 @@ export class ChannelsService {
 				userId,
 				channel.id,
 			);
+		// // 채널에 소환된 유저에게 알람 전송. DM의 경우에만 해당
+		// if (channel.channelType === ChannelType.DM) {
+		// 	console.log(`channelInfo.userId: ${channelInfo.userId}`)
+		// 	const targetUser = await this.usersRepository.findOne({
+		// 		where: { id: channelInfo.userId },
+		// 	});
+		// 	if (targetUser?.channelSocketId) {
+		// 		this.ChannelsGateway.sendChannelAlert(
+		// 			channel.id,
+		// 			[targetUser.channelSocketId],
+		// 		);
+		// 	}
+		// }
 
-		// TODO: 채널에 소환된 유저에게 알림 전송. DM의 경우에만 해당
 		// TODO: cache에 user count 저장
 		this.logger.log(
 			`channel ${channel.id} is created. user count: ${userCount}`,
@@ -142,7 +157,6 @@ export class ChannelsService {
 				userId,
 				channelId,
 			);
-
 		return {
 			channelUsers: channelUserInfoList,
 			myChannelUserType: myChannelUserInfo.channelUserType,
@@ -289,11 +303,15 @@ export class ChannelsService {
 			);
 		}
 
-		await this.channelInvitationRepository.createChannelInvitation(
+		const channelInvitation = await this.channelInvitationRepository.createChannelInvitation(
 			createInvitationParamDto,
 		);
 
-		// TODO: 알림 보내기
+		const gatewayInvitationParamDto: GatewayCreateChannelInvitationParamDto = {
+			invitationId: channelInvitation.id,
+			invitedUserId: invitedUserId,
+		};
+		await this.ChannelsGateway.PrivateAlert(gatewayInvitationParamDto);
 	}
 
 	async updateChannelUser(userId: number, channelId: number) {
