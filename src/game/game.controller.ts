@@ -2,19 +2,22 @@ import {
 	Body,
 	Controller,
 	Delete,
+	Param,
 	ParseIntPipe,
 	Post,
 	UseGuards,
 } from '@nestjs/common';
 import { GameService } from './game.service';
-import { CreateInvitationRequestDto } from './dto/create-invitation-request.dto';
+import { CreateGameInvitationRequestDto } from './dto/create-invitation-request.dto';
 import { GetUser } from '../auth/get-user.decorator';
 import { User } from '../users/entities/user.entity';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateGameInvitationParamDto } from './dto/create-invitation-param.dto';
 import { PositiveIntPipe } from '../common/pipes/positiveInt.pipe';
-import { CreateGameParamDto } from './dto/create-game-param.dto';
+import { GameParamDto } from './dto/game-param.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { DeleteGameInvitationParamDto } from './dto/delete-invitation-param.dto';
+import { CreateGameParamDto } from './dto/create-game-param.dto';
 
 @Controller('game')
 @ApiTags('game')
@@ -25,7 +28,7 @@ export class GameController {
 	@Post('/invite')
 	async createInvitation(
 		@GetUser() user: User,
-		@Body() invitationRequestDto: CreateInvitationRequestDto,
+		@Body() invitationRequestDto: CreateGameInvitationRequestDto,
 	) {
 		const invitationParamDto: CreateGameInvitationParamDto = {
 			invitingUser: user,
@@ -45,7 +48,7 @@ export class GameController {
 	@Post('/accept')
 	async createGame(
 		@GetUser() user: User,
-		@Body('invitationId', ParseIntPipe, PositiveIntPipe)
+		@Body('gameInvitationId', ParseIntPipe, PositiveIntPipe)
 		invitationId: number,
 	) {
 		const createGameParamDto: CreateGameParamDto = {
@@ -55,16 +58,33 @@ export class GameController {
 		await this.gameService.createGame(createGameParamDto);
 	}
 
-	@Delete('/reject')
+	@Delete('/invite/:gameInvitationId')
 	async deleteInvitation(
 		@GetUser() user: User,
-		@Body('invitationId', ParseIntPipe, PositiveIntPipe)
+		@Param('gameInvitationId', ParseIntPipe, PositiveIntPipe)
 		invitationId: number,
 	) {
-		const deleteInvitationParamDto: CreateGameParamDto = {
-			invitedUserId: user.id,
+		const deleteInvitationParamDto: DeleteGameInvitationParamDto = {
+			cancelingUserId: user.id,
 			invitationId: invitationId,
 		};
-		await this.gameService.deleteInvitation(deleteInvitationParamDto);
+		await this.gameService.deleteInvitationByInvitingUserId(
+			deleteInvitationParamDto,
+		);
+	}
+
+	@Delete('/refuse/:gameInvitationId')
+	async refuseInvitation(
+		@GetUser() user: User,
+		@Param('gameInvitationId', ParseIntPipe, PositiveIntPipe)
+		invitationId: number,
+	) {
+		const deleteInvitationParamDto: DeleteGameInvitationParamDto = {
+			cancelingUserId: user.id,
+			invitationId: invitationId,
+		};
+		await this.gameService.deleteInvitationByInvitedUserId(
+			deleteInvitationParamDto,
+		);
 	}
 }

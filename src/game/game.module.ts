@@ -16,6 +16,8 @@ import { FriendsRepository } from '../users/friends.repository';
 import { ChannelUser } from '../channels/entities/channel-user.entity';
 import { Friend } from '../users/entities/friend.entity';
 import { ChannelsModule } from '../channels/channels.module';
+import { Block } from '../users/entities/block.entity';
+import { BlocksRepository } from '../users/blocks.repository';
 
 @Module({
 	imports: [
@@ -25,6 +27,7 @@ import { ChannelsModule } from '../channels/channels.module';
 			User,
 			ChannelUser,
 			Friend,
+			Block,
 		]),
 		ChannelsModule,
 	],
@@ -36,6 +39,7 @@ import { ChannelsModule } from '../channels/channels.module';
 		JwtService,
 		ChannelUsersRepository,
 		FriendsRepository,
+		BlocksRepository,
 		GameRepository,
 		GameInvitationRepository,
 		UsersRepository,
