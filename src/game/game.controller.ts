@@ -14,10 +14,9 @@ import { User } from '../users/entities/user.entity';
 import { ApiTags } from '@nestjs/swagger';
 import { CreateGameInvitationParamDto } from './dto/create-invitation-param.dto';
 import { PositiveIntPipe } from '../common/pipes/positiveInt.pipe';
-import { GameParamDto } from './dto/game-param.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { DeleteGameInvitationParamDto } from './dto/delete-invitation-param.dto';
-import { CreateGameParamDto } from './dto/create-game-param.dto';
+import { acceptGameParamDto } from './dto/accept-game-param.dto';
 
 @Controller('game')
 @ApiTags('game')
@@ -51,8 +50,8 @@ export class GameController {
 		@Body('gameInvitationId', ParseIntPipe, PositiveIntPipe)
 		invitationId: number,
 	) {
-		const createGameParamDto: CreateGameParamDto = {
-			invitedUserId: user.id,
+		const createGameParamDto: acceptGameParamDto = {
+			invitedUser: user,
 			invitationId: invitationId,
 		};
 		await this.gameService.createGame(createGameParamDto);

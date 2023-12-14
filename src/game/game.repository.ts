@@ -2,18 +2,21 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { GAME_DEFAULT_PAGE_SIZE } from 'src/common/constants';
 import { DataSource, Repository } from 'typeorm';
 import { Game } from './entities/game.entity';
-import { CreateGameInvitationParamDto } from './dto/create-invitation-param.dto';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
-import { GameParamDto } from './dto/game-param.dto';
+import { CreateGameParamDto } from './dto/create-game-param.dto';
 export class GameRepository extends Repository<Game> {
 	constructor(@InjectRepository(Game) private dataSource: DataSource) {
 		super(Game, dataSource.manager);
 	}
 
-	async createGame(gameParamDto: GameParamDto) {
+	async createGame(gameParamDto: CreateGameParamDto) {
 		const game = this.create(gameParamDto);
+		// console.log(JSON.stringify(game)); // {"winnerId":8,"loserId":7,"gameType":"NORMAL_INVITE","winnerScore":0,"loserScore":0,"gameStatus":"WAITING","ballSpeed":1,"racketSize":1}
+		// console.log(game.id); // undefined
 
 		const result = await this.save(game);
+		// console.log(JSON.stringify(result)); // {"winnerId":8,"loserId":7,"gameType":"NORMAL_INVITE","winnerScore":0,"loserScore":0,"gameStatus":"WAITING","ballSpeed":1,"racketSize":1,"deletedAt":null,"id":2,"createdAt":"2023-12-14T04:38:55.989Z","updatedAt":"2023-12-14T04:38:55.989Z"}
+		// console.log(result.id); // 2
 
 		if (!result)
 			throw DBUpdateFailureException('create game invitation failed');
