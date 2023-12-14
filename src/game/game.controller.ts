@@ -42,18 +42,18 @@ export class GameController {
 	/**
 	 * 초대 수락
 	 * @param user
-	 * @param gameInvitationId 초대 테이블의 id
+	 * @param invitationId 초대 테이블의 id
 	 * (초대시 프론트가 이벤트를 수신하며 받은 data 입니다)
 	 */
 	@Post('/accept')
 	async createGame(
 		@GetUser() user: User,
 		@Body('gameInvitationId', ParseIntPipe, PositiveIntPipe)
-		gameInvitationId: number,
+		invitationId: number,
 	) {
 		const createGameParamDto: CreateGameParamDto = {
 			invitedUserId: user.id,
-			gameInvitationId: gameInvitationId,
+			invitationId: invitationId,
 		};
 		await this.gameService.createGame(createGameParamDto);
 	}
@@ -62,11 +62,11 @@ export class GameController {
 	async deleteInvitation(
 		@GetUser() user: User,
 		@Param('gameInvitationId', ParseIntPipe, PositiveIntPipe)
-		gameInvitationId: number,
+		invitationId: number,
 	) {
 		const deleteInvitationParamDto: DeleteGameInvitationParamDto = {
 			cancelingUserId: user.id,
-			gameInvitationId: gameInvitationId,
+			invitationId: invitationId,
 		};
 		await this.gameService.deleteInvitationByInvitingUserId(
 			deleteInvitationParamDto,
@@ -77,11 +77,11 @@ export class GameController {
 	async refuseInvitation(
 		@GetUser() user: User,
 		@Param('gameInvitationId', ParseIntPipe, PositiveIntPipe)
-		gameInvitationId: number,
+		invitationId: number,
 	) {
 		const deleteInvitationParamDto: DeleteGameInvitationParamDto = {
 			cancelingUserId: user.id,
-			gameInvitationId: gameInvitationId,
+			invitationId: invitationId,
 		};
 		await this.gameService.deleteInvitationByInvitedUserId(
 			deleteInvitationParamDto,

@@ -17,6 +17,7 @@ import { CreateGameParamDto } from './dto/create-game-param.dto';
 import { GatewaySendInvitationReplyDto } from './dto/gateway-send-invitation-reaponse.dto';
 import { User } from '../users/entities/user.entity';
 import * as moment from 'moment';
+import { BlocksRepository } from '../users/blocks.repository';
 
 @Injectable()
 export class GameService {
@@ -25,6 +26,7 @@ export class GameService {
 		private readonly gameInvitationRepository: GameInvitationRepository,
 		private readonly gameGateway: GameGateway,
 		private readonly usersRepository: UsersRepository,
+		private readonly blocksRepository: BlocksRepository,
 	) {}
 
 	async createInvitation(invitationParamDto: CreateGameInvitationParamDto) {
@@ -47,6 +49,10 @@ export class GameService {
 			throw new ImATeapotException(
 				`초대된 유저 ${invitedUserId} 는 OFFLINE 상태입니다`,
 			);
+		const isblocked = await this.blocksRepository.findOne({
+			where: { fromUserId: invitedUserId, toUserId: invitingUser.id },
+		});
+		if (isblocked) return;
 
 		// game invitation DB 저장
 		const gameInvitation =
@@ -65,7 +71,7 @@ export class GameService {
 	}
 
 	async createGame(createGameParamDto: CreateGameParamDto) {
-		const invitationId = createGameParamDto.gameInvitationId;
+		const invitationId = createGameParamDto.invitationId;
 		const invitedUserId = createGameParamDto.invitedUserId;
 
 		const invitation = await this.gameInvitationRepository.findOne({
@@ -161,7 +167,7 @@ export class GameService {
 	async deleteInvitationByInvitingUserId(
 		deleteInvitationParamDto: DeleteGameInvitationParamDto,
 	) {
-		const invitationId = deleteInvitationParamDto.gameInvitationId;
+		const invitationId = deleteInvitationParamDto.invitationId;
 		const invitingUserId = deleteInvitationParamDto.cancelingUserId;
 
 		const invitation = await this.gameInvitationRepository.findOne({
@@ -189,7 +195,7 @@ export class GameService {
 	async deleteInvitationByInvitedUserId(
 		deleteInvitationParamDto: DeleteGameInvitationParamDto,
 	) {
-		const invitationId = deleteInvitationParamDto.gameInvitationId;
+		const invitationId = deleteInvitationParamDto.invitationId;
 		const invitedUserId = deleteInvitationParamDto.cancelingUserId;
 
 		const invitation = await this.gameInvitationRepository.findOne({
