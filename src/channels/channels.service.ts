@@ -323,7 +323,7 @@ export class ChannelsService {
 				invitingUserId: invitingUserId,
 				invitedUserId: invitedUserId,
 			};
-		await this.ChannelsGateway.PrivateAlert(gatewayInvitationParamDto);
+		await this.ChannelsGateway.privateAlert(gatewayInvitationParamDto);
 	}
 
 	async updateChannelUser(userId: number, channelId: number) {
@@ -753,5 +753,17 @@ export class ChannelsService {
 		});
 		if (pwdResult.affected !== 1)
 			throw DBUpdateFailureException('update channel password failed');
+	}
+
+	async findChannelIdByChannelUserId(channelUserId: number) {
+		const channelUser = await this.channelUsersRepository.findOne({
+			where: { id: channelUserId },
+		});
+		if (!channelUser) {
+			throw new BadRequestException(
+				`channelUser ${channelUserId} does not exist`,
+			);
+		}
+		return channelUser.channelId;
 	}
 }
