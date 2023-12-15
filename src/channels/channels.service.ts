@@ -3,7 +3,11 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import * as bycrypt from 'bcrypt';
 import { Redis } from 'ioredis';
 import { MUTE_TIME } from 'src/common/constants';
-import { ChannelType, ChannelUserType } from 'src/common/enum';
+import {
+	ChannelEventType,
+	ChannelType,
+	ChannelUserType,
+} from 'src/common/enum';
 import { GatewayCreateChannelInvitationParamDto } from 'src/game/dto/gateway-create-channelInvitation-param-dto';
 import { User } from 'src/users/entities/user.entity';
 import { UsersRepository } from 'src/users/users.repository';
@@ -591,14 +595,24 @@ export class ChannelsService {
 	async acceptInvitation(
 		createChannelUserParamDto: ChannelInvitationParamDto,
 	): Promise<ChannelInvitationListResponseDto> {
+		const channelInvitationInfo =
+			await this.channelInvitationRepository.findOne({
+				where: {
+					id: createChannelUserParamDto.invitationId,
+				},
+			});
+		if (!channelInvitationInfo?.channelId || !channelInvitationInfo.id)
+			throw new BadRequestException(
+				`channel ${channelInvitationInfo?.id} does not exist`,
+			);
 		const channelInfo = await this.channelsRepository.findOne({
 			where: {
-				id: createChannelUserParamDto.invitationId,
+				id: channelInvitationInfo.channelId,
 			},
 		});
-		if (!channelInfo || !channelInfo.name)
+		if (!channelInfo?.id || !channelInfo.name)
 			throw new BadRequestException(
-				`channel ${createChannelUserParamDto.invitationId} does not exist`,
+				`channel ${channelInfo?.id} does not exist`,
 			);
 
 		const channelId = channelInfo.id;
