@@ -1,4 +1,3 @@
-import { BlocksRepository } from './../users/blocks.repository';
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
 import { Logger, UseFilters, UsePipes, ValidationPipe } from '@nestjs/common';
 import {
@@ -14,16 +13,17 @@ import {
 import Redis from 'ioredis';
 import { Server, Socket } from 'socket.io';
 import { AuthService } from 'src/auth/auth.service';
-import { UserStatus } from 'src/common/enum';
-import { EVENT_GAME_INVITATION, EVENT_USER_STATUS } from 'src/common/events';
+import { ChannelEventType, UserStatus } from 'src/common/enum';
+import { EVENT_USER_STATUS } from 'src/common/events';
 import { WSBadRequestException } from 'src/common/exception/custom-exception';
 import { WsExceptionFilter } from 'src/common/exception/custom-ws-exception.filter';
+import { GatewayCreateChannelInvitationParamDto } from 'src/game/dto/gateway-create-channelInvitation-param-dto';
 import { FriendsRepository } from 'src/users/friends.repository';
 import { UsersRepository } from 'src/users/users.repository';
+import { BlocksRepository } from './../users/blocks.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
+import { ChannelNoticeResponseDto } from './dto/channel-notice.response.dto';
 import { EventMessageOnDto } from './dto/event-message-on.dto';
-import { GatewayCreateGameInvitationParamDto } from '../game/dto/gateway-create-invitation-param.dto';
-import { GatewayCreateChannelInvitationParamDto } from 'src/game/dto/gateway-create-channelInvitation-param-dto';
 
 @WebSocketGateway({ namespace: 'channels' })
 @UseFilters(WsExceptionFilter)
@@ -140,7 +140,7 @@ export class ChannelsGateway
 			throw WSBadRequestException('유저 정보가 일치하지 않습니다.'); // TODO: exception 발생해도 서버 죽지 않는지 확인
 		}
 
-		const { channelId, message, notice } = data;
+		const { channelId, message } = data;
 
 		// 채널유저 유효성 검사
 		const channelUser = await this.channelUsersRepository.findOne({
@@ -154,8 +154,8 @@ export class ChannelsGateway
 			nickname: user.nickname,
 			message,
 			channelId,
-			notice,
 		};
+
 		// mute된 유저의 socketId List를 가져온다.
 		const muteRedisKey = `mute:${channelId}:${user.id}`;
 		const isMutedChannelUser = await this.redis.exists(muteRedisKey);
@@ -209,16 +209,23 @@ export class ChannelsGateway
 		// 채널에 leave한다.
 		client.leave(channelId.toString());
 
-		this.server
-			.to(channelId.toString())
-			.emit('message', `${user.nickname}님이 퇴장하셨습니다.`);
+		// this.server
+		// 	.to(channelId.toString())
+		// 	.emit('message', `${user.nickname}님이 퇴장하셨습니다.`);
+		// 채널의 다른 유저들에게 퇴장을 알린다.
+		this.channelNoticeMessage(channelId, {
+			nickname: user.nickname,
+			eventType: ChannelEventType.EXIT,
+		});
 
 		// 어느 채널에 퇴장했는지 알려주기 위해 front에 emit한다.
 		client.emit('leaveChannelRoom', channelId.toString());
 	}
 
 	// 알람 구현을 위한 메소드(한명에게만 알람)
-	async PrivateAlert(gatewayInvitationDto : GatewayCreateChannelInvitationParamDto) {
+	async PrivateAlert(
+		gatewayInvitationDto: GatewayCreateChannelInvitationParamDto,
+	) {
 		const invitedUser = await this.usersRepository.findOne({
 			where: { id: gatewayInvitationDto.invitedUserId },
 		});
@@ -232,10 +239,11 @@ export class ChannelsGateway
 
 		const invitationEmitDto = {
 			invitationId: gatewayInvitationDto.invitationId,
-			invitingUserId: invitingUser.nickname
+			invitingUserId: invitingUser.nickname,
 		};
 		if (
-			!invitedUser || !invitingUser ||
+			!invitedUser ||
+			!invitingUser ||
 			invitedUser.status === UserStatus.OFFLINE ||
 			invitingUser.status === UserStatus.OFFLINE ||
 			!invitedUser.channelSocketId
@@ -250,5 +258,15 @@ export class ChannelsGateway
 		this.server
 			.to(invitedUser.channelSocketId)
 			.emit('privateAlert', invitationEmitDto);
-		}
+	}
+
+	// 채널에 소켓 전송
+	channelNoticeMessage(
+		channelId: number,
+		channelNoticeResponseDto: ChannelNoticeResponseDto,
+	) {
+		this.server
+			.to(channelId.toString())
+			.emit('notice', channelNoticeResponseDto);
+	}
 }

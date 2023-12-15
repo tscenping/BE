@@ -1,32 +1,31 @@
-import { ChannelsGateway } from './channels.gateway';
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import * as bycrypt from 'bcrypt';
 import { Redis } from 'ioredis';
 import { MUTE_TIME } from 'src/common/constants';
 import { ChannelType, ChannelUserType } from 'src/common/enum';
+import { GatewayCreateChannelInvitationParamDto } from 'src/game/dto/gateway-create-channelInvitation-param-dto';
 import { User } from 'src/users/entities/user.entity';
 import { UsersRepository } from 'src/users/users.repository';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { ChannelInvitationRepository } from './channel-invitation.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
+import { ChannelsGateway } from './channels.gateway';
 import { ChannelsRepository } from './channels.repository';
+import { ChannelInvitationListResponseDto } from './dto/channel-Invitation-list-response.dto';
+import { ChannelInvitationParamDto } from './dto/channel-Invitation.dto';
 import { ChannelListResponseDto } from './dto/channel-list-response.dto';
 import { ChannelListReturnDto } from './dto/channel-list-return.dto';
+import { ChannelUserInfoReturnDto } from './dto/channel-user-info-return.dto';
 import { ChannelUsersResponseDto } from './dto/channel-users-response.dto';
 import { CreateChannelRequestDto } from './dto/creat-channel-request.dto';
 import { CreateChannelResponseDto } from './dto/create-channel-response.dto';
 import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
 import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
+import { DeleteChannelInvitationParamDto } from './dto/delete-invitation-param.dto';
 import { DmChannelListResponseDto } from './dto/dmchannel-list-response.dto';
 import { DmChannelListReturnDto } from './dto/dmchannel-list-return.dto';
 import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
-import { GatewayCreateChannelInvitationParamDto } from 'src/game/dto/gateway-create-channelInvitation-param-dto';
-import { ChannelInvitationListResponseDto } from './dto/channel-Invitation-list-response.dto';
-import { ChannelInvitationListDto } from './dto/channel-Invitation-list-return.dto';
-import { DeleteChannelInvitationParamDto } from './dto/delete-invitation-param.dto';
-import { ChannelInvitationParamDto } from './dto/channel-Invitation.dto';
-import { ChannelUserInfoReturnDto } from './dto/channel-user-info-return.dto';
 
 @Injectable()
 export class ChannelsService {
@@ -239,17 +238,18 @@ export class ChannelsService {
 		// channel이 프로텍티드라면 비밀번호가 맞는지 확인
 		if (channel.channelType === ChannelType.PROTECTED) {
 			if (!password) {
-				throw new BadRequestException(
-					'this is protected channel. enter password',
-				);
+				throw new BadRequestException('비밀번호를 입력해주세요.');
 			}
 
-			if (!bycrypt.compare(password, channel.password!)) {
-				throw new BadRequestException(
-					'user cannot join this protected channel. check password',
-				);
+			const isPasswordMatching = await bycrypt.compare(
+				password,
+				channel.password!,
+			);
+			if (!isPasswordMatching) {
+				throw new BadRequestException('비밀번호가 일치하지 않습니다.');
 			}
 		}
+
 		// channel이 프라이빗이라면 초대 받은적이 있는지 확인
 		else if (channel.channelType === ChannelType.PRIVATE) {
 			const channelInvitation =
@@ -308,15 +308,17 @@ export class ChannelsService {
 			);
 		}
 
-		const channelInvitation = await this.channelInvitationRepository.createChannelInvitation(
-			createInvitationParamDto,
-		);
+		const channelInvitation =
+			await this.channelInvitationRepository.createChannelInvitation(
+				createInvitationParamDto,
+			);
 
-		const gatewayInvitationParamDto: GatewayCreateChannelInvitationParamDto = {
-			invitationId: channelInvitation.id,
-			invitingUserId: invitingUserId,
-			invitedUserId: invitedUserId,
-		};
+		const gatewayInvitationParamDto: GatewayCreateChannelInvitationParamDto =
+			{
+				invitationId: channelInvitation.id,
+				invitingUserId: invitingUserId,
+				invitedUserId: invitedUserId,
+			};
 		await this.ChannelsGateway.PrivateAlert(gatewayInvitationParamDto);
 	}
 
@@ -587,7 +589,7 @@ export class ChannelsService {
 	}
 
 	async acceptInvitation(
-		createChannelUserParamDto: ChannelInvitationParamDto
+		createChannelUserParamDto: ChannelInvitationParamDto,
 	): Promise<ChannelInvitationListResponseDto> {
 		const channelInfo = await this.channelsRepository.findOne({
 			where: {
@@ -601,17 +603,20 @@ export class ChannelsService {
 
 		const channelId = channelInfo.id;
 		const channelName = channelInfo.name;
-		const channelUsersRepo = await this.channelUsersRepository.findChannelUserInfoList(
-			createChannelUserParamDto.invitedUserId,
-			channelId,
-		);
+		const channelUsersRepo =
+			await this.channelUsersRepository.findChannelUserInfoList(
+				createChannelUserParamDto.invitedUserId,
+				channelId,
+			);
 
-		const channelUsers: ChannelUserInfoReturnDto[] = channelUsersRepo.map(user => ({
-			...user,
-			isFriend: user.isFriend,
-			isBlocked: user.isBlocked,
-			channelUserType: user.channelUserType,
-		}));
+		const channelUsers: ChannelUserInfoReturnDto[] = channelUsersRepo.map(
+			(user) => ({
+				...user,
+				isFriend: user.isFriend,
+				isBlocked: user.isBlocked,
+				channelUserType: user.channelUserType,
+			}),
+		);
 
 		return { channelId, channelName, channelUsers };
 	}
@@ -629,16 +634,16 @@ export class ChannelsService {
 			throw new BadRequestException(
 				`해당하는 invitation id ${deleteInvitationParamDto.invitationId} 가 없습니다`,
 			);
-		
-		const deleteChannelInvitationParamDto: DeleteChannelInvitationParamDto = {
-			invitationId: invitation.id,
-			cancelingUserId: invitation.invitedUserId,
-		}
-		
+
+		const deleteChannelInvitationParamDto: DeleteChannelInvitationParamDto =
+			{
+				invitationId: invitation.id,
+				cancelingUserId: invitation.invitedUserId,
+			};
+
 		await this.channelInvitationRepository.deleteChannelInvitation(
 			deleteChannelInvitationParamDto,
 		);
-
 	}
 
 	async validateDmChannel(
