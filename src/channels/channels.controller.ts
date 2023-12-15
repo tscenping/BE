@@ -4,7 +4,6 @@ import {
 	Controller,
 	Delete,
 	Get,
-	Logger,
 	Param,
 	ParseIntPipe,
 	Patch,
@@ -20,16 +19,16 @@ import { User } from 'src/users/entities/user.entity';
 import { PositiveIntPipe } from '../common/pipes/positiveInt.pipe';
 import { ChannelsGateway } from './channels.gateway';
 import { ChannelsService } from './channels.service';
+import { ChannelInvitationParamDto } from './dto/channel-Invitation.dto';
 import { CreateChannelRequestDto } from './dto/creat-channel-request.dto';
 import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
 import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
 import { CreateInvitationRequestDto } from './dto/create-invitation-request.dto';
+import { DeleteChannelInvitationParamDto } from './dto/delete-invitation-param.dto';
 import { JoinChannelRequestDto } from './dto/join-channel-request.dto';
 import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
 import { UpdateChannelPwdReqeustDto } from './dto/update-channel-pwd-reqeust.dto';
 import { UpdateChannelUserRequestDto } from './dto/update-channel-user-request.dto';
-import { DeleteChannelInvitationParamDto } from './dto/delete-invitation-param.dto';
-import { ChannelInvitationParamDto } from './dto/channel-Invitation.dto';
 
 @Controller('channels')
 @ApiTags('channels')
@@ -59,7 +58,7 @@ export class ChannelsController {
 
 		// DM 채널인 경우 userId가 필수
 		if (channelInfo.channelType === ChannelType.DM && !channelInfo.userId) {
-			throw new BadRequestException(`userId is required`);
+			throw new BadRequestException(`DM을 위한 userId를 입력해주세요.`);
 		}
 
 		// DM 채널이 아닌데 channel name이 NULL인 경우 예외 처리
@@ -67,7 +66,7 @@ export class ChannelsController {
 			channelInfo.channelType !== ChannelType.DM &&
 			channelInfo.name === null
 		) {
-			throw new BadRequestException(`channel name is required`);
+			throw new BadRequestException(`채널 이름을 입력해주세요.`);
 		}
 
 		const createChannelResponseDto =
@@ -148,15 +147,15 @@ export class ChannelsController {
 
 		const channelUsersResponseDto =
 			await this.channelsService.createChannelUser(channelUserParamDto);
-	
+
 		if (user.channelSocketId) {
 			this.channelsGateway.joinChannelRoom(
 				channelId.toString(),
 				user.channelSocketId,
 			);
 		}
-		
-		return channelUsersResponseDto ;
+
+		return channelUsersResponseDto;
 	}
 
 	@Patch('/exit')
@@ -312,12 +311,13 @@ export class ChannelsController {
 	})
 	async acceptInvitation(
 		@GetUser() user: User,
-		@Body('channelInvitationId', ParseIntPipe, PositiveIntPipe) invitationId: number,
+		@Body('channelInvitationId', ParseIntPipe, PositiveIntPipe)
+		invitationId: number,
 	) {
 		const createChannelUserParamDto: ChannelInvitationParamDto = {
-			invitedUserId: user.id,	
+			invitedUserId: user.id,
 			invitationId: invitationId,
-		}
+		};
 		await this.channelsService.acceptInvitation(createChannelUserParamDto);
 	}
 
@@ -335,9 +335,6 @@ export class ChannelsController {
 			cancelingUserId: user.id,
 			invitationId: invitationId,
 		};
-		await this.channelsService.rejectInvitation(
-			deleteInvitationParamDto,
-		);
+		await this.channelsService.rejectInvitation(deleteInvitationParamDto);
 	}
-
 }
