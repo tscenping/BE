@@ -38,4 +38,5 @@ export enum ChannelEventType {
 	KICK = 'KICK',
 	MUTE = 'MUTE',
 	ADMIN = 'ADMIN',
+	ADMIN_CANCEL = 'ADMIN_CANCEL',
 }

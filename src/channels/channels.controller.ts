@@ -14,7 +14,7 @@ import {
 import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { GetUser } from 'src/auth/get-user.decorator';
-import { ChannelType } from 'src/common/enum';
+import { ChannelEventType, ChannelType } from 'src/common/enum';
 import { User } from 'src/users/entities/user.entity';
 import { PositiveIntPipe } from '../common/pipes/positiveInt.pipe';
 import { ChannelsGateway } from './channels.gateway';
@@ -73,6 +73,7 @@ export class ChannelsController {
 			await this.channelsService.createChannel(user.id, channelInfo);
 
 		if (user.channelSocketId) {
+			// 채널 룸에 join
 			this.channelsGateway.joinChannelRoom(
 				createChannelResponseDto.channelId.toString(),
 				user.channelSocketId,
@@ -149,10 +150,18 @@ export class ChannelsController {
 			await this.channelsService.createChannelUser(channelUserParamDto);
 
 		if (user.channelSocketId) {
+			// 채널 룸에 join
 			this.channelsGateway.joinChannelRoom(
 				channelId.toString(),
 				user.channelSocketId,
 			);
+
+			// 기존 채널 유저들에게 새로운 유저가 참여했음을 알림
+			this.channelsGateway.channelNoticeMessage(channelId, {
+				channelId,
+				nickname: user.nickname,
+				eventType: ChannelEventType.JOIN,
+			});
 		}
 
 		return channelUsersResponseDto;
@@ -170,6 +179,20 @@ export class ChannelsController {
 	) {
 		console.log(channelId);
 		await this.channelsService.updateChannelUser(user.id, channelId);
+
+		if (user.channelSocketId) {
+			// 채널 룸에서 leave
+			this.channelsGateway.leaveChannelRoom(
+				channelId.toString(),
+				user.channelSocketId,
+			);
+			// 기존 채널 유저들에게 해당 유저가 나갔음을 알림
+			this.channelsGateway.channelNoticeMessage(channelId, {
+				channelId,
+				nickname: user.nickname,
+				eventType: ChannelEventType.EXIT,
+			});
+		}
 	}
 
 	@Post('/invite')
@@ -211,6 +234,20 @@ export class ChannelsController {
 		const updateChannelUserTypeResponseDto = {
 			isAdmin: isAdmin,
 		};
+
+		// channelId를 찾아서 해당 채널에 join한 유저들에게 알림
+		const channelId =
+			await this.channelsService.findChannelIdByChannelUserId(
+				receiverChannelUserId,
+			);
+		this.channelsGateway.channelNoticeMessage(channelId, {
+			channelId,
+			nickname: user.nickname,
+			eventType: isAdmin
+				? ChannelEventType.ADMIN
+				: ChannelEventType.ADMIN_CANCEL,
+		});
+
 		return updateChannelUserTypeResponseDto;
 	}
 
@@ -230,6 +267,17 @@ export class ChannelsController {
 			giverUserId,
 			receiverChannelUserId,
 		);
+
+		// channelId를 찾아서 해당 채널에 join한 유저들에게 알림
+		const channelId =
+			await this.channelsService.findChannelIdByChannelUserId(
+				receiverChannelUserId,
+			);
+		this.channelsGateway.channelNoticeMessage(channelId, {
+			channelId,
+			nickname: user.nickname,
+			eventType: ChannelEventType.KICK,
+		});
 	}
 
 	@Patch('/ban')
@@ -248,6 +296,17 @@ export class ChannelsController {
 			giverUserId,
 			receiverChannelUserId,
 		);
+
+		// channelId를 찾아서 해당 채널에 join한 유저들에게 알림
+		const channelId =
+			await this.channelsService.findChannelIdByChannelUserId(
+				receiverChannelUserId,
+			);
+		this.channelsGateway.channelNoticeMessage(channelId, {
+			channelId,
+			nickname: user.nickname,
+			eventType: ChannelEventType.BAN,
+		});
 	}
 
 	@Patch('/mute')
@@ -262,6 +321,17 @@ export class ChannelsController {
 		const receiverChannelUserId = updateChannelUserRequestDto.channelUserId;
 
 		await this.channelsService.muteChannelUser(user, receiverChannelUserId);
+
+		// channelId를 찾아서 해당 채널에 join한 유저들에게 알림
+		const channelId =
+			await this.channelsService.findChannelIdByChannelUserId(
+				receiverChannelUserId,
+			);
+		this.channelsGateway.channelNoticeMessage(channelId, {
+			channelId,
+			nickname: user.nickname,
+			eventType: ChannelEventType.MUTE,
+		});
 	}
 
 	// 채널 목록 조회
@@ -318,6 +388,7 @@ export class ChannelsController {
 			invitedUserId: user.id,
 			invitationId: invitationId,
 		};
+
 		return await this.channelsService.acceptInvitation(
 			createChannelUserParamDto,
 		);
@@ -337,6 +408,7 @@ export class ChannelsController {
 			cancelingUserId: user.id,
 			invitationId: invitationId,
 		};
+
 		await this.channelsService.rejectInvitation(deleteInvitationParamDto);
 	}
 }

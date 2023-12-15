@@ -13,7 +13,7 @@ import {
 import Redis from 'ioredis';
 import { Server, Socket } from 'socket.io';
 import { AuthService } from 'src/auth/auth.service';
-import { ChannelEventType, UserStatus } from 'src/common/enum';
+import { UserStatus } from 'src/common/enum';
 import { EVENT_USER_STATUS } from 'src/common/events';
 import { WSBadRequestException } from 'src/common/exception/custom-exception';
 import { WsExceptionFilter } from 'src/common/exception/custom-ws-exception.filter';
@@ -186,44 +186,24 @@ export class ChannelsGateway
 		socket.join(channelRoomName);
 	}
 
-	//소켓 연결 해제 시, 채널 룸에서 leave하는 메서드
-	@SubscribeMessage('leaveChannelRoom')
-	async handleleaveChannelRoom(
-		@ConnectedSocket() client: Socket,
-		@MessageBody() data: { channelId: number },
-	) {
-		const user = await this.authService.getUserFromSocket(client);
-		if (!user || !client.id || user.channelSocketId !== client.id) {
-			return WSBadRequestException('유저 정보가 일치하지 않습니다.');
+	// 채널을 나간 경우, 해당 소켓을 채널 룸에서 leave하는 메서드
+	async leaveChannelRoom(channelRoomName: string, channelSocketId: string) {
+		this.logger.log(
+			`leaveChannelRoom: ${channelRoomName}, ${channelSocketId}`,
+		);
+
+		const socket = (await this.server.fetchSockets()).find(
+			(s) => s.id === channelSocketId,
+		);
+		if (!socket) {
+			return WSBadRequestException('socket이 존재하지 않습니다.');
 		}
-
-		const { channelId } = data;
-
-		// 채널유저 유효성 검사
-		const channelUser = await this.channelUsersRepository.findOne({
-			where: { userId: user.id, channelId, isBanned: false },
-		});
-		if (!channelUser) {
-			throw WSBadRequestException('채널에 속해있지 않습니다.');
-		}
-		// 채널에 leave한다.
-		client.leave(channelId.toString());
-
-		// this.server
-		// 	.to(channelId.toString())
-		// 	.emit('message', `${user.nickname}님이 퇴장하셨습니다.`);
-		// 채널의 다른 유저들에게 퇴장을 알린다.
-		this.channelNoticeMessage(channelId, {
-			nickname: user.nickname,
-			eventType: ChannelEventType.EXIT,
-		});
-
-		// 어느 채널에 퇴장했는지 알려주기 위해 front에 emit한다.
-		client.emit('leaveChannelRoom', channelId.toString());
+		this.logger.log(`socket.id: `, socket.id);
+		socket.leave(channelRoomName);
 	}
 
 	// 알람 구현을 위한 메소드(한명에게만 알람)
-	async PrivateAlert(
+	async privateAlert(
 		gatewayInvitationDto: GatewayCreateChannelInvitationParamDto,
 	) {
 		const invitedUser = await this.usersRepository.findOne({
@@ -241,6 +221,7 @@ export class ChannelsGateway
 			invitationId: gatewayInvitationDto.invitationId,
 			invitingUserId: invitingUser.nickname,
 		};
+
 		if (
 			!invitedUser ||
 			!invitingUser ||
