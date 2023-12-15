@@ -10,18 +10,19 @@ import {
 import { UsersRepository } from '../users/users.repository';
 import { Server, Socket } from 'socket.io';
 import { AuthService } from '../auth/auth.service';
-import { ParseIntPipe, UseFilters } from '@nestjs/common';
+import { UseFilters } from '@nestjs/common';
 import { WsExceptionFilter } from '../common/exception/custom-ws-exception.filter';
 import { GatewayCreateGameInvitationParamDto } from './dto/gateway-create-invitation-param.dto';
 import {
 	EVENT_GAME_INVITATION,
 	EVENT_GAME_INVITATION_REPLY,
+	EVENT_GAME_READY,
 } from '../common/events';
 import { ChannelsGateway } from '../channels/channels.gateway';
 import { GatewaySendInvitationReplyDto } from './dto/gateway-send-invitation-reaponse.dto';
-import { PositiveIntPipe } from '../common/pipes/positiveInt.pipe';
 import { GameRepository } from './game.repository';
 import { WSBadRequestException } from '../common/exception/custom-exception';
+import { GameDto } from './dto/game.dto';
 
 @WebSocketGateway({ namespace: 'game' })
 @UseFilters(WsExceptionFilter)
@@ -35,7 +36,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 	@WebSocketServer()
 	server: Server;
-	private connectedClients: Map<number, Socket> = new Map();
+	private userIdToClient: Map<number, Socket> = new Map();
+	private userIdToGameId: Map<number, number> = new Map();
+	private gameIdToGameDto: Map<number, GameDto> = new Map();
 
 	async handleConnection(@ConnectedSocket() client: Socket) {
 		const user = await this.authService.getUserFromSocket(client);
@@ -48,7 +51,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		await this.usersRepository.update(user.id, {
 			gameSocketId: client.id,
 		});
-		this.connectedClients.set(user.id, client);
+		this.userIdToClient.set(user.id, client);
 	}
 
 	async handleDisconnect(@ConnectedSocket() client: Socket) {
@@ -58,7 +61,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		await this.usersRepository.update(user.id, {
 			gameSocketId: null,
 		});
-		this.connectedClients.delete(user.id);
+		this.userIdToClient.delete(user.id);
 		client.rooms.clear();
 	}
 
@@ -84,10 +87,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	async sendInvitationReply(
 		sendInvitationReplyDto: GatewaySendInvitationReplyDto,
 	) {
+		const targetUserId = sendInvitationReplyDto.targetUserId;
 		const targetUserChannelSocketId =
 			sendInvitationReplyDto.targetUserChannelSocketId;
 		const isAccepted = sendInvitationReplyDto.isAccepted;
 		const gameId = sendInvitationReplyDto.gameId;
+		// gameId 저장하기
+		if (isAccepted && gameId) this.userIdToGameId.set(targetUserId, gameId);
 
 		this.channelsGateway.server
 			.to(targetUserChannelSocketId)
@@ -98,35 +104,43 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	}
 
 	@SubscribeMessage('gameRequest')
-	async prepareGame(
-		@ConnectedSocket() client: Socket,
-		@MessageBody() data: { gameId: number },
-	) {
+	async prepareGame(@ConnectedSocket() client: Socket) {
 		/* TODO: Game 세팅
-		 *	1. game DB 만들기
+		 *	1. game Data 만들기
 		 *
-		 * 	2. game room join하기 ✅
-		 * 	3. game start event emit  ✅*/
+		 * 	2. map 준비하기
+		 * 	3. game room join하기 ✅
+		 * 	4. game start event emit ✅*/
 		const user = await this.authService.getUserFromSocket(client);
 		if (!user) return client.disconnect();
+		const gameId = this.userIdToGameId.get(user.id);
 
 		const game = await this.gameRepository.findOne({
-			where: { id: data.gameId },
+			where: { id: gameId },
 		});
 		if (!game)
 			throw WSBadRequestException(
-				`해당하는 game id ${data.gameId} 가 없습니다`,
+				`gameId ${gameId} 가 유효하지 않습니다`,
 			);
 
-		const player1Socket = this.connectedClients.get(game.winnerId);
-		if (!player1Socket)
+		const gameDto = new GameDto(game);
+		if (!this.gameIdToGameDto.get(game.id))
+			this.gameIdToGameDto.set(game.id, gameDto);
+
+		const player1Socket = this.userIdToClient.get(gameDto.player1Id);
+		const player2Socket = this.userIdToClient.get(gameDto.player2Id);
+		if (!player1Socket || !player2Socket)
 			throw WSBadRequestException(
-				`player1 ${game.winnerId} 소켓이 없습니다`,
+				`두 플레이어의 게임 소켓이 모두 필요합니다. 게임 불가`,
 			);
-		const player2Socket = this.connectedClients.get(game.winnerId);
-		if (!player2Socket)
-			throw WSBadRequestException(
-				`player2 ${game.loserId} 소켓이 없습니다`,
-			);
+		player1Socket.join(gameDto.getGameId().toString());
+		player2Socket.join(gameDto.getGameId().toString());
+
+		// 프론트 무슨 데이터 필요한지 ?
+		this.server.to(player1Socket.id).emit(EVENT_GAME_READY, {});
+		this.server.to(player2Socket.id).emit(EVENT_GAME_READY, {});
 	}
+
+	@SubscribeMessage('gameStart')
+	async gameStart(@ConnectedSocket() client: Socket) {}
 }
