@@ -311,14 +311,16 @@ export class ChannelsController {
 	})
 	async acceptInvitation(
 		@GetUser() user: User,
-		@Body('channelInvitationId', ParseIntPipe, PositiveIntPipe)
+		@Body('invitationId', ParseIntPipe, PositiveIntPipe)
 		invitationId: number,
 	) {
 		const createChannelUserParamDto: ChannelInvitationParamDto = {
 			invitedUserId: user.id,
 			invitationId: invitationId,
 		};
-		await this.channelsService.acceptInvitation(createChannelUserParamDto);
+		return await this.channelsService.acceptInvitation(
+			createChannelUserParamDto,
+		);
 	}
 
 	@Delete('/refuse/:channelInvitationId')

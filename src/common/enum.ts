@@ -30,3 +30,12 @@ export enum ChannelUserType {
 	ADMIN = 'ADMIN',
 	MEMBER = 'MEMBER',
 }
+
+export enum ChannelEventType {
+	JOIN = 'JOIN',
+	BAN = 'BAN',
+	EXIT = 'EXIT',
+	KICK = 'KICK',
+	MUTE = 'MUTE',
+	ADMIN = 'ADMIN',
+}
