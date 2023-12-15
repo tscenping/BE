@@ -1,3 +1,4 @@
+import { BlocksRepository } from './../users/blocks.repository';
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
 import { Logger, UseFilters, UsePipes, ValidationPipe } from '@nestjs/common';
 import {
@@ -22,6 +23,7 @@ import { UsersRepository } from 'src/users/users.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
 import { EventMessageOnDto } from './dto/event-message-on.dto';
 import { GatewayCreateGameInvitationParamDto } from '../game/dto/gateway-create-invitation-param.dto';
+import { GatewayCreateChannelInvitationParamDto } from 'src/game/dto/gateway-create-channelInvitation-param-dto';
 
 @WebSocketGateway({ namespace: 'channels' })
 @UseFilters(WsExceptionFilter)
@@ -34,6 +36,7 @@ export class ChannelsGateway
 		private readonly usersRepository: UsersRepository,
 		private readonly channelUsersRepository: ChannelUsersRepository,
 		private readonly friendsRepository: FriendsRepository,
+		private readonly BlocksRepository: BlocksRepository,
 		@InjectRedis() private readonly redis: Redis,
 	) {}
 
@@ -215,30 +218,37 @@ export class ChannelsGateway
 	}
 
 	// 알람 구현을 위한 메소드(한명에게만 알람)
-	async PrivateAlert(data: { invitedUserId: number; invitationId: number }) {
+	async PrivateAlert(gatewayInvitationDto : GatewayCreateChannelInvitationParamDto) {
 		const invitedUser = await this.usersRepository.findOne({
-			where: { id: data.invitedUserId },
+			where: { id: gatewayInvitationDto.invitedUserId },
 		});
 
-		const invitationEmitDto = {
-			invitationId: data.invitationId,
-		};
+		const invitingUser = await this.usersRepository.findOne({
+			where: { id: gatewayInvitationDto.invitingUserId },
+		});
+		if (!invitingUser) {
+			throw WSBadRequestException('유저가 유효하지 않습니다.');
+		}
 
+		const invitationEmitDto = {
+			invitationId: gatewayInvitationDto.invitationId,
+			invitingUserId: invitingUser.nickname
+		};
 		if (
-			!invitedUser ||
+			!invitedUser || !invitingUser ||
 			invitedUser.status === UserStatus.OFFLINE ||
+			invitingUser.status === UserStatus.OFFLINE ||
 			!invitedUser.channelSocketId
 		) {
-			if (
-				!invitedUser ||
-				invitedUser.status === UserStatus.OFFLINE ||
-				!invitedUser.channelSocketId
-			) {
-				throw WSBadRequestException('유저가 유효하지 않습니다.');
-			}
-			this.server
-				.to(invitedUser.channelSocketId)
-				.emit('privateAlert', invitationEmitDto);
+			throw WSBadRequestException('유저가 유효하지 않습니다.');
 		}
-	}
+		const isBlocked = await this.BlocksRepository.findOne({
+			where: { fromUserId: invitedUser.id, toUserId: invitingUser.id },
+		});
+		if (isBlocked) return;
+
+		this.server
+			.to(invitedUser.channelSocketId)
+			.emit('privateAlert', invitationEmitDto);
+		}
 }

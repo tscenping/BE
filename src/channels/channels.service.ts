@@ -22,6 +22,11 @@ import { DmChannelListResponseDto } from './dto/dmchannel-list-response.dto';
 import { DmChannelListReturnDto } from './dto/dmchannel-list-return.dto';
 import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
 import { GatewayCreateChannelInvitationParamDto } from 'src/game/dto/gateway-create-channelInvitation-param-dto';
+import { ChannelInvitationListResponseDto } from './dto/channel-Invitation-list-response.dto';
+import { ChannelInvitationListDto } from './dto/channel-Invitation-list-return.dto';
+import { DeleteChannelInvitationParamDto } from './dto/delete-invitation-param.dto';
+import { ChannelInvitationParamDto } from './dto/channel-Invitation.dto';
+import { ChannelUserInfoReturnDto } from './dto/channel-user-info-return.dto';
 
 @Injectable()
 export class ChannelsService {
@@ -309,6 +314,7 @@ export class ChannelsService {
 
 		const gatewayInvitationParamDto: GatewayCreateChannelInvitationParamDto = {
 			invitationId: channelInvitation.id,
+			invitingUserId: invitingUserId,
 			invitedUserId: invitedUserId,
 		};
 		await this.ChannelsGateway.PrivateAlert(gatewayInvitationParamDto);
@@ -578,6 +584,61 @@ export class ChannelsService {
 			throw new BadRequestException(`There is no 'dm channel'`);
 		}
 		return { dmChannels, totalItemCount };
+	}
+
+	async acceptInvitation(
+		createChannelUserParamDto: ChannelInvitationParamDto
+	): Promise<ChannelInvitationListResponseDto> {
+		const channelInfo = await this.channelsRepository.findOne({
+			where: {
+				id: createChannelUserParamDto.invitationId,
+			},
+		});
+		if (!channelInfo || !channelInfo.name)
+			throw new BadRequestException(
+				`channel ${createChannelUserParamDto.invitationId} does not exist`,
+			);
+
+		const channelId = channelInfo.id;
+		const channelName = channelInfo.name;
+		const channelUsersRepo = await this.channelUsersRepository.findChannelUserInfoList(
+			createChannelUserParamDto.invitedUserId,
+			channelId,
+		);
+
+		const channelUsers: ChannelUserInfoReturnDto[] = channelUsersRepo.map(user => ({
+			...user,
+			isFriend: user.isFriend,
+			isBlocked: user.isBlocked,
+			channelUserType: user.channelUserType,
+		}));
+
+		return { channelId, channelName, channelUsers };
+	}
+
+	async rejectInvitation(
+		deleteInvitationParamDto: DeleteChannelInvitationParamDto,
+	) {
+		const invitation = await this.channelInvitationRepository.findOne({
+			where: {
+				id: deleteInvitationParamDto.invitationId,
+				invitedUserId: deleteInvitationParamDto.cancelingUserId,
+			},
+		});
+		if (!invitation)
+			throw new BadRequestException(
+				`해당하는 invitation id ${deleteInvitationParamDto.invitationId} 가 없습니다`,
+			);
+		
+		const deleteChannelInvitationParamDto: DeleteChannelInvitationParamDto = {
+			invitationId: invitation.id,
+			cancelingUserId: invitation.invitedUserId,
+		}
+		
+		await this.channelInvitationRepository.deleteChannelInvitation(
+			deleteChannelInvitationParamDto,
+		);
+
 	}
 
 	async validateDmChannel(

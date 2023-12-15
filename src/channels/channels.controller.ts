@@ -2,6 +2,7 @@ import {
 	BadRequestException,
 	Body,
 	Controller,
+	Delete,
 	Get,
 	Logger,
 	Param,
@@ -27,6 +28,8 @@ import { JoinChannelRequestDto } from './dto/join-channel-request.dto';
 import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
 import { UpdateChannelPwdReqeustDto } from './dto/update-channel-pwd-reqeust.dto';
 import { UpdateChannelUserRequestDto } from './dto/update-channel-user-request.dto';
+import { DeleteChannelInvitationParamDto } from './dto/delete-invitation-param.dto';
+import { ChannelInvitationParamDto } from './dto/channel-Invitation.dto';
 
 @Controller('channels')
 @ApiTags('channels')
@@ -300,4 +303,41 @@ export class ChannelsController {
 	) {
 		return await this.channelsService.findDmChannels(user.id, page);
 	}
+
+	// 초대 수락
+	@Post('/accept')
+	@ApiOperation({
+		summary: '초대 수락',
+		description: '초대 수락',
+	})
+	async acceptInvitation(
+		@GetUser() user: User,
+		@Body('channelInvitationId', ParseIntPipe, PositiveIntPipe) invitationId: number,
+	) {
+		const createChannelUserParamDto: ChannelInvitationParamDto = {
+			invitedUserId: user.id,	
+			invitationId: invitationId,
+		}
+		await this.channelsService.acceptInvitation(createChannelUserParamDto);
+	}
+
+	@Delete('/refuse/:channelInvitationId')
+	@ApiOperation({
+		summary: '초대 거절',
+		description: '초대 거절',
+	})
+	async rejectInvitation(
+		@GetUser() user: User,
+		@Param('channelinvitationId', ParseIntPipe, PositiveIntPipe)
+		invitationId: number,
+	) {
+		const deleteInvitationParamDto: DeleteChannelInvitationParamDto = {
+			cancelingUserId: user.id,
+			invitationId: invitationId,
+		};
+		await this.channelsService.rejectInvitation(
+			deleteInvitationParamDto,
+		);
+	}
+
 }
