@@ -328,7 +328,7 @@ export class ChannelsController {
 	})
 	async rejectInvitation(
 		@GetUser() user: User,
-		@Param('channelinvitationId', ParseIntPipe, PositiveIntPipe)
+		@Param('channelInvitationId', ParseIntPipe, PositiveIntPipe)
 		invitationId: number,
 	) {
 		const deleteInvitationParamDto: DeleteChannelInvitationParamDto = {
