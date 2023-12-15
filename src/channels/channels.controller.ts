@@ -312,18 +312,16 @@ export class ChannelsController {
 	})
 	async acceptInvitation(
 		@GetUser() user: User,
-		@Body('invitationId', ParseIntPipe, PositiveIntPipe) 
-		invitationId: number,
+		@Body('channelInvitationId', ParseIntPipe, PositiveIntPipe) invitationId: number,
 	) {
 		const createChannelUserParamDto: ChannelInvitationParamDto = {
-			invitedUserId: user.id,
+			invitedUserId: user.id,	
 			invitationId: invitationId,
-		} 
-
+		}
 		await this.channelsService.acceptInvitation(createChannelUserParamDto);
 	}
 
-	@Delete('/refuse/:channelinvitationId')
+	@Delete('/refuse/:channelInvitationId')
 	@ApiOperation({
 		summary: '초대 거절',
 		description: '초대 거절',
