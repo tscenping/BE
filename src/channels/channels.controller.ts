@@ -311,7 +311,7 @@ export class ChannelsController {
 	})
 	async acceptInvitation(
 		@GetUser() user: User,
-		@Body('InvitationId', ParseIntPipe, PositiveIntPipe)
+		@Body('invitationId', ParseIntPipe, PositiveIntPipe)
 		invitationId: number,
 	) {
 		const createChannelUserParamDto: ChannelInvitationParamDto = {
