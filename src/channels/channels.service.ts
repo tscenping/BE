@@ -631,6 +631,10 @@ export class ChannelsService {
 				channelUserType: user.channelUserType,
 			}),
 		);
+		await this.channelUsersRepository.createChannelUser(
+			channelId,
+			createChannelUserParamDto.invitedUserId,
+		);
 
 		return { channelId, channelName, channelUsers };
 	}
