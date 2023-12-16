@@ -264,15 +264,18 @@ export class ChannelsController {
 		const giverUserId = user.id;
 		const receiverChannelUserId = updateChannelUserRequestDto.channelUserId;
 
+		const channelId =
+			await this.channelsService.findChannelIdByChannelUserId(
+				receiverChannelUserId,
+			);
+
+		// channelUser를 kick 처리한다.
 		const receiverUserProfile = await this.channelsService.kickChannelUser(
 			giverUserId,
 			receiverChannelUserId,
 		);
 
-		// channelId를 찾아서 해당 채널에 join한 유저들에게 알림
-		const channelId = await this.channelsService.findChannelIdByUserId(
-			giverUserId,
-		);
+		// 해당 채널에 join한 유저들에게 알림
 		this.channelsGateway.channelNoticeMessage(channelId, {
 			channelId,
 			nickname: receiverUserProfile.nickname, // 강퇴당한 유저의 닉네임
@@ -292,15 +295,18 @@ export class ChannelsController {
 		const giverUserId = user.id;
 		const receiverChannelUserId = updateChannelUserRequestDto.channelUserId;
 
+		const channelId =
+			await this.channelsService.findChannelIdByChannelUserId(
+				receiverChannelUserId,
+			);
+
+		// channelUser를 Ban 처리하고, 해당 유저가 속한 채널에서 나가게 한다.
 		const receiverUserProfile = await this.channelsService.banChannelUser(
 			giverUserId,
 			receiverChannelUserId,
 		);
 
-		// channelId를 찾아서 해당 채널에 join한 유저들에게 알림
-		const channelId = await this.channelsService.findChannelIdByUserId(
-			giverUserId,
-		);
+		// 해당 채널에 join한 유저들에게 알림
 		this.channelsGateway.channelNoticeMessage(channelId, {
 			channelId,
 			nickname: receiverUserProfile.nickname, // 밴 당한 유저의 닉네임
