@@ -3,11 +3,7 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import * as bycrypt from 'bcrypt';
 import { Redis } from 'ioredis';
 import { MUTE_TIME } from 'src/common/constants';
-import {
-	ChannelEventType,
-	ChannelType,
-	ChannelUserType,
-} from 'src/common/enum';
+import { ChannelType, ChannelUserType } from 'src/common/enum';
 import { GatewayCreateChannelInvitationParamDto } from 'src/game/dto/gateway-create-channelInvitation-param-dto';
 import { User } from 'src/users/entities/user.entity';
 import { UsersRepository } from 'src/users/users.repository';
@@ -382,10 +378,11 @@ export class ChannelsService {
 			giverUserId,
 			channelId,
 		);
-		if (giverChannelUser.channelUserType !== ChannelUserType.OWNER)
+		if (giverChannelUser.channelUserType !== ChannelUserType.OWNER) {
 			throw new BadRequestException(
 				`giver ${giverUserId} does not have authority`,
 			);
+		}
 
 		// receiver user 유효성 확인 (존재하는 user인지)
 		const receiverUserId = receiverChannelUser.userId;
@@ -396,7 +393,14 @@ export class ChannelsService {
 			receiverChannelUserId,
 		);
 
-		return result.channelUserType === ChannelUserType.ADMIN;
+		const receiverUserProfile = await this.usersRepository.findOne({
+			where: { id: receiverUserId },
+		});
+
+		return {
+			isAdmin: result.channelUserType === ChannelUserType.ADMIN,
+			receiverUserProfile: receiverUserProfile!,
+		};
 	}
 
 	async kickChannelUser(giverUserId: number, receiverChannelUserId: number) {
@@ -435,9 +439,15 @@ export class ChannelsService {
 				);
 		}
 
+		const receiverUserProfile = await this.usersRepository.findOne({
+			where: { id: receiverUserId },
+		});
+
 		await this.channelUsersRepository.softDeleteUserFromChannel(
 			receiverChannelUserId,
 		);
+
+		return receiverUserProfile!;
 	}
 
 	async banChannelUser(giverUserId: number, receiverChannelUserId: number) {
@@ -477,6 +487,10 @@ export class ChannelsService {
 			}
 		}
 
+		const receiverUserProfile = await this.usersRepository.findOne({
+			where: { id: receiverUserId },
+		});
+
 		const result = await this.channelUsersRepository.update(
 			receiverChannelUserId,
 			{
@@ -489,6 +503,8 @@ export class ChannelsService {
 		await this.channelUsersRepository.softDeleteUserFromChannel(
 			receiverChannelUserId,
 		);
+
+		return receiverUserProfile!;
 	}
 
 	async muteChannelUser(giverUser: User, receiverChannelUserId: number) {
@@ -528,19 +544,18 @@ export class ChannelsService {
 			}
 		}
 
-		// await this.redis.set(`mute:${channelId}:${receiverUserIdKey}:1`, '');
-		// await this.redis.set(`mute:${channelId}:${receiverUserIdKey}:2`, '');
-		// await this.redis.expire(receiverUserIdKey, MUTE_TIME); // TODO: 30초로 변경
-		// const key = `mute:${channelId}:${receiverUserIdKey}:\*`;
-		// const Mutelist = await this.redis.keys(key);
-		// console.log('Mutelist: ', Mutelist);
+		const receiverUserProfile = await this.usersRepository.findOne({
+			where: { id: receiverUserId },
+		});
+
 		// redis에 mute 정보 저장
 		const muteKey = `mute:${channelId}:${receiverUser.id}`;
 		// redis에 mute 정보 저장
-		const result = await this.redis.set(muteKey, '');
+		await this.redis.set(muteKey, '');
 		// mute 정보 만료 시간 설정
 		await this.redis.expire(muteKey, MUTE_TIME); // TODO: 30초로 변경
-		console.log('result: ', result);
+
+		return receiverUserProfile!;
 	}
 
 	async findAllChannels(
@@ -722,8 +737,17 @@ export class ChannelsService {
 		const channelUser = await this.channelUsersRepository.findOne({
 			where: { id: channelUserId },
 		});
-		if (!channelUser)
+		if (!channelUser) {
 			throw new BadRequestException(`this ${channelUserId} is invalid`);
+		}
+
+		const user = await this.usersRepository.findOne({
+			where: { id: channelUser.userId },
+		});
+		if (!user) {
+			throw new BadRequestException(`user does not exist`);
+		}
+
 		return channelUser;
 	}
 
@@ -767,6 +791,16 @@ export class ChannelsService {
 			throw new BadRequestException(
 				`channelUser ${channelUserId} does not exist`,
 			);
+		}
+		return channelUser.channelId;
+	}
+
+	async findChannelIdByUserId(userId: number) {
+		const channelUser = await this.channelUsersRepository.findOne({
+			where: { userId },
+		});
+		if (!channelUser) {
+			throw new BadRequestException(`user ${userId} does not exist`);
 		}
 		return channelUser.channelId;
 	}

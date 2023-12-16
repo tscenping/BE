@@ -226,10 +226,11 @@ export class ChannelsController {
 		const giverUserId = user.id;
 		const receiverChannelUserId = updateChannelUserRequestDto.channelUserId;
 
-		const isAdmin = await this.channelsService.updateChannelUserType(
-			giverUserId,
-			receiverChannelUserId,
-		);
+		const { isAdmin, receiverUserProfile } =
+			await this.channelsService.updateChannelUserType(
+				giverUserId,
+				receiverChannelUserId,
+			);
 		// console.log(isAdmin);
 		const updateChannelUserTypeResponseDto = {
 			isAdmin: isAdmin,
@@ -242,7 +243,7 @@ export class ChannelsController {
 			);
 		this.channelsGateway.channelNoticeMessage(channelId, {
 			channelId,
-			nickname: user.nickname,
+			nickname: receiverUserProfile.nickname, // 관리자가 되거나 해제된 유저의 닉네임
 			eventType: isAdmin
 				? ChannelEventType.ADMIN
 				: ChannelEventType.ADMIN_CANCEL,
@@ -263,19 +264,18 @@ export class ChannelsController {
 		const giverUserId = user.id;
 		const receiverChannelUserId = updateChannelUserRequestDto.channelUserId;
 
-		await this.channelsService.kickChannelUser(
+		const receiverUserProfile = await this.channelsService.kickChannelUser(
 			giverUserId,
 			receiverChannelUserId,
 		);
 
 		// channelId를 찾아서 해당 채널에 join한 유저들에게 알림
-		const channelId =
-			await this.channelsService.findChannelIdByChannelUserId(
-				receiverChannelUserId,
-			);
+		const channelId = await this.channelsService.findChannelIdByUserId(
+			giverUserId,
+		);
 		this.channelsGateway.channelNoticeMessage(channelId, {
 			channelId,
-			nickname: user.nickname,
+			nickname: receiverUserProfile.nickname, // 강퇴당한 유저의 닉네임
 			eventType: ChannelEventType.KICK,
 		});
 	}
@@ -292,19 +292,18 @@ export class ChannelsController {
 		const giverUserId = user.id;
 		const receiverChannelUserId = updateChannelUserRequestDto.channelUserId;
 
-		await this.channelsService.banChannelUser(
+		const receiverUserProfile = await this.channelsService.banChannelUser(
 			giverUserId,
 			receiverChannelUserId,
 		);
 
 		// channelId를 찾아서 해당 채널에 join한 유저들에게 알림
-		const channelId =
-			await this.channelsService.findChannelIdByChannelUserId(
-				receiverChannelUserId,
-			);
+		const channelId = await this.channelsService.findChannelIdByUserId(
+			giverUserId,
+		);
 		this.channelsGateway.channelNoticeMessage(channelId, {
 			channelId,
-			nickname: user.nickname,
+			nickname: receiverUserProfile.nickname, // 밴 당한 유저의 닉네임
 			eventType: ChannelEventType.BAN,
 		});
 	}
@@ -320,7 +319,10 @@ export class ChannelsController {
 	) {
 		const receiverChannelUserId = updateChannelUserRequestDto.channelUserId;
 
-		await this.channelsService.muteChannelUser(user, receiverChannelUserId);
+		const receiverUserProfile = await this.channelsService.muteChannelUser(
+			user,
+			receiverChannelUserId,
+		);
 
 		// channelId를 찾아서 해당 채널에 join한 유저들에게 알림
 		const channelId =
@@ -329,7 +331,7 @@ export class ChannelsController {
 			);
 		this.channelsGateway.channelNoticeMessage(channelId, {
 			channelId,
-			nickname: user.nickname,
+			nickname: receiverUserProfile.nickname, // 뮤트 당한 유저의 닉네임
 			eventType: ChannelEventType.MUTE,
 		});
 	}
