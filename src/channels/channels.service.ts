@@ -790,14 +790,4 @@ export class ChannelsService {
 		}
 		return channelUser.channelId;
 	}
-
-	async findChannelIdByUserId(userId: number) {
-		const channelUser = await this.channelUsersRepository.findOne({
-			where: { userId },
-		});
-		if (!channelUser) {
-			throw new BadRequestException(`user ${userId} does not exist`);
-		}
-		return channelUser.channelId;
-	}
 }
