@@ -73,7 +73,7 @@ export class AuthController {
 			userId: user.id,
 			isFirstLogin: user.nickname === null,
 			isMfaEnabled: user.isMfaEnabled,
-			mfaCode: mfaUrl,
+			mfaUrl,
 		};
 
 		return res.send(userSigninResponseDto);
@@ -134,7 +134,7 @@ export class AuthController {
 				userId: existUser.id,
 				isFirstLogin: false,
 				isMfaEnabled: false,
-				mfaCode: undefined,
+				mfaUrl: undefined,
 			};
 
 			return res.send(userSigninResponseDto);
@@ -164,7 +164,7 @@ export class AuthController {
 			userId: user.id,
 			isFirstLogin: false,
 			isMfaEnabled: false,
-			mfaCode: undefined,
+			mfaUrl: undefined,
 		};
 		Logger.log(
 			`updateRanking(ladderScore, id): ${user.ladderScore}, ${user.id}`,
