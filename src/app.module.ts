@@ -15,6 +15,7 @@ import typeOrmConfig from './config/typeorm.config';
 import { GameModule } from './game/game.module';
 import { UsersModule } from './users/users.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import userConfig from './config/user.config';
 
 @Module({
 	imports: [
@@ -31,6 +32,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 				jwtConfig,
 				typeOrmConfig,
 				redisConfig,
+				userConfig,
 			],
 		}),
 		TypeOrmModule.forRootAsync({

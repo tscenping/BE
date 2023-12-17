@@ -1,13 +1,12 @@
-// import { registerAs } from '@nestjs/config';
+import { registerAs } from '@nestjs/config';
+import { z } from 'zod';
 
-// export const USER_CONFIG = 'user';
+export const USER_CONFIG = 'user';
 
-// export default registerAs(USER_CONFIG, () => {
-// 	// const FIRST_NICKNAME_PREFIX = z
-// 	// 	.string()
-// 	// 	.parse(process.env.FIRST_NICKNAME_PREFIX);
+export default registerAs(USER_CONFIG, () => {
+	const MFA_SECRET = z.string().parse(process.env.MFA_SECRET);
 
-// 	return {
-// 		// FIRST_NICKNAME_PREFIX,
-// 	};
-// });
+	return {
+		mfaSecret: MFA_SECRET,
+	};
+});

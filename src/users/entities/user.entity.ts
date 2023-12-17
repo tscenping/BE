@@ -36,6 +36,10 @@ export class User extends BaseEntity {
 	@IsBoolean()
 	isMfaEnabled: boolean;
 
+	@Column({ default: null, type: 'varchar' })
+	@IsString()
+	mfaSecret: string | null;
+
 	@Column({ default: 1200 })
 	@IsNotEmpty()
 	@IsNumber()
