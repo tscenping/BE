@@ -1,4 +1,4 @@
-import { Logger } from '@nestjs/common';
+import { BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import {
@@ -20,6 +20,16 @@ export class ChannelUsersRepository extends Repository<ChannelUser> {
 			channelId: channelId,
 			userId: userId,
 		});
+		// 이미 채널에 참여한 유저인지 확인
+		const isAlreadyJoined = await this.findOne({
+			where: {
+				channelId: channelId,
+				userId: userId,
+			},
+		});
+		if (isAlreadyJoined)
+			throw new BadRequestException('이미 채널에 참여한 유저입니다');
+
 		const res = await this.save(newChannelUser);
 
 		if (!res) throw DBUpdateFailureException('join channel failed');

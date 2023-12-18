@@ -1,5 +1,10 @@
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+	BadRequestException,
+	ImATeapotException,
+	Injectable,
+	Logger,
+} from '@nestjs/common';
 import * as bycrypt from 'bcrypt';
 import { Redis } from 'ioredis';
 import { MUTE_TIME } from 'src/common/constants';
@@ -26,6 +31,7 @@ import { DeleteChannelInvitationParamDto } from './dto/delete-invitation-param.d
 import { DmChannelListResponseDto } from './dto/dmchannel-list-response.dto';
 import { DmChannelListReturnDto } from './dto/dmchannel-list-return.dto';
 import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
+import moment from 'moment';
 
 @Injectable()
 export class ChannelsService {
@@ -803,5 +809,18 @@ export class ChannelsService {
 			throw new BadRequestException(`user ${userId} does not exist`);
 		}
 		return channelUser.channelId;
+	}
+
+	async findChannelIdByInvitationId(invitationId: number) {
+		const channelInvitation =
+			await this.channelInvitationRepository.findOne({
+				where: { id: invitationId },
+			});
+		if (!channelInvitation) {
+			throw new BadRequestException(
+				`channelInvitation ${invitationId} does not exist`,
+			);
+		}
+		return channelInvitation.channelId;
 	}
 }
