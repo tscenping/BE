@@ -120,10 +120,7 @@ export class ChannelsService {
 		// 	}
 		// }
 
-		// TODO: cache에 user count 저장
-		this.logger.log(
-			`channel ${channel.id} is created. user count: ${userCount}`,
-		);
+		await this.redis.set(`userCount:${channel.id}`, userCount.toString());
 
 		const createChannelResponseDto = {
 			channelId: channel.id,
