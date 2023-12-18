@@ -244,4 +244,16 @@ export class AuthController {
 
 		return res.send();
 	}
+
+	@Patch('/mfa')
+	@ApiOperation({
+		summary: 'MFA 활성화/비활성화',
+		description: 'MFA 활성화/비활성화',
+	})
+	@ApiResponse({ status: 200, description: 'MFA 활성화/비활성화 결과' })
+	@UseGuards(AuthGuard('access'))
+	async toggleMfa(@GetUser() user: User) {
+		const isMfaEnabled = await this.authService.toggleMfa(user);
+		return { isMfaEnabled };
+	}
 }

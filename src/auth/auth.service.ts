@@ -170,4 +170,20 @@ export class AuthService {
 
 		return user;
 	}
+
+	async toggleMfa(user: User) {
+		if (user.isMfaEnabled) {
+			// MFA 비활성화
+			await this.usersRepository.update(user.id, {
+				isMfaEnabled: false,
+				mfaSecret: null,
+			});
+		} else {
+			// MFA 활성화
+			await this.usersRepository.update(user.id, {
+				isMfaEnabled: true,
+			});
+		}
+		return !user.isMfaEnabled;
+	}
 }
