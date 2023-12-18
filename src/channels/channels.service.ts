@@ -106,21 +106,8 @@ export class ChannelsService {
 				userId,
 				channel.id,
 			);
-		// // 채널에 소환된 유저에게 알람 전송. DM의 경우에만 해당
-		// if (channel.channelType === ChannelType.DM) {
-		// 	console.log(`channelInfo.userId: ${channelInfo.userId}`)
-		// 	const targetUser = await this.usersRepository.findOne({
-		// 		where: { id: channelInfo.userId },
-		// 	});
-		// 	if (targetUser?.channelSocketId) {
-		// 		this.ChannelsGateway.sendChannelAlert(
-		// 			channel.id,
-		// 			[targetUser.channelSocketId],
-		// 		);
-		// 	}
-		// }
 
-		await this.redis.set(`userCount:${channel.id}`, userCount.toString());
+		await this.redis.set(`userCount:${channel.id}`, userCount.toString()); // TODO: 필요 없을 것 같다.
 
 		const createChannelResponseDto = {
 			channelId: channel.id,
