@@ -392,14 +392,30 @@ export class ChannelsController {
 		@Body('invitationId', ParseIntPipe, PositiveIntPipe)
 		invitationId: number,
 	) {
-		const createChannelUserParamDto: ChannelInvitationParamDto = {
-			invitedUserId: user.id,
-			invitationId: invitationId,
-		};
-
-		return await this.channelsService.acceptInvitation(
-			createChannelUserParamDto,
-		);
+		try {
+			const createChannelUserParamDto: ChannelInvitationParamDto = {
+				invitedUserId: user.id,
+				invitationId: invitationId,
+			};
+			const channelId =
+				await this.channelsService.findChannelIdByInvitationId(
+					invitationId,
+				);
+			const channelsReturnDto =
+				await this.channelsService.acceptInvitation(
+					createChannelUserParamDto,
+				);
+			this.channelsGateway.channelNoticeMessage(channelId, {
+				channelId,
+				nickname: user.nickname,
+				eventType: ChannelEventType.JOIN,
+			});
+			return channelsReturnDto;
+		} catch (error) {
+			throw new BadRequestException(
+				"I'm just a little bit caught in the middle. Life is a maze and love is a riddle.",
+			);
+		}
 	}
 
 	@Delete('/refuse/:channelInvitationId')
