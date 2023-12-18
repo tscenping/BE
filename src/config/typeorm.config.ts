@@ -1,7 +1,7 @@
 import { registerAs } from '@nestjs/config';
-import { z } from 'zod';
-import * as process from 'process';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import * as process from 'process';
+import { z } from 'zod';
 
 export default registerAs('typeorm', () => {
 	const TYPE = 'postgres';

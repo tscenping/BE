@@ -11,10 +11,11 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { User } from 'src/users/entities/user.entity';
+import { AppService } from '../app.service';
 import { SignupRequestDto } from '../users/dto/signup-request.dto';
 import { UsersService } from '../users/users.service';
-import { AppService } from '../app.service';
 import { AuthService } from './auth.service';
+import { SigninMfaRequestDto } from './dto/signin-mfa-request.dto';
 import { UserSigninResponseDto } from './dto/user-signin-response.dto';
 import { FtAuthService } from './ft-auth.service';
 import { GetUser } from './get-user.decorator';
@@ -42,7 +43,7 @@ export class AuthController {
 		// access token을 이용해 사용자 정보를 받아온다.
 		const userData = await this.ftAuthService.getUserData(accessToken);
 		// 신규가입자라면 DB에 저장한다.
-		const { user, mfaCode } = await this.authService.findOrCreateUser(
+		const { user, mfaUrl } = await this.authService.findOrCreateUser(
 			userData,
 		);
 
@@ -50,26 +51,29 @@ export class AuthController {
 		const { jwtAccessToken, jwtRefreshToken } =
 			await this.authService.generateJwtToken(user);
 
-		// token을 쿠키에 저장한다.
-		res.cookie('accessToken', jwtAccessToken, {
-			// httpOnly: true,	// 자동로그인을 위해 httpOnly를 false로 설정
-			secure: true,
-			sameSite: 'none',
-			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
-		});
+		// MFA가 활성화 되어있지 않다면 jwt 토큰을 쿠키에 저장한다.
+		if (user.isMfaEnabled == false) {
+			// token을 쿠키에 저장한다.
+			res.cookie('accessToken', jwtAccessToken, {
+				// httpOnly: true,	// 자동로그인을 위해 httpOnly를 false로 설정
+				secure: true,
+				sameSite: 'none',
+				expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
+			});
 
-		res.cookie('refreshToken', jwtRefreshToken, {
-			httpOnly: true,
-			secure: true,
-			sameSite: 'none',
-			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
-		});
+			res.cookie('refreshToken', jwtRefreshToken, {
+				httpOnly: true,
+				secure: true,
+				sameSite: 'none',
+				expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
+			});
+		}
 
 		const userSigninResponseDto: UserSigninResponseDto = {
 			userId: user.id,
 			isFirstLogin: user.nickname === null,
 			isMfaEnabled: user.isMfaEnabled,
-			mfaCode,
+			mfaUrl,
 		};
 
 		return res.send(userSigninResponseDto);
@@ -130,7 +134,7 @@ export class AuthController {
 				userId: existUser.id,
 				isFirstLogin: false,
 				isMfaEnabled: false,
-				mfaCode: undefined,
+				mfaUrl: undefined,
 			};
 
 			return res.send(userSigninResponseDto);
@@ -160,7 +164,7 @@ export class AuthController {
 			userId: user.id,
 			isFirstLogin: false,
 			isMfaEnabled: false,
-			mfaCode: undefined,
+			mfaUrl: undefined,
 		};
 		Logger.log(
 			`updateRanking(ladderScore, id): ${user.ladderScore}, ${user.id}`,
@@ -204,5 +208,52 @@ export class AuthController {
 		});
 
 		return res.send();
+	}
+
+	@Patch('/signin/mfa')
+	@ApiOperation({
+		summary: 'MFA 인증',
+		description: 'MFA 인증',
+	})
+	@ApiResponse({ status: 200, description: 'MFA 인증 성공' })
+	async signinMfa(
+		@Body() signinMfaRequestDto: SigninMfaRequestDto,
+		@Res() res: Response,
+	) {
+		// MFA 인증
+		const user = await this.authService.verifyMfa(signinMfaRequestDto);
+
+		// 사용자 정보를 이용해 JWT 토큰을 생성한다.
+		const { jwtAccessToken, jwtRefreshToken } =
+			await this.authService.generateJwtToken(user);
+
+		// token을 쿠키에 저장한다.
+		res.cookie('accessToken', jwtAccessToken, {
+			// httpOnly: true,
+			secure: true,
+			sameSite: 'none',
+			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1), // 1일
+		});
+
+		res.cookie('refreshToken', jwtRefreshToken, {
+			httpOnly: true,
+			secure: true,
+			sameSite: 'none',
+			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14), // 14일
+		});
+
+		return res.send();
+	}
+
+	@Patch('/mfa')
+	@ApiOperation({
+		summary: 'MFA 활성화/비활성화',
+		description: 'MFA 활성화/비활성화',
+	})
+	@ApiResponse({ status: 200, description: 'MFA 활성화/비활성화 결과' })
+	@UseGuards(AuthGuard('access'))
+	async toggleMfa(@GetUser() user: User) {
+		const isMfaEnabled = await this.authService.toggleMfa(user);
+		return { isMfaEnabled };
 	}
 }

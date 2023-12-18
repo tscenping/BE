@@ -1,12 +1,22 @@
-import { ConflictException, Inject, Injectable, Logger } from '@nestjs/common';
+import {
+	BadRequestException,
+	ConflictException,
+	Inject,
+	Injectable,
+	Logger,
+	UnauthorizedException,
+} from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { Socket } from 'socket.io';
+import * as speakeasy from 'speakeasy';
 import jwtConfig from 'src/config/jwt.config';
+import userConfig from 'src/config/user.config';
 import { User } from 'src/users/entities/user.entity';
 import { UsersRepository } from '../users/users.repository';
 import { FtUserParamDto } from './dto/ft-user-param.dto';
+import { SigninMfaRequestDto } from './dto/signin-mfa-request.dto';
 import { UserFindReturnDto } from './dto/user-find-return.dto';
 
 @Injectable()
@@ -16,12 +26,17 @@ export class AuthService {
 		private readonly jwtService: JwtService,
 		@Inject(jwtConfig.KEY)
 		private readonly jwtConfigure: ConfigType<typeof jwtConfig>,
+		@Inject(userConfig.KEY)
+		private readonly userConfigure: ConfigType<typeof userConfig>,
 	) {}
 
 	private readonly logger = new Logger(AuthService.name);
 
-	private async createMfaCode(): Promise<string> {
-		return Promise.resolve('mfaCode'); // TODO: 2FA 코드 생성
+	private async createMfaSecret() {
+		const secret = speakeasy.generateSecret({
+			name: this.userConfigure.mfaSecret,
+		});
+		return secret;
 	}
 
 	async findOrCreateUser(
@@ -42,8 +57,20 @@ export class AuthService {
 			return { user };
 		}
 
-		const mfaCode = await this.createMfaCode();
-		return { user, mfaCode };
+		const mfaSecret = await this.createMfaSecret();
+		await this.usersRepository.update(user.id, {
+			mfaSecret: mfaSecret.base32,
+		});
+
+		const mfaUrl = speakeasy.otpauthURL({
+			secret: mfaSecret.ascii,
+			label: user.email,
+			issuer: user.nickname,
+		});
+
+		this.logger.log(mfaUrl);
+
+		return { user, mfaUrl };
 	}
 
 	async generateJwtToken(user: User) {
@@ -114,5 +141,49 @@ export class AuthService {
 		const accessToken = await this.jwtService.signAsync(payload);
 
 		return accessToken;
+	}
+
+	async verifyMfa(signinMfaRequestDto: SigninMfaRequestDto) {
+		const { userId, token } = signinMfaRequestDto;
+
+		const user = await this.usersRepository.findOne({
+			where: { id: userId },
+		});
+
+		if (!user) {
+			throw new BadRequestException('존재하지 않는 유저입니다.');
+		}
+
+		// mfaCode(token) 검증
+		const verified = speakeasy.totp.verify({
+			secret: user.mfaSecret!,
+			encoding: 'base32',
+			token,
+		});
+
+		if (!verified) {
+			throw new UnauthorizedException('MFA 인증에 실패했습니다.');
+		}
+
+		// mfaSecret DB에서 삭제
+		await this.usersRepository.update(user.id, { mfaSecret: null });
+
+		return user;
+	}
+
+	async toggleMfa(user: User) {
+		if (user.isMfaEnabled) {
+			// MFA 비활성화
+			await this.usersRepository.update(user.id, {
+				isMfaEnabled: false,
+				mfaSecret: null,
+			});
+		} else {
+			// MFA 활성화
+			await this.usersRepository.update(user.id, {
+				isMfaEnabled: true,
+			});
+		}
+		return !user.isMfaEnabled;
 	}
 }
