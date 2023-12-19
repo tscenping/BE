@@ -19,7 +19,7 @@ import {
 	EVENT_GAME_READY,
 } from '../common/events';
 import { ChannelsGateway } from '../channels/channels.gateway';
-import { GatewaySendInvitationReplyDto } from './dto/gateway-send-invitation-reaponse.dto';
+import { EmitEventInvitationReplyDto } from './dto/emit-event-invitation-reply.dto';
 import { GameRepository } from './game.repository';
 import { WSBadRequestException } from '../common/exception/custom-exception';
 import { GameDto } from './dto/game.dto';
@@ -85,7 +85,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	}
 
 	async sendInvitationReply(
-		sendInvitationReplyDto: GatewaySendInvitationReplyDto,
+		sendInvitationReplyDto: EmitEventInvitationReplyDto,
 	) {
 		const targetUserId = sendInvitationReplyDto.targetUserId;
 		const targetUserChannelSocketId =

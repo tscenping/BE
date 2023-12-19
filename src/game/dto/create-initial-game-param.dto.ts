@@ -1,6 +1,6 @@
 import { GameStatus, GameType } from '../../common/enum';
 
-export class CreateGameParamDto {
+export class CreateInitialGameParamDto {
 	winnerId: number;
 	loserId: number;
 	gameType: GameType;
@@ -10,13 +10,18 @@ export class CreateGameParamDto {
 	ballSpeed: number;
 	racketSize: number;
 
-	constructor(player1Id: number, player2Id: number, gameType: GameType) {
+	constructor(
+		player1Id: number,
+		player2Id: number,
+		gameType: GameType,
+		gameStatus: GameStatus,
+	) {
 		this.winnerId = player1Id;
 		this.loserId = player2Id;
 		this.gameType = gameType;
 		this.winnerScore = 0;
 		this.loserScore = 0;
-		this.gameStatus = GameStatus.WAITING;
+		this.gameStatus = gameStatus;
 		if (
 			this.gameType === GameType.SPECIAL_INVITE ||
 			this.gameType === GameType.SPECIAL_MATCHING
@@ -24,7 +29,7 @@ export class CreateGameParamDto {
 			this.ballSpeed = this.getRandomNumber(1, 3);
 			this.racketSize = this.getRandomNumber(1, 3);
 		} else {
-			// Set to 1 for NORMAL
+			// Set 1 for LADDER and NORMAL
 			this.ballSpeed = 1;
 			this.racketSize = 1;
 		}

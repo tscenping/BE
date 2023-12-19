@@ -35,7 +35,7 @@ export class GameController {
 			gameType: invitationRequestDto.gameType,
 		};
 
-		await this.gameService.createInvitation(invitationParamDto);
+		return await this.gameService.createInvitation(invitationParamDto);
 	}
 
 	/**

@@ -1,4 +1,4 @@
-export class GatewaySendInvitationReplyDto {
+export class EmitEventInvitationReplyDto {
 	targetUserId: number;
 	targetUserChannelSocketId: string;
 	isAccepted: boolean;

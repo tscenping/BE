@@ -3,13 +3,13 @@ import { GAME_DEFAULT_PAGE_SIZE } from 'src/common/constants';
 import { DataSource, Repository } from 'typeorm';
 import { Game } from './entities/game.entity';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
-import { CreateGameParamDto } from './dto/create-game-param.dto';
+import { CreateInitialGameParamDto } from './dto/create-initial-game-param.dto';
 export class GameRepository extends Repository<Game> {
 	constructor(@InjectRepository(Game) private dataSource: DataSource) {
 		super(Game, dataSource.manager);
 	}
 
-	async createGame(gameParamDto: CreateGameParamDto) {
+	async createGame(gameParamDto: CreateInitialGameParamDto) {
 		const game = this.create(gameParamDto);
 		// console.log(JSON.stringify(game)); // {"winnerId":8,"loserId":7,"gameType":"NORMAL_INVITE","winnerScore":0,"loserScore":0,"gameStatus":"WAITING","ballSpeed":1,"racketSize":1}
 		// console.log(game.id); // undefined
