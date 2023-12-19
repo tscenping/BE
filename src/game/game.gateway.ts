@@ -248,6 +248,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 		gameDto.readyCnt++;
 		if (gameDto.bothReady()) {
+			await this.gameRepository.update(gameDto.getGameId(), {
+				gameStatus: GameStatus.PLAYING,
+			});
 			this.server
 				.to(gameDto.getGameId().toString())
 				.emit(EVENT_GAME_START);
