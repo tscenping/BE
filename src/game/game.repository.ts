@@ -4,7 +4,6 @@ import { DataSource, Repository } from 'typeorm';
 import { Game } from './entities/game.entity';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { CreateInitialGameParamDto } from './dto/create-initial-game-param.dto';
-import { CreateGameParamDto } from './dto/create-game-param.dto';
 export class GameRepository extends Repository<Game> {
 	constructor(@InjectRepository(Game) private dataSource: DataSource) {
 		super(Game, dataSource.manager);
