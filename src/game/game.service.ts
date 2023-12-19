@@ -8,10 +8,10 @@ import { UsersRepository } from '../users/users.repository';
 import { CreateGameInvitationParamDto } from './dto/create-invitation-param.dto';
 import { GatewayCreateGameInvitationParamDto } from './dto/gateway-create-invitation-param.dto';
 import { GameGateway } from './game.gateway';
-import { CreateGameParamDto } from './dto/create-game-param.dto';
+import { CreateInitialGameParamDto } from './dto/create-initial-game-param.dto';
 import { GameInvitationRepository } from './game-invitation.repository';
 import { DeleteGameInvitationParamDto } from './dto/delete-invitation-param.dto';
-import { UserStatus } from '../common/enum';
+import { GameStatus, UserStatus } from '../common/enum';
 import { acceptGameParamDto } from './dto/accept-game-param.dto';
 import { GatewaySendInvitationReplyDto } from './dto/gateway-send-invitation-reaponse.dto';
 import { User } from '../users/entities/user.entity';
@@ -156,7 +156,12 @@ export class GameService {
 		const plyer2Id = invitedUser.id;
 		const gameType = invitation.gameType;
 
-		const gameDto = new CreateGameParamDto(plyer1Id, plyer2Id, gameType);
+		const gameDto = new CreateInitialGameParamDto(
+			plyer1Id,
+			plyer2Id,
+			gameType,
+			GameStatus.WAITING,
+		);
 		const game = await this.gameRepository.createGame(gameDto);
 
 		// 성사됐으니까 game invitation 지워주기
