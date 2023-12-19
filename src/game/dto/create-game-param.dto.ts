@@ -1,4 +1,5 @@
 import { GameStatus, GameType } from '../../common/enum';
+import { GameDto } from './game.dto';
 
 export class CreateGameParamDto {
 	winnerId: number;
@@ -10,28 +11,21 @@ export class CreateGameParamDto {
 	ballSpeed: number;
 	racketSize: number;
 
-	constructor(player1Id: number, player2Id: number, gameType: GameType) {
-		this.winnerId = player1Id;
-		this.loserId = player2Id;
-		this.gameType = gameType;
-		this.winnerScore = 0;
-		this.loserScore = 0;
-		this.gameStatus = GameStatus.WAITING;
-		if (
-			this.gameType === GameType.SPECIAL_INVITE ||
-			this.gameType === GameType.SPECIAL_MATCHING
-		) {
-			this.ballSpeed = this.getRandomNumber(1, 3);
-			this.racketSize = this.getRandomNumber(1, 3);
-		} else {
-			// Set to 1 for NORMAL
-			this.ballSpeed = 1;
-			this.racketSize = 1;
-		}
-	}
-
-	private getRandomNumber(min: number, max: number): number {
-		// Generate a random integer between min and max (inclusive)
-		return Math.floor(Math.random() * (max - min + 1)) + min;
+	constructor(
+		gameDto: GameDto,
+		winnerId: number,
+		loserId: number,
+		winnerScore: number,
+		loserScore: number,
+		gameStatus: GameStatus,
+	) {
+		this.winnerId = winnerId;
+		this.loserId = loserId;
+		this.gameType = gameDto.gameType;
+		this.winnerScore = winnerScore;
+		this.loserScore = loserScore;
+		this.gameStatus = gameStatus;
+		this.ballSpeed = gameDto.viewMap.ballSpeed;
+		this.racketSize = gameDto.viewMap.racketSize;
 	}
 }
