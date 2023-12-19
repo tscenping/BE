@@ -10,8 +10,8 @@ export class GameDto {
 	loserId: number | null;
 	scoreLeft: number;
 	scoreRight: number;
-	gameStatus: GameStatus;
 	gameType: GameType;
+	gameStatus: GameStatus;
 	viewMap: ViewMapDto;
 	readyCnt: number;
 	gameInterrupted: boolean;
@@ -24,8 +24,8 @@ export class GameDto {
 		this.loserId = null;
 		this.scoreLeft = game.winnerScore;
 		this.scoreRight = game.loserScore;
-		this.gameStatus = game.gameStatus;
 		this.gameType = game.gameType;
+		this.gameStatus = game.gameStatus;
 		this.viewMap = new ViewMapDto(game.ballSpeed, game.racketSize);
 		this.readyCnt = 0;
 		this.gameInterrupted = false;

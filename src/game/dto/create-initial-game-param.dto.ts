@@ -29,7 +29,7 @@ export class CreateInitialGameParamDto {
 			this.ballSpeed = this.getRandomNumber(1, 3);
 			this.racketSize = this.getRandomNumber(1, 3);
 		} else {
-			// Set to 1 for NORMAL
+			// Set 1 for LADDER and NORMAL
 			this.ballSpeed = 1;
 			this.racketSize = 1;
 		}

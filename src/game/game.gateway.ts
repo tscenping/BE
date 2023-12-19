@@ -74,7 +74,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			if (gameDto) {
 				if (gameDto.gameStatus === GameStatus.PLAYING)
 					gameDto.gameInterrupted = true;
-				this.gameIdToGameDto.delete(gameId);
 			}
 			this.userIdToGameId.delete(user.id);
 		}
@@ -139,27 +138,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		});
 		if (!game)
 			throw WSBadRequestException(
-				`game id ${data.gameId} 는 유효하지 않습니다`,
+				`game id ${data.gameId} 데이터를 찾지 못했습니다`,
 			);
 
 		const gameDto = new GameDto(game);
-		const gameId = this.userIdToGameId.get(user.id);
-		if (gameId) {
-			const gameDto = this.gameIdToGameDto.get(gameId);
-			if (gameDto) {
-				// userId -> gameId -> game이 아직 있는데
-				if (
-					gameDto.playerLeftId !== user.id &&
-					gameDto.playerRightId !== user.id
-				) {
-					// user가 player가 아니라면
-					throw WSBadRequestException(
-						`유저에게 진행 중이거나 처리되지 않은 다른 game id ${gameId}가 있습니다`,
-					);
-				}
-			}
-			this.userIdToGameId.delete(user.id);
-		}
+
 		this.userIdToGameId.set(user.id, game.id);
 		this.gameIdToGameDto.set(game.id, gameDto);
 
@@ -194,22 +177,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		const user = await this.authService.getUserFromSocket(client);
 		if (!user) return client.disconnect();
 
-		const gameDto = this.gameIdToGameDto.get(data.gameId);
-		if (!gameDto) {
-			throw WSBadRequestException(
-				`유저가 진행 중인 게임을 찾지 못했습니다`,
-			);
-		} else {
-			if (
-				gameDto.playerLeftId !== user.id &&
-				gameDto.playerRightId !== user.id
-			) {
-				// user가 player가 아니라면
-				throw WSBadRequestException(
-					`유저에게 해당하는 게임이 아닙니다`,
-				);
-			}
-		}
+		const gameDto = await this.checkGameDto(data.gameId, user.id);
 
 		if (data.keyStatus === 'down') {
 			if (user.id === gameDto.playerLeftId)
@@ -224,9 +192,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		@MessageBody() data: { gameId: number },
 	) {
 		/* TODO:
-		 *   	1. ball racket update emit
+		 *   	1. ball racket update, emit
 		 * 		2. score update, emit -> restart
-		 * 		3. 둘 중 하나 끊겼는지 확인하고 승패 처리 -> gameEnd(game DB 저장, gameIdToGameDto에서 game을 지우기)
+		 * 		3. 둘 중 하나 끊겼는지 확인하고 승패 처리 -> gameEnd(game DB 저장, user DB 저장, userIdToGameId에서 gameId을 지우기)
 		 * 		4. max score인지 확인 -> gameEnd
 		 * 		5. init하기
 		 * */
@@ -234,8 +202,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		const user = await this.authService.getUserFromSocket(client);
 		if (!user) return client.disconnect;
 
-		const gameDto = this.gameIdToGameDto.get(data.gameId);
-		if (!gameDto) throw WSBadRequestException('유효하지 않은 게임입니다');
+		const gameDto = await this.checkGameDto(data.gameId, user.id);
 
 		const playerLeftSocket = this.userIdToClient.get(gameDto.playerLeftId);
 		const playerRightSocket = this.userIdToClient.get(
@@ -248,9 +215,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 		gameDto.readyCnt++;
 		if (gameDto.bothReady()) {
-			await this.gameRepository.update(gameDto.getGameId(), {
-				gameStatus: GameStatus.PLAYING,
-			});
+			gameDto.gameStatus = GameStatus.PLAYING;
 			this.server
 				.to(gameDto.getGameId().toString())
 				.emit(EVENT_GAME_START);
@@ -307,6 +272,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 				} else await this.gameRestart(gameDto);
 			}
 			if (
+				gameDto.gameInterrupted ||
 				!(await this.isSocketConnected(playerLeftSocket)) ||
 				!(await this.isSocketConnected(playerRightSocket))
 			) {
@@ -317,35 +283,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	}
 
 	async gameEnd(gameDto: GameDto) {
+		// TODO: ladderScore 계산하기
 		// game DB update
-		const winnerId =
-			gameDto.scoreLeft > gameDto.scoreRight
-				? gameDto.playerLeftId
-				: gameDto.playerRightId;
-		const loserId =
-			gameDto.scoreLeft < gameDto.scoreRight
-				? gameDto.playerLeftId
-				: gameDto.playerRightId;
 
-		const winnerScore =
-			gameDto.scoreLeft > gameDto.scoreRight
-				? gameDto.scoreLeft
-				: gameDto.scoreRight;
-		const loserScore =
-			gameDto.scoreLeft < gameDto.scoreRight
-				? gameDto.scoreLeft
-				: gameDto.scoreRight;
+		/* TODO: user db update
+		    -> ladderMaxScore 비교 후 반영, Ladder전일 때는 winCount, loseCount도 update */
+		// user DB update
 
-		const gameResult = new CreateGameParamDto(
-			gameDto,
-			winnerId,
-			loserId,
-			winnerScore,
-			loserScore,
-			GameStatus.FINISHED,
-		);
-		await this.gameRepository.update(gameDto.getGameId(), gameResult);
-
+		// gameDto 유저들 지워주기
+		this.userIdToGameId.delete(gameDto.playerLeftId);
+		this.userIdToGameId.delete(gameDto.playerRightId);
 		// gameDto 지워주기
 		this.gameIdToGameDto.delete(gameDto.getGameId());
 	}
@@ -359,8 +306,36 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			(s) => s.id === client.id,
 		);
 		if (!socket) {
-			return false;
+			return null;
 		}
-		return true;
+		return socket;
+	}
+
+	private async checkGameDto(
+		receivedGameId: number,
+		userId: number,
+	): Promise<GameDto> {
+		const gameId = this.userIdToGameId.get(userId);
+		if (!gameId) {
+			throw WSBadRequestException(``);
+		}
+		if (gameId !== receivedGameId)
+			throw WSBadRequestException(
+				`user id ${userId} 에게서 game id ${receivedGameId} 를 찾지 못했습니다`,
+			);
+
+		const gameDto = this.gameIdToGameDto.get(gameId);
+		if (!gameDto) {
+			throw WSBadRequestException(
+				`game id ${receivedGameId} 에게서 game 객체를 찾지 못했습니다`,
+			);
+		} else {
+			if (gameDto.gameInterrupted)
+				throw WSBadRequestException(
+					`game id ${gameId} 는 비정상 종료된 게임입니다`,
+				);
+		}
+
+		return gameDto;
 	}
 }
