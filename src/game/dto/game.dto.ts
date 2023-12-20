@@ -16,7 +16,7 @@ export class GameDto {
 	readyCnt: number;
 	gameInterrupted: boolean;
 
-	constructor(game: Game, readonly maxScore = 9) {
+	constructor(game: Game, readonly maxScore = 7) {
 		this.setGameId(game.id);
 		this.playerLeftId = game.winnerId;
 		this.playerRightId = game.loserId;
