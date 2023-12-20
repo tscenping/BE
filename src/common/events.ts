@@ -6,6 +6,8 @@ export const EVENT_GAME_INVITATION = 'gameInvitation';
 
 export const EVENT_GAME_INVITATION_REPLY = 'gameInvitationReply';
 
+export const EVENT_GAME_MATCHED = 'gameMatched';
+
 export const EVENT_GAME_START = 'gameStart';
 
 export const EVENT_MATCH_SCORE = 'matchScore';
