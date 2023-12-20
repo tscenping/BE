@@ -1,19 +1,15 @@
-import {
-	BadRequestException,
-	ImATeapotException,
-	Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { GameRepository } from './game.repository';
 import { UsersRepository } from '../users/users.repository';
 import { CreateGameInvitationParamDto } from './dto/create-invitation-param.dto';
 import { GatewayCreateGameInvitationParamDto } from './dto/gateway-create-invitation-param.dto';
 import { GameGateway } from './game.gateway';
-import { CreateGameParamDto } from './dto/create-game-param.dto';
+import { CreateInitialGameParamDto } from './dto/create-initial-game-param.dto';
 import { GameInvitationRepository } from './game-invitation.repository';
 import { DeleteGameInvitationParamDto } from './dto/delete-invitation-param.dto';
-import { UserStatus } from '../common/enum';
+import { GameStatus, UserStatus } from '../common/enum';
 import { acceptGameParamDto } from './dto/accept-game-param.dto';
-import { GatewaySendInvitationReplyDto } from './dto/gateway-send-invitation-reaponse.dto';
+import { EmitEventInvitationReplyDto } from './dto/emit-event-invitation-reply.dto';
 import { User } from '../users/entities/user.entity';
 import * as moment from 'moment';
 import { BlocksRepository } from '../users/blocks.repository';
@@ -40,13 +36,13 @@ export class GameService {
 		// 상대가 존재하는 유저인지
 		const invitedUser = await this.checkUserExist(invitedUserId);
 
-		// 상대가 ONLINE 인지 => 접속 중인 유저가 아니라면 없던 일이 됨
+		// 상대가 OFFLINE / INGAME이면 없던 일이 됨
 		if (
-			invitedUser.status === UserStatus.OFFLINE ||
+			invitedUser.status !== UserStatus.ONLINE ||
 			!invitedUser.channelSocketId
 		)
-			throw new ImATeapotException(
-				`초대된 유저 ${invitedUserId} 는 OFFLINE 상태입니다`,
+			throw new BadRequestException(
+				`초대된 유저 ${invitedUserId} 는 OFFLINE 상태이거나 게임 중입니다`,
 			);
 
 		const isBlocked = await this.blocksRepository.findOne({
@@ -68,7 +64,7 @@ export class GameService {
 			const diff = currentTime.diff(olderInvitation.createdAt, 'seconds');
 
 			if (diff < 10) {
-				throw new ImATeapotException(
+				throw new BadRequestException(
 					`아직 응답을 기다리고 있는 초대입니다`,
 				);
 			} else {
@@ -93,6 +89,11 @@ export class GameService {
 			gameType: gameType,
 		};
 		await this.gameGateway.inviteGame(gatewayInvitationParamDto);
+
+		const createInvitationResponseDto = {
+			gameInvitationId: gameInvitation.id,
+		};
+		return createInvitationResponseDto;
 	}
 
 	async createGame(createGameParamDto: acceptGameParamDto) {
@@ -106,7 +107,7 @@ export class GameService {
 			},
 		});
 		if (!invitation)
-			throw new ImATeapotException(
+			throw new BadRequestException(
 				`해당하는 invitation id ${invitationId} 가 없습니다`,
 			);
 
@@ -115,28 +116,28 @@ export class GameService {
 		const diff = currentTime.diff(invitation.createdAt, 'seconds');
 
 		if (diff >= 10) {
-			throw new ImATeapotException(
-				`해당하는 invitation id ${invitationId} 는 시간초과로 유효하지 않습니다`,
+			throw new BadRequestException(
+				`시간초과로 유효하지 않은 요청입니다`,
 			);
 		}
 
 		// 두 유저 모두 ONLINE 인지 확인
 		if (
-			invitedUser.status === UserStatus.OFFLINE ||
+			invitedUser.status !== UserStatus.ONLINE ||
 			!invitedUser.channelSocketId
 		)
-			throw new ImATeapotException(
-				`초대된 유저 ${invitedUser.id} 는 OFFLINE 상태입니다`,
+			throw new BadRequestException(
+				`초대된 유저 ${invitedUser.id} 는 OFFLINE 상태이거나 게임중입니다`,
 			);
 		const invitingUser = await this.checkUserExist(
 			invitation.invitingUserId,
 		);
 		if (
-			invitingUser.status === UserStatus.OFFLINE ||
+			invitingUser.status !== UserStatus.ONLINE ||
 			!invitingUser.channelSocketId
 		)
-			throw new ImATeapotException(
-				`초대한 유저 ${invitingUser.id} 는 OFFLINE 상태입니다`,
+			throw new BadRequestException(
+				`초대한 유저 ${invitingUser.id} 는 OFFLINE 상태이거나 게임중입니다`,
 			);
 
 		/* TODO: DB에 쌓인 유효하지 않은 초대장들은 어떻게 지우지 ?
@@ -156,21 +157,25 @@ export class GameService {
 		const plyer2Id = invitedUser.id;
 		const gameType = invitation.gameType;
 
-		const gameDto = new CreateGameParamDto(plyer1Id, plyer2Id, gameType);
+		const gameDto = new CreateInitialGameParamDto(
+			plyer1Id,
+			plyer2Id,
+			gameType,
+			GameStatus.WAITING,
+		);
 		const game = await this.gameRepository.createGame(gameDto);
 
 		// 성사됐으니까 game invitation 지워주기
 		await this.gameInvitationRepository.softDelete(invitationId);
 
 		// 두 유저에게 game id emit
-		const invitationReplyToInvitingUserDto: GatewaySendInvitationReplyDto =
-			{
-				targetUserId: invitingUser.id,
-				targetUserChannelSocketId: invitingUser.channelSocketId,
-				isAccepted: true,
-				gameId: game.id,
-			};
-		const invitationReplyToInvitedUserDto: GatewaySendInvitationReplyDto = {
+		const invitationReplyToInvitingUserDto: EmitEventInvitationReplyDto = {
+			targetUserId: invitingUser.id,
+			targetUserChannelSocketId: invitingUser.channelSocketId,
+			isAccepted: true,
+			gameId: game.id,
+		};
+		const invitationReplyToInvitedUserDto: EmitEventInvitationReplyDto = {
 			targetUserId: invitedUser.id,
 			targetUserChannelSocketId: invitedUser.channelSocketId,
 			isAccepted: true,
@@ -198,7 +203,7 @@ export class GameService {
 			},
 		});
 		if (!invitation)
-			throw new ImATeapotException(
+			throw new BadRequestException(
 				`해당하는 invitation id ${invitationId} 가 없습니다`,
 			);
 
@@ -207,7 +212,9 @@ export class GameService {
 		const diff = currentTime.diff(invitation.createdAt, 'seconds');
 
 		if (diff >= 10) {
-			throw new ImATeapotException(`시간초과로 유효하지 않은 요청입니다`);
+			throw new BadRequestException(
+				`시간초과로 유효하지 않은 요청입니다`,
+			);
 		}
 
 		await this.gameInvitationRepository.softDelete(invitationId);
@@ -226,7 +233,7 @@ export class GameService {
 			},
 		});
 		if (!invitation)
-			throw new ImATeapotException(
+			throw new BadRequestException(
 				`해당하는 invitation id ${invitationId} 가 없습니다`,
 			);
 		// 10초 지나면 유효하지 않은 취소 (악의 취소)
@@ -234,7 +241,9 @@ export class GameService {
 		const diff = currentTime.diff(invitation.createdAt, 'seconds');
 
 		if (diff >= 10) {
-			throw new ImATeapotException(`시간초과로 유효하지 않은 요청입니다`);
+			throw new BadRequestException(
+				`시간초과로 유효하지 않은 요청입니다`,
+			);
 		}
 
 		await this.gameInvitationRepository.softDelete(invitationId);
@@ -248,11 +257,11 @@ export class GameService {
 			invitingUser.status === UserStatus.OFFLINE ||
 			!invitingUser.channelSocketId
 		)
-			throw new ImATeapotException(
+			throw new BadRequestException(
 				`초대한 유저 ${invitingUser.id} 는 OFFLINE 상태입니다`,
 			);
 
-		const sendInvitationReplyDto: GatewaySendInvitationReplyDto = {
+		const sendInvitationReplyDto: EmitEventInvitationReplyDto = {
 			targetUserId: invitingUser.id,
 			targetUserChannelSocketId: invitingUser.channelSocketId,
 			isAccepted: false,

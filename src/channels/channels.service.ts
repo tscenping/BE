@@ -1,7 +1,6 @@
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
 import {
 	BadRequestException,
-	ImATeapotException,
 	Injectable,
 	Logger,
 } from '@nestjs/common';
