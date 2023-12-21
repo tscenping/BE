@@ -228,16 +228,28 @@ export class GameService {
 
 		gameQueue.push(user);
 
-		if (gameQueue.length === 2) {
-			const player1 = gameQueue[0];
-			const player2 = gameQueue[1];
+		if (gameQueue.length >= 2) {
+			console.log(gameQueue);
+			let player1 = gameQueue.shift();
+			let player2 = gameQueue.shift();
+
+			// player1 또는 2가 OFFLINE이라면 큐에서 제거시키고 다시 매칭
+			while (player1 && player1.channelSocketId === null) {
+				player1 = gameQueue.shift();
+			}
+
+			while (player2 && player2.channelSocketId === null) {
+				player2 = gameQueue.shift();
+			}
 
 			if (
+				!player1 ||
+				!player2 ||
 				player1.channelSocketId === null ||
 				player2.channelSocketId === null
 			)
 				throw new BadRequestException(
-					`유저 ${player1.id} 는 OFFLINE 상태입니다`,
+					`게임 매칭 큐에 유저가 2명 이상이어야 합니다`,
 				);
 
 			const gameDto = new CreateInitialGameParamDto(
@@ -265,7 +277,6 @@ export class GameService {
 			await this.gameGateway.sendMatchmakingReply(
 				invitationReplyToPlayer2Dto,
 			);
-			gameQueue.splice(0, 2);
 		}
 	}
 
