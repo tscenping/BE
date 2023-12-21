@@ -229,7 +229,6 @@ export class GameService {
 		gameQueue.push(user);
 
 		if (gameQueue.length >= 2) {
-			console.log(gameQueue);
 			let player1 = gameQueue.shift();
 			let player2 = gameQueue.shift();
 
