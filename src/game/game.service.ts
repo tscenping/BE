@@ -7,15 +7,23 @@ import { GameGateway } from './game.gateway';
 import { CreateInitialGameParamDto } from './dto/create-initial-game-param.dto';
 import { GameInvitationRepository } from './game-invitation.repository';
 import { DeleteGameInvitationParamDto } from './dto/delete-invitation-param.dto';
-import { GameStatus, UserStatus } from '../common/enum';
+import { GameStatus, GameType, UserStatus } from '../common/enum';
 import { acceptGameParamDto } from './dto/accept-game-param.dto';
-import { EmitEventInvitationReplyDto } from './dto/emit-event-invitation-reply.dto';
+import { EmitEventInvitationReplyDto } from './dto/emit-event-invitation-reaponse.dto';
 import { User } from '../users/entities/user.entity';
 import * as moment from 'moment';
 import { BlocksRepository } from '../users/blocks.repository';
+import { gameMatchStartParamDto } from './dto/match-game-param.dto';
+import { EmitEventMatchmakingReplyDto } from './dto/emit-event-matchmaking-param.dto';
+import { gameMatchDeleteParamDto } from './dto/match-game-delete-param.dto';
 
 @Injectable()
 export class GameService {
+	private gameQueue: Record<string, User[]> = {
+		LADDER: [],
+		NORMAL_MATCHING: [],
+		SPECIAL_MATCHING: [],
+	};
 	constructor(
 		private readonly gameRepository: GameRepository,
 		private readonly gameInvitationRepository: GameInvitationRepository,
@@ -190,6 +198,118 @@ export class GameService {
 		);
 	}
 
+	async gameMatchStart(gameMatchStartParamDto: gameMatchStartParamDto) {
+		const userId = gameMatchStartParamDto.userId;
+		const gameType = gameMatchStartParamDto.gameType;
+
+		// 유저가 존재하는지
+		const user = await this.checkUserExist(userId);
+
+		if (user.status !== UserStatus.ONLINE || !user.channelSocketId)
+			throw new BadRequestException(
+				`유저 ${user.id} 는 OFFLINE 상태이거나 게임중입니다`,
+			);
+		if (
+			gameType !== GameType.LADDER &&
+			gameType !== GameType.NORMAL_MATCHING &&
+			gameType !== GameType.SPECIAL_MATCHING
+		) {
+			throw new BadRequestException(`지원하지 않는 게임 타입입니다`);
+		}
+
+		const gameQueue = this.gameQueue[gameType];
+
+		// 이미 큐에 존재하는지
+		const index = gameQueue.indexOf(user);
+		if (index > -1)
+			throw new BadRequestException(
+				`유저 ${user.id} 는 이미 매칭 큐에 존재합니다`,
+			);
+
+		gameQueue.push(user);
+
+		if (gameQueue.length >= 2) {
+			let player1 = gameQueue.shift();
+			let player2 = gameQueue.shift();
+
+			// player1 또는 2가 OFFLINE이라면 큐에서 제거시키고 다시 매칭
+			while (player1 && player1.channelSocketId === null) {
+				player1 = gameQueue.shift();
+			}
+
+			while (player2 && player2.channelSocketId === null) {
+				player2 = gameQueue.shift();
+			}
+
+			if (
+				!player1 ||
+				!player2 ||
+				player1.channelSocketId === null ||
+				player2.channelSocketId === null
+			)
+				throw new BadRequestException(
+					`게임 매칭 큐에 유저가 2명 이상이어야 합니다`,
+				);
+
+			const gameDto = new CreateInitialGameParamDto(
+				player1.id,
+				player2.id,
+				gameType,
+				GameStatus.WAITING,
+			);
+			const game = await this.gameRepository.createGame(gameDto);
+
+			const invitationReplyToPlayer1Dto: EmitEventMatchmakingReplyDto = {
+				targetUserId: player1.id,
+				targetUserChannelSocketId: player1.channelSocketId,
+				gameId: game.id,
+			};
+			const invitationReplyToPlayer2Dto: EmitEventMatchmakingReplyDto = {
+				targetUserId: player2.id,
+				targetUserChannelSocketId: player2.channelSocketId,
+				gameId: game.id,
+			};
+
+			await this.gameGateway.sendMatchmakingReply(
+				invitationReplyToPlayer1Dto,
+			);
+			await this.gameGateway.sendMatchmakingReply(
+				invitationReplyToPlayer2Dto,
+			);
+		}
+	}
+
+	async gameMatchCancel(gameMatchCancelParamDto: gameMatchDeleteParamDto) {
+		const userId = gameMatchCancelParamDto.userId;
+		const gameType = gameMatchCancelParamDto.gameType;
+
+		// 유저가 존재하는지
+		const user = await this.checkUserExist(userId);
+
+		if (user.status !== UserStatus.ONLINE || !user.channelSocketId)
+			throw new BadRequestException(
+				`유저 ${user.id} 는 OFFLINE 상태이거나 게임중입니다`,
+			);
+
+		if (
+			gameType !== GameType.LADDER &&
+			gameType !== GameType.NORMAL_MATCHING &&
+			gameType !== GameType.SPECIAL_MATCHING
+		) {
+			throw new BadRequestException(`지원하지 않는 게임 타입입니다`);
+		}
+
+		const gameQueue = this.gameQueue[gameType];
+
+		const index = gameQueue.indexOf(user);
+		if (index > -1) {
+			gameQueue.splice(index, 1);
+		} else if (index === -1)
+			throw new BadRequestException(
+				`유저 ${user.id} 는 매칭 큐에 존재하지 않습니다`,
+			);
+	}
+
 	async deleteInvitationByInvitingUserId(
 		deleteInvitationParamDto: DeleteGameInvitationParamDto,
 	) {
@@ -216,7 +336,6 @@ export class GameService {
 				`시간초과로 유효하지 않은 요청입니다`,
 			);
 		}
-
 		await this.gameInvitationRepository.softDelete(invitationId);
 	}
 

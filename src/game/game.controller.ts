@@ -2,6 +2,7 @@ import {
 	Body,
 	Controller,
 	Delete,
+	Get,
 	Param,
 	ParseIntPipe,
 	Post,
@@ -17,6 +18,9 @@ import { PositiveIntPipe } from '../common/pipes/positiveInt.pipe';
 import { AuthGuard } from '@nestjs/passport';
 import { DeleteGameInvitationParamDto } from './dto/delete-invitation-param.dto';
 import { acceptGameParamDto } from './dto/accept-game-param.dto';
+import { gameMatchStartParamDto } from './dto/match-game-param.dto';
+import { GameType } from 'src/common/enum';
+import { gameMatchDeleteParamDto } from './dto/match-game-delete-param.dto';
 
 @Controller('game')
 @ApiTags('game')
@@ -85,5 +89,31 @@ export class GameController {
 		await this.gameService.deleteInvitationByInvitedUserId(
 			deleteInvitationParamDto,
 		);
+	}
+
+	@Post('/match')
+	async gameMatchStart(
+		@GetUser() user: User,
+		@Body('gameType')
+		gameType: GameType,
+	) {
+		const gameMatchStartDto: gameMatchStartParamDto = {
+			userId: user.id,
+			gameType: gameType,
+		};
+		await this.gameService.gameMatchStart(gameMatchStartDto);
+	}
+
+	@Delete('/match/:gameType')
+	async gameMatchCancel(
+		@GetUser() user: User,
+		@Param('gameType')
+		gameType: GameType,
+	) {
+		const gameDeleteMatchDto: gameMatchDeleteParamDto = {
+			userId: user.id,
+			gameType: gameType,
+		};
+		await this.gameService.gameMatchCancel(gameDeleteMatchDto);
 	}
 }

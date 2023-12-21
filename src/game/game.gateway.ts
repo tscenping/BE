@@ -20,6 +20,7 @@ import {
 	EVENT_MATCH_SCORE,
 	EVENT_MATCH_STATUS,
 	EVENT_SERVER_GAME_READY,
+	EVENT_GAME_MATCHED,
 } from '../common/events';
 import { ChannelsGateway } from '../channels/channels.gateway';
 import { EmitEventInvitationReplyDto } from './dto/emit-event-invitation-reply.dto';
@@ -30,6 +31,7 @@ import { GameStatus, UserStatus } from '../common/enum';
 import { EmitEventMatchStatusDto } from './dto/emit-event-match-status.dto';
 import { EmitEventMatchScoreParamDto } from './dto/emit-event-match-score-param.dto';
 import { EmitEventServerGameReadyParamDto } from './dto/emit-event-server-game-ready-param.dto';
+import { EmitEventMatchmakingReplyDto } from './dto/emit-event-matchmaking-param.dto';
 
 @WebSocketGateway({ namespace: 'game' })
 @UseFilters(WsExceptionFilter)
@@ -115,6 +117,20 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			.to(targetUserChannelSocketId)
 			.emit(EVENT_GAME_INVITATION_REPLY, {
 				isAccepted: isAccepted,
+				gameId: gameId,
+			});
+	}
+
+	async sendMatchmakingReply(
+		sendMatchmakingReplyDto: EmitEventMatchmakingReplyDto,
+	) {
+		const targetUserChannelSocketId =
+			sendMatchmakingReplyDto.targetUserChannelSocketId;
+		const gameId = sendMatchmakingReplyDto.gameId;
+
+		this.channelsGateway.server
+			.to(targetUserChannelSocketId)
+			.emit(EVENT_GAME_MATCHED, {
 				gameId: gameId,
 			});
 	}
