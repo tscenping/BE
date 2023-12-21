@@ -2,6 +2,7 @@ import {
 	Body,
 	Controller,
 	Delete,
+	Get,
 	Param,
 	ParseIntPipe,
 	Post,
@@ -100,7 +101,6 @@ export class GameController {
 			userId: user.id,
 			gameType: gameType,
 		};
-		console.log(gameMatchStartDto);
 		await this.gameService.gameMatchStart(gameMatchStartDto);
 	}
 
