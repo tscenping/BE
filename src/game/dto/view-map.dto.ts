@@ -130,7 +130,7 @@ export class ViewMapDto {
 		this.ball.y = y;
 	}
 
-	updateRacketLeft(action: string) {
+	updateRacketLeft(action: KEYNAME) {
 		const racket = this.racketLeft;
 
 		if (action === KEYNAME.arrowUp) {
@@ -144,12 +144,12 @@ export class ViewMapDto {
 			racket.y = this.canvasHeight - this.racketHeight;
 	}
 
-	updateRacketRight(action: string) {
+	updateRacketRight(action: KEYNAME) {
 		const racket = this.racketRight;
 
 		if (action === KEYNAME.arrowUp) {
 			racket.y -= this.racketSpeed;
-		} else if (action === KEYNAME.arrowUp) {
+		} else if (action === KEYNAME.arrowDown) {
 			racket.y += this.racketSpeed;
 		}
 

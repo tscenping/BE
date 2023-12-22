@@ -123,7 +123,7 @@ export class AuthService {
 			this.logger.log('payload is null');
 			return null;
 		}
-		this.logger.log(`payload: ${JSON.stringify(payload)}`);
+		// this.logger.log(`payload: ${JSON.stringify(payload)}`);
 
 		const user = await this.usersRepository.findOne({
 			where: { id: payload.id },

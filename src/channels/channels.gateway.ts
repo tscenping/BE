@@ -20,7 +20,7 @@ import { WsExceptionFilter } from 'src/common/exception/custom-ws-exception.filt
 import { GatewayCreateChannelInvitationParamDto } from 'src/game/dto/gateway-create-channelInvitation-param-dto';
 import { FriendsRepository } from 'src/users/friends.repository';
 import { UsersRepository } from 'src/users/users.repository';
-import { BlocksRepository } from './../users/blocks.repository';
+import { BlocksRepository } from '../users/blocks.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
 import { ChannelNoticeResponseDto } from './dto/channel-notice.response.dto';
 import { EventMessageOnDto } from './dto/event-message-on.dto';
@@ -28,7 +28,7 @@ import { User } from 'src/users/entities/user.entity';
 
 @WebSocketGateway({ namespace: 'channels' })
 @UseFilters(WsExceptionFilter)
-@UsePipes(new ValidationPipe())
+@UsePipes(ValidationPipe)
 export class ChannelsGateway
 	implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
