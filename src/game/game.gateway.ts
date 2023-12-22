@@ -342,7 +342,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 					clearInterval(intervalId);
 					await this.gameEnd(gameDto);
 				} else if (
-					gameDto.gameInterrupted &&
+					!gameDto.gameInterrupted &&
 					(await this.isSocketConnected(playerSockets.left)) &&
 					(await this.isSocketConnected(playerSockets.right))
 				) {
