@@ -15,7 +15,7 @@ import {
 	CHANNEL_PASSWORD_REGEXP,
 } from 'src/common/constants';
 import { ChannelType } from 'src/common/enum';
-import { BeforeInsert, Column, Entity } from 'typeorm';
+import { BeforeInsert, BeforeUpdate, Column, Entity } from 'typeorm';
 
 @Entity()
 export class Channel extends BaseEntity {
@@ -45,6 +45,7 @@ export class Channel extends BaseEntity {
 	ownerId?: number | null;
 
 	@BeforeInsert()
+	@BeforeUpdate()
 	async hashPassword() {
 		if (this.password) {
 			try {

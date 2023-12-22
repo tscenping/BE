@@ -1,9 +1,5 @@
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
-import {
-	BadRequestException,
-	Injectable,
-	Logger,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import * as bycrypt from 'bcrypt';
 import { Redis } from 'ioredis';
 import { MUTE_TIME } from 'src/common/constants';
@@ -31,6 +27,7 @@ import { DmChannelListResponseDto } from './dto/dmchannel-list-response.dto';
 import { DmChannelListReturnDto } from './dto/dmchannel-list-return.dto';
 import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
 import moment from 'moment';
+import { channel } from 'diagnostics_channel';
 
 @Injectable()
 export class ChannelsService {
@@ -781,10 +778,17 @@ export class ChannelsService {
 		channelId: number,
 		newPassword: string,
 	) {
-		const pwdResult = await this.channelsRepository.update(channelId, {
-			password: newPassword,
+		const channel = await this.channelsRepository.findOne({
+			where: { id: channelId },
 		});
-		if (pwdResult.affected !== 1)
+		if (!channel) {
+			throw new BadRequestException(
+				`channel ${channelId} does not exist`,
+			);
+		}
+		channel.password = newPassword;
+		const updateChannel = await this.channelsRepository.save(channel);
+		if (!updateChannel)
 			throw DBUpdateFailureException('update channel password failed');
 	}
 
