@@ -1,3 +1,4 @@
+import { ChannelsGateway } from 'src/channels/channels.gateway';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { GameRepository } from './game.repository';
 import { UsersRepository } from '../users/users.repository';
@@ -19,17 +20,13 @@ import { gameMatchDeleteParamDto } from './dto/match-game-delete-param.dto';
 
 @Injectable()
 export class GameService {
-	private gameQueue: Record<string, User[]> = {
-		LADDER: [],
-		NORMAL_MATCHING: [],
-		SPECIAL_MATCHING: [],
-	};
 	constructor(
 		private readonly gameRepository: GameRepository,
 		private readonly gameInvitationRepository: GameInvitationRepository,
 		private readonly gameGateway: GameGateway,
 		private readonly usersRepository: UsersRepository,
 		private readonly blocksRepository: BlocksRepository,
+		private readonly ChannelsGateway: ChannelsGateway,
 	) {}
 
 	async createInvitation(invitationParamDto: CreateGameInvitationParamDto) {
@@ -199,6 +196,8 @@ export class GameService {
 	async gameMatchStart(gameMatchStartParamDto: gameMatchStartParamDto) {
 		const userId = gameMatchStartParamDto.userId;
 		const gameType = gameMatchStartParamDto.gameType;
+		const gameQueueInit = this.ChannelsGateway.getGameQueue();
+		const gameQueue = gameQueueInit[gameType];
 
 		// 유저가 존재하는지
 		const user = await this.checkUserExist(userId);
@@ -214,8 +213,6 @@ export class GameService {
 		) {
 			throw new BadRequestException(`지원하지 않는 게임 타입입니다`);
 		}
-
-		const gameQueue = this.gameQueue[gameType];
 
 		// 이미 큐에 존재하는지
 		const index = gameQueue.indexOf(user);
@@ -280,6 +277,8 @@ export class GameService {
 	async gameMatchCancel(gameMatchCancelParamDto: gameMatchDeleteParamDto) {
 		const userId = gameMatchCancelParamDto.userId;
 		const gameType = gameMatchCancelParamDto.gameType;
+		const gameQueueInit = this.ChannelsGateway.getGameQueue();
+		const gameQueue = gameQueueInit[gameType];
 
 		// 유저가 존재하는지
 		const user = await this.checkUserExist(userId);
@@ -297,11 +296,14 @@ export class GameService {
 			throw new BadRequestException(`지원하지 않는 게임 타입입니다`);
 		}
 
-		const gameQueue = this.gameQueue[gameType];
-
-		const index = gameQueue.indexOf(user);
+		const index = gameQueue.findIndex(
+			(queueUser) => queueUser.id === user.id,
+		);
 		if (index > -1) {
 			gameQueue.splice(index, 1);
+			if (gameQueue.length === 0) {
+				return;
+			}
 		} else if (index === -1)
 			throw new BadRequestException(
 				`유저 ${user.id} 는 매칭 큐에 존재하지 않습니다`,

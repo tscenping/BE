@@ -18,6 +18,7 @@ import { Friend } from '../users/entities/friend.entity';
 import { ChannelsModule } from '../channels/channels.module';
 import { Block } from '../users/entities/block.entity';
 import { BlocksRepository } from '../users/blocks.repository';
+import { ChannelsGateway } from 'src/channels/channels.gateway';
 
 @Module({
 	imports: [
@@ -43,6 +44,7 @@ import { BlocksRepository } from '../users/blocks.repository';
 		GameRepository,
 		GameInvitationRepository,
 		UsersRepository,
+		ChannelsGateway,
 	],
 })
 export class GameModule {}
