@@ -24,6 +24,7 @@ import { BlocksRepository } from './../users/blocks.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
 import { ChannelNoticeResponseDto } from './dto/channel-notice.response.dto';
 import { EventMessageOnDto } from './dto/event-message-on.dto';
+import { User } from 'src/users/entities/user.entity';
 
 @WebSocketGateway({ namespace: 'channels' })
 @UseFilters(WsExceptionFilter)
@@ -31,6 +32,11 @@ import { EventMessageOnDto } from './dto/event-message-on.dto';
 export class ChannelsGateway
 	implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
+	private gameQueue: Record<string, User[]> = {
+		LADDER: [],
+		NORMAL_MATCHING: [],
+		SPECIAL_MATCHING: [],
+	};
 	constructor(
 		private readonly authService: AuthService,
 		private readonly usersRepository: UsersRepository,
@@ -95,7 +101,7 @@ export class ChannelsGateway
 
 	async handleDisconnect(@ConnectedSocket() client: Socket) {
 		this.logger.log(`Client disconnected: ${client.id}`);
-
+		const gameQueue = this.gameQueue;
 		const user = await this.authService.getUserFromSocket(client);
 		if (!user || client.id !== user.channelSocketId) {
 			return;
@@ -123,9 +129,18 @@ export class ChannelsGateway
 				.to(friendChannelSocketId.channelSocketId)
 				.emit(EVENT_USER_STATUS, eventUserStatusEmitDto);
 		}
-
+		// 모든 gameQueue에서 해당 user 삭제 (해당되는 user가 아니면 삭제하지 않음)
+		Object.keys(gameQueue).forEach((key) => {
+			gameQueue[key] = gameQueue[key].filter(
+				(userId) => userId.id !== user.id,
+			);
+		});
 		// 유저가 속해있던 채널 룸에서 leave한다.
 		client.rooms.clear();
+	}
+
+	getGameQueue(): Record<string, User[]> {
+		return this.gameQueue;
 	}
 
 	@SubscribeMessage('message')
