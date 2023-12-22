@@ -40,3 +40,13 @@ export enum ChannelEventType {
 	ADMIN = 'ADMIN',
 	ADMIN_CANCEL = 'ADMIN_CANCEL',
 }
+
+export enum KEYSTATUS {
+	up = 'up',
+	down = 'down',
+}
+
+export enum KEYNAME {
+	arrowUp = 'arrowUp',
+	arrowDown = 'arrowDown',
+}

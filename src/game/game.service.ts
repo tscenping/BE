@@ -120,7 +120,7 @@ export class GameService {
 		const currentTime = moment();
 		const diff = currentTime.diff(invitation.createdAt, 'seconds');
 
-		if (diff >= 10) {
+		if (diff >= 60) {
 			throw new BadRequestException(
 				`시간초과로 유효하지 않은 요청입니다`,
 			);
@@ -175,13 +175,11 @@ export class GameService {
 
 		// 두 유저에게 game id emit
 		const invitationReplyToInvitingUserDto: EmitEventInvitationReplyDto = {
-			targetUserId: invitingUser.id,
 			targetUserChannelSocketId: invitingUser.channelSocketId,
 			isAccepted: true,
 			gameId: game.id,
 		};
 		const invitationReplyToInvitedUserDto: EmitEventInvitationReplyDto = {
-			targetUserId: invitedUser.id,
 			targetUserChannelSocketId: invitedUser.channelSocketId,
 			isAccepted: true,
 			gameId: game.id,
@@ -383,7 +381,6 @@ export class GameService {
 			);
 
 		const sendInvitationReplyDto: EmitEventInvitationReplyDto = {
-			targetUserId: invitingUser.id,
 			targetUserChannelSocketId: invitingUser.channelSocketId,
 			isAccepted: false,
 			gameId: null,

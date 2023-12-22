@@ -1,4 +1,6 @@
 // ball 변하는 값
+import { KEYNAME } from '../../common/enum';
+
 export type ball = {
 	x: number;
 	y: number;
@@ -12,7 +14,7 @@ export type ball = {
 // racket 변하는 값
 export type racket = {
 	y: number;
-	action: string; // up, down
+	action: string | null; // up, down
 };
 
 export class UpdateDto {
@@ -31,6 +33,14 @@ export class UpdateDto {
 	scoreLeft: boolean;
 	scoreRight: boolean;
 
+	constructor() {
+		this.racketLeft = { x: 0, y: 0 };
+		this.racketRight = { x: 0, y: 0 };
+		this.ball = { x: 0, y: 0 };
+		this.scoreLeft = false;
+		this.scoreRight = false;
+	}
+
 	isScoreChanged(): boolean {
 		return this.scoreRight || this.scoreRight;
 	}
@@ -42,7 +52,7 @@ export class ViewMapDto {
 	racketLeft: racket;
 	racketRight: racket;
 	racketSize: number;
-	private updateDto: UpdateDto;
+	private readonly updateDto: UpdateDto;
 
 	constructor(
 		ballSpeed: number,
@@ -63,21 +73,29 @@ export class ViewMapDto {
 		readonly deltaTime = 1 / 60,
 	) {
 		this.updateDto = new UpdateDto();
-		this.ball.x = canvasWidth / 2;
-		this.ball.y = canvasHeight / 2;
+		this.ball = {
+			x: canvasWidth / 2,
+			y: canvasHeight / 2,
+			vx: 0,
+			vy: 0,
+			xVelocity: ballSpeed * (Math.random() < 0.5 ? 0 : 1) === 0 ? 1 : -1,
+			yVelocity: ballSpeed * (Math.random() < 0.5 ? 0 : 1) === 0 ? 1 : -1,
+			accel: 0,
+		};
 		this.ballSpeed = ballSpeed;
-		this.ball.xVelocity =
-			ballSpeed * (Math.random() < 0.5 ? 0 : 1) === 0 ? 1 : -1;
-		this.ball.yVelocity =
-			ballSpeed * (Math.random() < 0.5 ? 0 : 1) === 0 ? 1 : -1;
-		this.ball.accel = 0;
 
-		this.racketLeft.y = canvasHeight / 2 - racketHeight / 2;
-		this.racketRight.y = canvasHeight / 2 - racketHeight / 2;
+		this.racketLeft = {
+			y: canvasHeight / 2 - racketHeight / 2,
+			action: null,
+		};
+		this.racketRight = {
+			y: canvasHeight / 2 - racketHeight / 2,
+			action: null,
+		};
 		this.racketSize = racketSize;
 	}
 
-	async init() {
+	init() {
 		this.ball.vx = 0;
 		this.ball.vy = 0;
 		this.updateDto.scoreLeft = false;
@@ -112,22 +130,28 @@ export class ViewMapDto {
 		this.ball.y = y;
 	}
 
-	updateRacketLeft(action: string) {
+	updateRacketLeft(action: KEYNAME) {
 		const racket = this.racketLeft;
 
-		if (action === 'arrowUp') racket.y -= this.racketSpeed;
-		else if (action === 'arrowDown') racket.y += this.racketSpeed;
+		if (action === KEYNAME.arrowUp) {
+			racket.y -= this.racketSpeed;
+		} else if (action === KEYNAME.arrowDown) {
+			racket.y += this.racketSpeed;
+		}
 
 		if (racket.y <= 0) racket.y = 0;
 		if (racket.y + this.racketHeight >= this.canvasHeight)
 			racket.y = this.canvasHeight - this.racketHeight;
 	}
 
-	updateRacketRight(action: string) {
+	updateRacketRight(action: KEYNAME) {
 		const racket = this.racketRight;
 
-		if (action === 'up') racket.y -= this.racketSpeed;
-		else if (action === 'down') racket.y += this.racketSpeed;
+		if (action === KEYNAME.arrowUp) {
+			racket.y -= this.racketSpeed;
+		} else if (action === KEYNAME.arrowDown) {
+			racket.y += this.racketSpeed;
+		}
 
 		if (racket.y <= 0) racket.y = 0;
 		if (racket.y + this.racketHeight >= this.canvasHeight)

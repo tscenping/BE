@@ -49,7 +49,6 @@ export class GameDto {
 		}
 		return false;
 	}
-
 	private setGameId(gameId: number) {
 		this.gameId = gameId;
 	}
