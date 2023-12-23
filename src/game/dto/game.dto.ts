@@ -6,10 +6,12 @@ export class GameDto {
 	private gameId: number;
 	playerLeftId: number;
 	playerRightId: number;
-	winnerId: number | null;
-	loserId: number | null;
 	scoreLeft: number;
 	scoreRight: number;
+	winnerId: number | null;
+	loserId: number | null;
+	winnerScore: number;
+	loserScore: number;
 	gameType: GameType;
 	gameStatus: GameStatus;
 	viewMap: ViewMapDto;
@@ -20,10 +22,12 @@ export class GameDto {
 		this.setGameId(game.id);
 		this.playerLeftId = game.winnerId;
 		this.playerRightId = game.loserId;
-		this.winnerId = null;
-		this.loserId = null;
 		this.scoreLeft = game.winnerScore;
 		this.scoreRight = game.loserScore;
+		this.winnerId = null;
+		this.loserId = null;
+		this.winnerScore = 0;
+		this.loserScore = 0;
 		this.gameType = game.gameType;
 		this.gameStatus = game.gameStatus;
 		this.viewMap = new ViewMapDto(game.ballSpeed, game.racketSize);
@@ -49,6 +53,25 @@ export class GameDto {
 		}
 		return false;
 	}
+
+	async restart() {
+		await this.viewMap.initObjects();
+	}
+
+	async setResult() {
+		if (this.scoreLeft === this.maxScore) {
+			this.winnerScore = this.scoreLeft;
+			this.winnerId = this.playerLeftId;
+			this.loserScore = this.scoreRight;
+			this.loserId = this.playerRightId;
+		} else if (this.scoreRight === this.maxScore) {
+			this.winnerScore = this.scoreRight;
+			this.winnerId = this.playerRightId;
+			this.loserScore = this.scoreLeft;
+			this.loserId = this.playerLeftId;
+		} else return;
+	}
+
 	private setGameId(gameId: number) {
 		this.gameId = gameId;
 	}

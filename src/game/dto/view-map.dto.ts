@@ -95,7 +95,7 @@ export class ViewMapDto {
 		this.racketSize = racketSize;
 	}
 
-	init() {
+	async initObjects() {
 		this.ball.vx = 0;
 		this.ball.vy = 0;
 		this.updateDto.scoreLeft = false;
