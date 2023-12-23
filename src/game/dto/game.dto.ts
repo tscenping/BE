@@ -59,12 +59,12 @@ export class GameDto {
 	}
 
 	async setResult() {
-		if (this.scoreLeft === this.maxScore) {
+		if (this.scoreLeft > this.scoreRight) {
 			this.winnerScore = this.scoreLeft;
 			this.winnerId = this.playerLeftId;
 			this.loserScore = this.scoreRight;
 			this.loserId = this.playerRightId;
-		} else if (this.scoreRight === this.maxScore) {
+		} else if (this.scoreLeft < this.scoreRight) {
 			this.winnerScore = this.scoreRight;
 			this.winnerId = this.playerRightId;
 			this.loserScore = this.scoreLeft;

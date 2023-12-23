@@ -93,7 +93,7 @@ export class GameService {
 			invitedUserChannelSocketId: invitedUser.channelSocketId,
 			gameType: gameType,
 		};
-		await this.gameGateway.inviteGame(gatewayInvitationParamDto);
+		this.gameGateway.sendGameInvitation(gatewayInvitationParamDto);
 
 		const createInvitationResponseDto = {
 			gameInvitationId: gameInvitation.id,
@@ -185,12 +185,8 @@ export class GameService {
 			gameId: game.id,
 		};
 
-		await this.gameGateway.sendInvitationReply(
-			invitationReplyToInvitingUserDto,
-		);
-		await this.gameGateway.sendInvitationReply(
-			invitationReplyToInvitedUserDto,
-		);
+		this.gameGateway.sendInvitationReply(invitationReplyToInvitingUserDto);
+		this.gameGateway.sendInvitationReply(invitationReplyToInvitedUserDto);
 	}
 
 	async gameMatchStart(gameMatchStartParamDto: gameMatchStartParamDto) {
@@ -265,12 +261,8 @@ export class GameService {
 				gameId: game.id,
 			};
 
-			await this.gameGateway.sendMatchmakingReply(
-				invitationReplyToPlayer1Dto,
-			);
-			await this.gameGateway.sendMatchmakingReply(
-				invitationReplyToPlayer2Dto,
-			);
+			this.gameGateway.sendMatchmakingReply(invitationReplyToPlayer1Dto);
+			this.gameGateway.sendMatchmakingReply(invitationReplyToPlayer2Dto);
 		}
 	}
 
@@ -386,7 +378,7 @@ export class GameService {
 			gameId: null,
 		};
 
-		await this.gameGateway.sendInvitationReply(sendInvitationReplyDto);
+		this.gameGateway.sendInvitationReply(sendInvitationReplyDto);
 	}
 
 	private async checkUserExist(userId: number): Promise<User> {

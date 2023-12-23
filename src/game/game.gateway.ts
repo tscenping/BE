@@ -45,6 +45,7 @@ import { UpdateGameResultParamDto } from './dto/update-game-result-param.dto';
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
 import Redis from 'ioredis';
 import { K } from '../common/constants';
+import { UpdateDto } from './dto/view-map.dto';
 import { User } from '../users/entities/user.entity';
 
 @WebSocketGateway({ namespace: 'game' })
@@ -106,55 +107,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		client.rooms.clear();
 	}
 
-	async inviteGame(
-		gatewayInvitationParamDto: GatewayCreateGameInvitationParamDto,
-	) {
-		const invitedUserChannelSocketId =
-			gatewayInvitationParamDto.invitedUserChannelSocketId;
-		const invitationId = gatewayInvitationParamDto.invitationId;
-		const invitingUserNickname =
-			gatewayInvitationParamDto.invitingUserNickname;
-		const gameType = gatewayInvitationParamDto.gameType;
-
-		this.channelsGateway.server
-			.to(invitedUserChannelSocketId)
-			.emit(EVENT_GAME_INVITATION, {
-				invitationId: invitationId,
-				invitingUserNickname: invitingUserNickname,
-				gameType: gameType,
-			});
-	}
-
-	async sendInvitationReply(
-		sendInvitationReplyDto: EmitEventInvitationReplyDto,
-	) {
-		const targetUserChannelSocketId =
-			sendInvitationReplyDto.targetUserChannelSocketId;
-		const isAccepted = sendInvitationReplyDto.isAccepted;
-		const gameId = sendInvitationReplyDto.gameId;
-
-		this.channelsGateway.server
-			.to(targetUserChannelSocketId)
-			.emit(EVENT_GAME_INVITATION_REPLY, {
-				isAccepted: isAccepted,
-				gameId: gameId,
-			});
-	}
-
-	async sendMatchmakingReply(
-		sendMatchmakingReplyDto: EmitEventMatchmakingReplyDto,
-	) {
-		const targetUserChannelSocketId =
-			sendMatchmakingReplyDto.targetUserChannelSocketId;
-		const gameId = sendMatchmakingReplyDto.gameId;
-
-		this.channelsGateway.server
-			.to(targetUserChannelSocketId)
-			.emit(EVENT_GAME_MATCHED, {
-				gameId: gameId,
-			});
-	}
-
 	@SubscribeMessage('gameRequest')
 	async prepareGame(
 		@ConnectedSocket() client: Socket,
@@ -175,7 +127,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			where: { id: data.gameId },
 		});
 		if (!game) {
-			// 여기는 client.disconnect 해도 될 것 같다
+			// 여기는 disconnect 해도 될 것 같다
 			throw WSBadRequestException(
 				`game id ${data.gameId} 데이터를 찾지 못했습니다`,
 			);
@@ -201,25 +153,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			user.id === gameDto.playerRightId
 				? gameDto.playerLeftId
 				: gameDto.playerRightId;
+
 		const rival = await this.usersRepository.findOne({
 			where: { id: rivalId },
 		});
 		if (!rival)
 			throw WSBadRequestException(`상대 ${rivalId} 가 존재하지 않습니다`);
-		const eventServerGameReadyParamDto: EmitEventServerGameReadyParamDto = {
-			rivalNickname: rival.nickname,
-			rivalAvatar: rival.avatar,
-			myPosition: rivalId === gameDto.playerRightId ? 'LEFT' : 'RIGHT',
-		};
 
-		console.log(
-			'eventServerGameReadyParamDto: ',
-			JSON.stringify(eventServerGameReadyParamDto),
-		);
-
-		this.server
-			.to(client.id)
-			.emit(EVENT_SERVER_GAME_READY, eventServerGameReadyParamDto);
+		this.sendServerGameReady(gameDto, rival, client);
 	}
 
 	@SubscribeMessage('matchKeyDown')
@@ -317,22 +258,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			console.log(`right racket y: ${gameDto.viewMap.racketRight.y}`);
 
 			// emit update objects to each user
-			const playerLeftMatchStatusDto: EmitEventMatchStatusDto = {
-				myRacket: updateDto.racketLeft,
-				rivalRacket: updateDto.racketRight,
-				ball: updateDto.ball,
-			};
-			const playerRightMatchStatusDto: EmitEventMatchStatusDto = {
-				myRacket: updateDto.racketRight,
-				rivalRacket: updateDto.racketLeft,
-				ball: updateDto.ball,
-			};
-			this.server
-				.to(playerSockets.left.id)
-				.emit(EVENT_MATCH_STATUS, playerLeftMatchStatusDto);
-			this.server
-				.to(playerSockets.right.id)
-				.emit(EVENT_MATCH_STATUS, playerRightMatchStatusDto);
+			this.sendMatchStatus(updateDto, playerSockets);
 
 			// update score
 			if (updateDto.isScoreChanged()) {
@@ -340,20 +266,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 				else if (updateDto.scoreRight) gameDto.scoreRight++;
 
 				//emit score to each user
-				const playerLeftMatchScoreDto: EmitEventMatchScoreParamDto = {
-					myScore: gameDto.scoreLeft,
-					rivalScore: gameDto.scoreRight,
-				};
-				const playerRightMatchScoreDto: EmitEventMatchScoreParamDto = {
-					myScore: gameDto.scoreRight,
-					rivalScore: gameDto.scoreLeft,
-				};
-				this.server
-					.to(playerSockets.left.id)
-					.emit(EVENT_MATCH_SCORE, playerLeftMatchScoreDto);
-				this.server
-					.to(playerSockets.right.id)
-					.emit(EVENT_MATCH_SCORE, playerRightMatchScoreDto);
+				this.sendMatchScore(gameDto, playerSockets);
 
 				// end or restart
 				if (gameDto.isOver()) {
@@ -469,11 +382,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		const playerRightSocket = this.userIdToClient.get(playerRightId);
 
 		if (!playerLeftSocket || !playerRightSocket) return null;
-		if (
-			!this.isSocketConnected(playerLeftSocket) ||
-			!this.isSocketConnected(playerRightSocket)
-		)
-			return null;
+		// if (
+		// 	!this.isSocketConnected(playerLeftSocket) ||
+		// 	!this.isSocketConnected(playerRightSocket)
+		// )
+		// 	return null;
 		console.log(`left player socketId: ${playerLeftSocket.id}`);
 		console.log(`right player socketId: ${playerRightSocket.id}`);
 		return {
@@ -530,5 +443,117 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 				resolve(`Delay complete after ${ms} milliseconds`);
 			}, ms);
 		});
+	}
+
+	sendGameInvitation(
+		gatewayInvitationParamDto: GatewayCreateGameInvitationParamDto,
+	) {
+		const invitedUserChannelSocketId =
+			gatewayInvitationParamDto.invitedUserChannelSocketId;
+		const invitationId = gatewayInvitationParamDto.invitationId;
+		const invitingUserNickname =
+			gatewayInvitationParamDto.invitingUserNickname;
+		const gameType = gatewayInvitationParamDto.gameType;
+
+		this.channelsGateway.server
+			.to(invitedUserChannelSocketId)
+			.emit(EVENT_GAME_INVITATION, {
+				invitationId: invitationId,
+				invitingUserNickname: invitingUserNickname,
+				gameType: gameType,
+			});
+	}
+
+	sendInvitationReply(sendInvitationReplyDto: EmitEventInvitationReplyDto) {
+		const targetUserChannelSocketId =
+			sendInvitationReplyDto.targetUserChannelSocketId;
+		const isAccepted = sendInvitationReplyDto.isAccepted;
+		const gameId = sendInvitationReplyDto.gameId;
+
+		this.channelsGateway.server
+			.to(targetUserChannelSocketId)
+			.emit(EVENT_GAME_INVITATION_REPLY, {
+				isAccepted: isAccepted,
+				gameId: gameId,
+			});
+	}
+
+	sendMatchmakingReply(
+		sendMatchmakingReplyDto: EmitEventMatchmakingReplyDto,
+	) {
+		const targetUserChannelSocketId =
+			sendMatchmakingReplyDto.targetUserChannelSocketId;
+		const gameId = sendMatchmakingReplyDto.gameId;
+
+		this.channelsGateway.server
+			.to(targetUserChannelSocketId)
+			.emit(EVENT_GAME_MATCHED, {
+				gameId: gameId,
+			});
+	}
+
+	sendServerGameReady(gameDto: GameDto, rival: User, client: Socket) {
+		const eventServerGameReadyParamDto: EmitEventServerGameReadyParamDto = {
+			rivalNickname: rival.nickname,
+			rivalAvatar: rival.avatar,
+			myPosition: rival.id === gameDto.playerRightId ? 'LEFT' : 'RIGHT',
+		};
+
+		console.log(
+			'eventServerGameReadyParamDto: ',
+			JSON.stringify(eventServerGameReadyParamDto),
+		);
+
+		this.server
+			.to(client.id)
+			.emit(EVENT_SERVER_GAME_READY, eventServerGameReadyParamDto);
+	}
+
+	sendMatchStatus(
+		updateDto: UpdateDto,
+		playerSockets: {
+			left: Socket;
+			right: Socket;
+		},
+	) {
+		const playerLeftMatchStatusDto: EmitEventMatchStatusDto = {
+			myRacket: updateDto.racketLeft,
+			rivalRacket: updateDto.racketRight,
+			ball: updateDto.ball,
+		};
+		const playerRightMatchStatusDto: EmitEventMatchStatusDto = {
+			myRacket: updateDto.racketRight,
+			rivalRacket: updateDto.racketLeft,
+			ball: updateDto.ball,
+		};
+		this.server
+			.to(playerSockets.left.id)
+			.emit(EVENT_MATCH_STATUS, playerLeftMatchStatusDto);
+		this.server
+			.to(playerSockets.right.id)
+			.emit(EVENT_MATCH_STATUS, playerRightMatchStatusDto);
+	}
+
+	sendMatchScore(
+		gameDto: GameDto,
+		playerSockets: {
+			left: Socket;
+			right: Socket;
+		},
+	) {
+		const playerLeftMatchScoreDto: EmitEventMatchScoreParamDto = {
+			myScore: gameDto.scoreLeft,
+			rivalScore: gameDto.scoreRight,
+		};
+		const playerRightMatchScoreDto: EmitEventMatchScoreParamDto = {
+			myScore: gameDto.scoreRight,
+			rivalScore: gameDto.scoreLeft,
+		};
+		this.server
+			.to(playerSockets.left.id)
+			.emit(EVENT_MATCH_SCORE, playerLeftMatchScoreDto);
+		this.server
+			.to(playerSockets.right.id)
+			.emit(EVENT_MATCH_SCORE, playerRightMatchScoreDto);
 	}
 }
