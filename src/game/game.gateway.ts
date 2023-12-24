@@ -315,7 +315,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 				clearInterval(intervalId);
 				await this.gameEnd(gameDto);
 			}
-		}, 4000); // 테스트시엔 4초, 원래는 1/60초 (1000 / 60)
+		}, 1000 / 60); // 테스트시엔 4초, 원래는 1/60초 (1000 / 60)
 	}
 
 	async gameEnd(gameDto: GameDto) {
