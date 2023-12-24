@@ -66,11 +66,11 @@ export class ViewMapDto {
 
 		readonly racketWidth = canvasWidth * 0.1,
 		readonly racketHeight = canvasHeight * 0.4,
-		readonly racketLeftX = 0,
-		readonly racketRightX = canvasWidth - racketWidth,
+		readonly racketLeftX = 10,
+		readonly racketRightX = canvasWidth - racketWidth - 10,
 		readonly racketSpeed = 6,
 
-		readonly deltaTime = 1 / 60,
+		readonly deltaTime = 1 / 10,
 	) {
 		this.updateDto = new UpdateDto();
 		this.ball = {

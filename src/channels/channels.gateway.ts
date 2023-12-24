@@ -65,7 +65,8 @@ export class ChannelsGateway
 		if (!user || !client.id) {
 			return client.disconnect();
 		} else if (user.channelSocketId) {
-			throw WSBadRequestException('중복 연결입니다');
+			// throw WSBadRequestException('중복 연결입니다');
+			return client.disconnect();
 		}
 		this.logger.log(`Client connected: userId: ${user.id}`);
 

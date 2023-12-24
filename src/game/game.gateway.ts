@@ -315,14 +315,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 				clearInterval(intervalId);
 				await this.gameEnd(gameDto);
 			}
-		}, 1000 / 60); // 테스트시엔 4초, 원래는 1/60초 (1000 / 60)
+		}, 1000 / 10); // 테스트시엔 4초, 원래는 1/60초 (1000 / 60)
 	}
 
 	async gameEnd(gameDto: GameDto) {
 		const res = await gameDto.setResult();
 		if (!res) {
 			WSBadRequestException(
-				'최종 스코어 0:0 으로 게임이 무효화되었습니다',
+				'최종 스코어 동점으로 게임이 무효화되었습니다',
 			);
 		}
 
