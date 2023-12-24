@@ -132,6 +132,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 				`game id ${data.gameId} 데이터를 찾지 못했습니다`,
 			);
 		}
+		if (game.gameStatus === GameStatus.FINISHED) {
+			throw WSBadRequestException(
+				`game id ${data.gameId} 는 이미 완료된 게임입니다`,
+			);
+		}
 		console.log(`game ${game.id} 이 준비되었습니다`);
 
 		console.log(`data.gameId: ${data.gameId}`);
@@ -224,6 +229,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		if (gameDto.bothReady()) {
 			console.log(`It's ready!`);
 			gameDto.gameStatus = GameStatus.PLAYING;
+
+			// 이거 꼭 필요할까
+			await this.gameRepository.update(gameDto.getGameId(), {
+				gameStatus: GameStatus.PLAYING,
+			});
 
 			this.server.to(playerSockets.left.id).emit(EVENT_GAME_START);
 			this.server.to(playerSockets.right.id).emit(EVENT_GAME_START);

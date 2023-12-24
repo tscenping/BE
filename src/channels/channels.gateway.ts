@@ -62,8 +62,9 @@ export class ChannelsGateway
 		// Socket으로부터 user 정보를 가져온다.
 
 		const user = await this.authService.getUserFromSocket(client);
-		if (!user || !client.id || user.channelSocketId) {
-			client.disconnect();
+		if (!user || !client.id) {
+			return client.disconnect();
+		} else if (user.channelSocketId) {
 			throw WSBadRequestException('중복 연결입니다');
 		}
 		this.logger.log(`Client connected: userId: ${user.id}`);

@@ -59,8 +59,8 @@ export class ViewMapDto {
 		racketSize: number,
 
 		// 고정값
-		readonly canvasWidth = 1400,
-		readonly canvasHeight = 1000,
+		readonly canvasWidth = 1200,
+		readonly canvasHeight = 800,
 
 		readonly ballRadius = 2,
 
