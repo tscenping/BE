@@ -8,5 +8,5 @@ export type MyProfileResponseDto = {
 	totalCount: number;
 	ladderScore: number;
 	ladderMaxScore: number;
-	ladderRank: number; // TODO: ladderRank cache에서 조회하기
+	ladderRank: number;
 };
