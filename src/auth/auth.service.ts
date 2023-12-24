@@ -9,6 +9,7 @@ import {
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { createCipheriv, createDecipheriv } from 'crypto';
 import { Socket } from 'socket.io';
 import * as speakeasy from 'speakeasy';
 import jwtConfig from 'src/config/jwt.config';
@@ -34,7 +35,7 @@ export class AuthService {
 
 	private async createMfaSecret() {
 		const secret = speakeasy.generateSecret({
-			name: this.userConfigure.mfaSecret,
+			name: this.userConfigure.MFA_SECRET,
 		});
 		return secret;
 	}
@@ -53,13 +54,19 @@ export class AuthService {
 			return { user };
 		}
 
-		if (!user.isMfaEnabled) {
+		if (!user.isMfaEnabled || user.mfaSecret) {
 			return { user };
 		}
 
 		const mfaSecret = await this.createMfaSecret();
+		// secret key를 암호화해서 DB에 저장한다.
+
+		// The key length is dependent on the algorithm.
+		// In this case for aes256, it is 32 bytes.
+		const encryptedMfaSecret = await this.encryptMfaSecret(mfaSecret);
+
 		await this.usersRepository.update(user.id, {
-			mfaSecret: mfaSecret.base32,
+			mfaSecret: encryptedMfaSecret,
 		});
 
 		const mfaUrl = speakeasy.otpauthURL({
@@ -153,20 +160,21 @@ export class AuthService {
 		if (!user) {
 			throw new BadRequestException('존재하지 않는 유저입니다.');
 		}
+		if (!user.mfaSecret) {
+			throw new BadRequestException('MFA가 활성화되어 있지 않습니다.');
+		}
 
 		// mfaCode(token) 검증
+		const decryptedMfaSecret = await this.decryptMfaSecret(user.mfaSecret);
 		const verified = speakeasy.totp.verify({
-			secret: user.mfaSecret!,
-			encoding: 'base32',
+			secret: decryptedMfaSecret,
+			encoding: 'ascii',
 			token,
 		});
 
 		if (!verified) {
 			throw new UnauthorizedException('MFA 인증에 실패했습니다.');
 		}
-
-		// mfaSecret DB에서 삭제
-		await this.usersRepository.update(user.id, { mfaSecret: null });
 
 		return user;
 	}
@@ -185,5 +193,35 @@ export class AuthService {
 			});
 		}
 		return !user.isMfaEnabled;
+	}
+
+	async encryptMfaSecret(mfaSecret: speakeasy.GeneratedSecret) {
+		const cipher = createCipheriv(
+			'aes-256-ctr',
+			this.userConfigure.CRYPTO_KEY,
+			this.userConfigure.CRYPTO_SECRET_IV,
+		);
+
+		const encryptedMfaSecret = Buffer.concat([
+			cipher.update(mfaSecret.ascii),
+			cipher.final(),
+		]).toString('hex');
+
+		return encryptedMfaSecret;
+	}
+
+	async decryptMfaSecret(encryptedMfaSecret: string) {
+		const decipher = createDecipheriv(
+			'aes-256-ctr',
+			this.userConfigure.CRYPTO_KEY,
+			this.userConfigure.CRYPTO_SECRET_IV,
+		);
+		// string to buffer
+		const encryptedBuffer = Buffer.from(encryptedMfaSecret, 'hex');
+		const decryptedMfaSecret = Buffer.concat([
+			decipher.update(encryptedBuffer),
+			decipher.final(),
+		]);
+		return decryptedMfaSecret.toString();
 	}
 }
