@@ -42,7 +42,7 @@ export class UpdateDto {
 	}
 
 	isScoreChanged(): boolean {
-		return this.scoreRight || this.scoreRight;
+		return this.scoreLeft || this.scoreRight;
 	}
 }
 

@@ -64,15 +64,22 @@ export class GameDto {
 			this.winnerId = this.playerLeftId;
 			this.loserScore = this.scoreRight;
 			this.loserId = this.playerRightId;
+			return true;
 		} else if (this.scoreLeft < this.scoreRight) {
 			this.winnerScore = this.scoreRight;
 			this.winnerId = this.playerRightId;
 			this.loserScore = this.scoreLeft;
 			this.loserId = this.playerLeftId;
-		} else return;
+			return true;
+		} else return false;
 	}
 
 	private setGameId(gameId: number) {
 		this.gameId = gameId;
+	}
+
+	async testSetScore(scoreLeft: number, scoreRight: number) {
+		this.scoreLeft = scoreLeft;
+		this.scoreRight = scoreRight;
 	}
 }

@@ -176,7 +176,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		const user = await this.authService.getUserFromSocket(client);
 		if (!user) return client.disconnect();
 
-		const gameDto = await this.checkGameDto(data.gameId, user.id);
+		const gameDto = await this.checkGameDto(user.id, data.gameId);
 
 		console.log('----When matchKeyDown event coming, racket status----');
 		console.log(`before left racket y: ${gameDto.viewMap.racketLeft.y}`);
@@ -234,6 +234,24 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		this.gameLoop(gameDto);
 	}
 
+	@SubscribeMessage('testSetScore')
+	async testSetScore(
+		@ConnectedSocket() client: Socket,
+		@MessageBody()
+		data: {
+			gameId: number;
+			scoreLeft: number;
+			scoreRight: number;
+		},
+	) {
+		const user = await this.authService.getUserFromSocket(client);
+		if (!user) return client.disconnect;
+
+		const gameDto = await this.checkGameDto(user.id, data.gameId);
+
+		await gameDto.testSetScore(data.scoreLeft, data.scoreRight);
+	}
+
 	gameLoop(gameDto: GameDto) {
 		console.log('Game Loop started!');
 		const playerSockets = this.getPlayerSockets(gameDto);
@@ -283,6 +301,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 			// check interrupted by disconnected user
 			if (gameDto.gameInterrupted || !this.getPlayerSockets(gameDto)) {
+				console.log('This game is interrupted!');
 				clearInterval(intervalId);
 				await this.gameEnd(gameDto);
 			}
@@ -290,7 +309,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	}
 
 	async gameEnd(gameDto: GameDto) {
-		await gameDto.setResult();
+		const res = await gameDto.setResult();
+		if (!res) {
+			WSBadRequestException(
+				'최종 스코어 0:0 으로 게임이 무효화되었습니다',
+			);
+		}
 
 		// game DB 업데이트
 		const updateGameResultParamDto: UpdateGameResultParamDto = {
@@ -347,6 +371,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		const winnerNewLadderScore =
 			winner.ladderScore + K * (1 - winnerWinProb);
 		const loserNewLadderScore = loser.ladderScore + K * (0 - loserWinProb);
+		console.log(
+			`winner's score change: before ${winner.ladderScore} -> after ${winnerNewLadderScore}`,
+		);
+		console.log(
+			`loser's score change: before ${loser.ladderScore} -> after ${loserNewLadderScore}`,
+		);
 
 		const user1UpdateResult = await this.usersRepository.update(winner.id, {
 			ladderScore: winnerNewLadderScore,

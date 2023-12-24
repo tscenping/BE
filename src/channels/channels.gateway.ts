@@ -63,7 +63,8 @@ export class ChannelsGateway
 
 		const user = await this.authService.getUserFromSocket(client);
 		if (!user || !client.id || user.channelSocketId) {
-			return client.disconnect();
+			client.disconnect();
+			throw WSBadRequestException('중복 연결입니다');
 		}
 		this.logger.log(`Client connected: userId: ${user.id}`);
 
