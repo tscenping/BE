@@ -261,6 +261,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		this.gameLoop(gameDto);
 	}
 
+	// 테스트에만 쓰임
 	@SubscribeMessage('testSetScore')
 	async testSetScore(
 		@ConnectedSocket() client: Socket,
@@ -297,16 +298,22 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		let cnt = 0;
 		const intervalId: NodeJS.Timeout = setInterval(async () => {
 			cnt++;
-			console.log(`${cnt}'th interval`);
 			const viewMap = gameDto.viewMap;
 
 			// update objects
 			const updateDto = await viewMap.changes();
-			console.log(
-				'----In gameLoop when objects are changed, racket status----',
-			);
-			console.log(`left racket y: ${gameDto.viewMap.racketLeft.y}`);
-			console.log(`right racket y: ${gameDto.viewMap.racketRight.y}`);
+			console.log('\n');
+			console.log(`----${cnt}'번째 loop에서의 오브젝트들----`);
+			console.log('racket status:');
+			console.log(`	left racket y: ${gameDto.viewMap.racketLeft.y}`);
+			console.log(`	right racket y: ${gameDto.viewMap.racketRight.y}`);
+			console.log('ball status:');
+			console.log(`	x: ${gameDto.viewMap.ball.x}`);
+			console.log(`	y: ${gameDto.viewMap.ball.y}`);
+			console.log('ball velocity status:');
+			console.log(`	x: ${gameDto.viewMap.ball.xVelocity}`);
+			console.log(`	y: ${gameDto.viewMap.ball.yVelocity}`);
+			console.log('\n');
 
 			// emit update objects to each user
 			this.sendMatchStatus(updateDto, playerSockets);

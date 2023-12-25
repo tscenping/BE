@@ -76,6 +76,7 @@ export class GameDto {
 		this.gameId = gameId;
 	}
 
+	// 테스트에만 쓰임
 	async testSetScore(scoreLeft: number, scoreRight: number) {
 		this.scoreLeft = scoreLeft;
 		this.scoreRight = scoreRight;
