@@ -64,8 +64,8 @@ export class ViewMapDto {
 
 		readonly ballRadius = 2,
 
-		readonly racketWidth = canvasWidth * 0.1,
-		readonly racketHeight = canvasHeight * 0.4,
+		readonly racketWidth = canvasWidth * 0.05,
+		readonly racketHeight = canvasHeight * 0.1,
 		readonly racketLeftX = 10,
 		readonly racketRightX = canvasWidth - racketWidth - 10,
 		readonly racketSpeed = 6,

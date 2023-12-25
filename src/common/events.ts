@@ -15,3 +15,5 @@ export const EVENT_GAME_START = 'gameStart';
 export const EVENT_MATCH_SCORE = 'matchScore';
 
 export const EVENT_MATCH_STATUS = 'matchStatus';
+
+export const EVENT_ERROR = 'error';

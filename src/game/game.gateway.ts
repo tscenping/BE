@@ -14,6 +14,7 @@ import { UseFilters, UsePipes, ValidationPipe } from '@nestjs/common';
 import { WsExceptionFilter } from '../common/exception/custom-ws-exception.filter';
 import { GatewayCreateGameInvitationParamDto } from './dto/gateway-create-invitation-param.dto';
 import {
+	EVENT_ERROR,
 	EVENT_GAME_INVITATION,
 	EVENT_GAME_INVITATION_REPLY,
 	EVENT_GAME_MATCHED,
@@ -25,10 +26,6 @@ import {
 import { ChannelsGateway } from '../channels/channels.gateway';
 import { EmitEventInvitationReplyDto } from './dto/emit-event-invitation-reply.dto';
 import { GameRepository } from './game.repository';
-import {
-	WSBadRequestException,
-	WSDBUpdateFailureException,
-} from '../common/exception/custom-exception';
 import { GameDto } from './dto/game.dto';
 import {
 	GameStatus,
@@ -89,6 +86,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		const user = await this.authService.getUserFromSocket(client);
 		if (!user || client.id !== user.gameSocketId) return;
 
+		console.log(`${user.id} is disconnected to game socket {${client.id}}`);
+
 		await this.usersRepository.update(user.id, {
 			gameSocketId: null,
 		});
@@ -97,14 +96,21 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		if (gameId) {
 			const gameDto = this.gameIdToGameDto.get(gameId);
 			if (gameDto) {
-				if (gameDto.gameStatus === GameStatus.PLAYING)
+				if (
+					gameDto.gameStatus === GameStatus.PLAYING &&
+					!gameDto.gameInterrupted
+				) {
 					gameDto.gameInterrupted = true;
+				} else {
+					// FINISHED는 정상 종료이기 때문에 이미 gameIdTogameDto map에 없다
+					await this.gameRepository.softDelete(gameDto.getGameId());
+					console.log('game 지워버렸어');
+					this.gameIdToGameDto.delete(gameId);
+				}
 			}
 			this.userIdToGameId.delete(user.id);
 		}
 		this.userIdToClient.delete(user.id);
-
-		client.rooms.clear();
 	}
 
 	@SubscribeMessage('gameRequest')
@@ -112,6 +118,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		@ConnectedSocket() client: Socket,
 		@MessageBody() data: { gameId: number },
 	) {
+		console.log('gameRequest 이벤트 받았다 !!!');
 		/* TODO: Game 세팅
 		 *	1. game Data 만들기
 		 *
@@ -126,17 +133,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		const game = await this.gameRepository.findOne({
 			where: { id: data.gameId },
 		});
-		if (!game) {
-			// 여기는 disconnect 해도 될 것 같다
-			throw WSBadRequestException(
-				`game id ${data.gameId} 데이터를 찾지 못했습니다`,
-			);
-		}
-		if (game.gameStatus === GameStatus.FINISHED) {
-			throw WSBadRequestException(
-				`game id ${data.gameId} 는 이미 완료된 게임입니다`,
-			);
-		}
+		if (!game) return client.disconnect();
+
 		console.log(`game ${game.id} 이 준비되었습니다`);
 
 		console.log(`data.gameId: ${data.gameId}`);
@@ -162,8 +160,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		const rival = await this.usersRepository.findOne({
 			where: { id: rivalId },
 		});
-		if (!rival)
-			throw WSBadRequestException(`상대 ${rivalId} 가 존재하지 않습니다`);
+		if (!rival) {
+			// client.disconnect();
+			return this.sendError(
+				client,
+				400,
+				`상대 player ${rivalId} 의 데이터를 찾지 못했습니다`,
+			);
+		}
 
 		this.sendServerGameReady(gameDto, rival, client);
 	}
@@ -182,6 +186,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		if (!user) return client.disconnect();
 
 		const gameDto = await this.checkGameDto(user.id, data.gameId);
+		if (!gameDto) {
+			// client.disconnect();
+			return this.sendError(client, 400, `유효하지 않은 게임입니다`);
+		}
 
 		console.log('----When matchKeyDown event coming, racket status----');
 		console.log(`before left racket y: ${gameDto.viewMap.racketLeft.y}`);
@@ -201,6 +209,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		@ConnectedSocket() client: Socket,
 		@MessageBody() data: { gameId: number },
 	) {
+		console.log('clientGameReady 이벤트 받았다 !!!');
 		/* TODO: gameLoop
 		 *   	1. ball racket update, emit
 		 * 		2. score update, emit -> restart
@@ -215,11 +224,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		console.log(`--------${client.id} is ready--------`);
 
 		const gameDto = await this.checkGameDto(user.id, data.gameId);
+		if (!gameDto) {
+			// client.disconnect();
+			return this.sendError(client, 400, `유효하지 않은 게임입니다`);
+		}
 
 		// 유효성 검사
 		const playerSockets = this.getPlayerSockets(gameDto);
-		if (!playerSockets) {
-			throw WSBadRequestException(
+		if (playerSockets.length !== 2) {
+			// client.disconnect();
+			return this.sendError(
+				client,
+				400,
 				`두 플레이어의 게임 소켓이 모두 필요합니다. 게임 불가`,
 			);
 		}
@@ -235,8 +251,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 				gameStatus: GameStatus.PLAYING,
 			});
 
-			this.server.to(playerSockets.left.id).emit(EVENT_GAME_START);
-			this.server.to(playerSockets.right.id).emit(EVENT_GAME_START);
+			console.log('gameStart 이벤트 보낸다 !!!');
+			this.server.to(playerSockets[0].id).emit(EVENT_GAME_START);
+			this.server.to(playerSockets[1].id).emit(EVENT_GAME_START);
 		} else return;
 
 		await this.delay(1000 * 3);
@@ -258,6 +275,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		if (!user) return client.disconnect;
 
 		const gameDto = await this.checkGameDto(user.id, data.gameId);
+		if (!gameDto) {
+			// client.disconnect();
+			return this.sendError(client, 400, `유효하지 않은 게임입니다`);
+		}
 
 		await gameDto.testSetScore(data.scoreLeft, data.scoreRight);
 	}
@@ -265,8 +286,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	gameLoop(gameDto: GameDto) {
 		console.log('Game Loop started!');
 		const playerSockets = this.getPlayerSockets(gameDto);
-		if (!playerSockets) {
-			throw WSBadRequestException(
+		if (playerSockets.length !== 2) {
+			return this.sendErrorAll(
+				playerSockets,
+				400,
 				`두 플레이어의 게임 소켓이 모두 필요합니다. 게임 불가`,
 			);
 		}
@@ -302,7 +325,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 					await this.gameEnd(gameDto);
 				} else if (
 					!gameDto.gameInterrupted &&
-					this.getPlayerSockets(gameDto)
+					this.getPlayerSockets(gameDto).length === 2
 				) {
 					await this.delay(1000 * 3);
 					await gameDto.restart();
@@ -310,22 +333,38 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			}
 
 			// check interrupted by disconnected user
-			if (gameDto.gameInterrupted || !this.getPlayerSockets(gameDto)) {
-				console.log('This game is interrupted!');
+			if (
+				gameDto.gameInterrupted ||
+				this.getPlayerSockets(gameDto).length !== 2
+			) {
+				console.log('으악 게임이 강제로 중단됐다');
 				clearInterval(intervalId);
-				await this.gameEnd(gameDto);
+				const playerSockets = this.getPlayerSockets(gameDto);
+				return this.sendErrorAll(
+					playerSockets,
+					400,
+					`비정상 종료로 게임이 무효화되었습니다`,
+				);
 			}
 		}, 1000 / 10); // 테스트시엔 4초, 원래는 1/60초 (1000 / 60)
 	}
 
 	async gameEnd(gameDto: GameDto) {
-		const res = await gameDto.setResult();
-		if (!res) {
-			WSBadRequestException(
-				'최종 스코어 동점으로 게임이 무효화되었습니다',
+		await gameDto.setResult();
+
+		if (
+			!gameDto.winnerId ||
+			!gameDto.loserId ||
+			gameDto.winnerScore === 0 ||
+			gameDto.loserScore === 0
+		) {
+			const playerSockets = this.getPlayerSockets(gameDto);
+			return this.sendErrorAll(
+				playerSockets,
+				400,
+				`비정상 종료로 게임이 무효화되었습니다`,
 			);
 		}
-
 		// game DB 업데이트
 		const updateGameResultParamDto: UpdateGameResultParamDto = {
 			winnerId: gameDto.winnerId as number,
@@ -335,21 +374,30 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			gameStatus: GameStatus.FINISHED,
 		};
 
-		const gameUpdateResult = await this.gameRepository.update(
+		await this.gameRepository.update(
 			gameDto.getGameId(),
 			updateGameResultParamDto,
 		);
-		if (gameUpdateResult.affected != 1)
-			throw WSDBUpdateFailureException('게임 결과 업데이트 실패');
 
 		// ladderScore 계산, user DB 업데이트
 		if (gameDto.gameType === GameType.LADDER) {
-			await this.updateLadderData(
-				gameDto.winnerId as number,
-				gameDto.loserId as number,
-			);
-		}
+			const winner = await this.usersRepository.findOne({
+				where: { id: gameDto.winnerId },
+			});
+			const loser = await this.usersRepository.findOne({
+				where: { id: gameDto.loserId },
+			});
+			if (!winner || !loser) {
+				const playerSockets = this.getPlayerSockets(gameDto);
+				return this.sendErrorAll(
+					playerSockets,
+					400,
+					`player 의 데이터를 찾지 못했습니다`,
+				);
+			}
 
+			await this.updateLadderData(winner, loser);
+		}
 		// gameDto 유저들 지워주기
 		this.userIdToGameId.delete(gameDto.playerLeftId);
 		this.userIdToGameId.delete(gameDto.playerRightId);
@@ -357,16 +405,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		this.gameIdToGameDto.delete(gameDto.getGameId());
 	}
 
-	private async updateLadderData(winnerId: number, loserId: number) {
-		const winner = await this.usersRepository.findOne({
-			where: { id: winnerId },
-		});
-		const loser = await this.usersRepository.findOne({
-			where: { id: loserId },
-		});
-		if (!winner || !loser)
-			throw WSBadRequestException(`player 의 데이터를 찾지 못했습니다`);
-
+	private async updateLadderData(winner: User, loser: User) {
 		// winner가 이겼을 가능성
 		const winnerWinProb = this.probability(
 			loser.ladderScore,
@@ -388,7 +427,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			`loser's score change: before ${loser.ladderScore} -> after ${loserNewLadderScore}`,
 		);
 
-		const user1UpdateResult = await this.usersRepository.update(winner.id, {
+		await this.usersRepository.update(winner.id, {
 			ladderScore: winnerNewLadderScore,
 			ladderMaxScore:
 				winnerNewLadderScore > winner.ladderScore
@@ -396,9 +435,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 					: winner.ladderScore,
 			winCount: winner.winCount + 1,
 		});
-		if (user1UpdateResult.affected != 1)
-			throw WSDBUpdateFailureException('게임 결과 업데이트 실패');
-		const user2UpdateResult = await this.usersRepository.update(loser.id, {
+		await this.usersRepository.update(loser.id, {
 			ladderScore: loserNewLadderScore,
 			ladderMaxScore:
 				loserNewLadderScore > loser.ladderScore
@@ -406,8 +443,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 					: loser.ladderScore,
 			loseCount: loser.loseCount + 1,
 		});
-		if (user2UpdateResult.affected != 1)
-			throw WSDBUpdateFailureException('게임 결과 업데이트 실패');
 	}
 
 	private probability(rating1: number, rating2: number) {
@@ -415,24 +450,22 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	}
 
 	private getPlayerSockets(gameDto: GameDto) {
+		const sockets = [];
 		const playerLeftId = gameDto.playerLeftId;
 		const playerRightId = gameDto.playerRightId;
 
 		const playerLeftSocket = this.userIdToClient.get(playerLeftId);
 		const playerRightSocket = this.userIdToClient.get(playerRightId);
 
-		if (!playerLeftSocket || !playerRightSocket) return null;
-		// if (
-		// 	!this.isSocketConnected(playerLeftSocket) ||
-		// 	!this.isSocketConnected(playerRightSocket)
-		// )
-		// 	return null;
-		console.log(`left player socketId: ${playerLeftSocket.id}`);
-		console.log(`right player socketId: ${playerRightSocket.id}`);
-		return {
-			left: playerLeftSocket,
-			right: playerRightSocket,
-		};
+		if (playerLeftSocket) {
+			sockets.push(playerLeftSocket);
+		}
+
+		if (playerRightSocket) {
+			sockets.push(playerRightSocket);
+		}
+
+		return sockets;
 	}
 
 	private async isSocketConnected(client: Socket) {
@@ -445,33 +478,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		return socket;
 	}
 
-	// 적절한 조치인지 모르겠다 !
-	private async checkGameDto(
-		userId: number,
-		receivedGameId: number,
-	): Promise<GameDto> {
+	private async checkGameDto(userId: number, receivedGameId: number) {
 		const gameId = this.userIdToGameId.get(userId);
-		if (!gameId) {
-			throw WSBadRequestException(
-				`user id ${userId} 에게서 game id ${receivedGameId} 를 찾지 못했습니다`,
-			);
-		}
-		if (gameId !== receivedGameId) {
-			throw WSBadRequestException(
-				`user id ${userId} 의 game id ${gameId} 와 요청된 game id ${receivedGameId} 가 다릅니다`,
-			);
-		}
+		if (!gameId) return null;
+		if (gameId !== receivedGameId) return null;
 
 		const gameDto = this.gameIdToGameDto.get(gameId);
 		if (!gameDto) {
-			throw WSBadRequestException(
-				`game id ${receivedGameId} 에게서 game 객체를 찾지 못했습니다`,
-			);
+			return null;
 		} else {
-			if (gameDto.gameInterrupted)
-				throw WSBadRequestException(
-					`game id ${gameId} 는 비정상 종료된 게임입니다`,
-				);
+			if (gameDto.gameInterrupted) return null;
 		}
 
 		return gameDto;
@@ -495,6 +511,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			gatewayInvitationParamDto.invitingUserNickname;
 		const gameType = gatewayInvitationParamDto.gameType;
 
+		console.log(
+			`소켓 id ${invitedUserChannelSocketId} 에 gameInvitation 이벤트 보낸다 !!!`,
+		);
 		this.channelsGateway.server
 			.to(invitedUserChannelSocketId)
 			.emit(EVENT_GAME_INVITATION, {
@@ -510,6 +529,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		const isAccepted = sendInvitationReplyDto.isAccepted;
 		const gameId = sendInvitationReplyDto.gameId;
 
+		console.log(
+			`소켓 id ${targetUserChannelSocketId} 에 gameInvitationReply 이벤트 보낸다 !!!`,
+		);
 		this.channelsGateway.server
 			.to(targetUserChannelSocketId)
 			.emit(EVENT_GAME_INVITATION_REPLY, {
@@ -525,6 +547,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			sendMatchmakingReplyDto.targetUserChannelSocketId;
 		const gameId = sendMatchmakingReplyDto.gameId;
 
+		console.log(
+			`소켓 id ${targetUserChannelSocketId} 에 gameMatched 이벤트 보낸다 !!!`,
+		);
 		this.channelsGateway.server
 			.to(targetUserChannelSocketId)
 			.emit(EVENT_GAME_MATCHED, {
@@ -533,29 +558,53 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	}
 
 	sendServerGameReady(gameDto: GameDto, rival: User, client: Socket) {
+		console.log('serverGameReady 이벤트 보낸다 !!!');
+		const viewMap = gameDto.viewMap;
+		const amILeft = rival.id === gameDto.playerRightId;
+
+		const myPosition = amILeft ? 'LEFT' : 'RIGHT';
+		const myRacketX = amILeft ? viewMap.racketLeftX : viewMap.racketRightX;
+		const rivalRacketX = amILeft
+			? viewMap.racketRightX
+			: viewMap.racketLeftX;
+		const myRacketY = amILeft
+			? viewMap.racketLeft.y
+			: viewMap.racketRight.y;
+		const rivalRacketY = amILeft
+			? viewMap.racketRight.y
+			: viewMap.racketLeft.y;
+		const racketHeight = viewMap.racketHeight;
+		const racketWidth = viewMap.racketWidth;
+
 		const eventServerGameReadyParamDto: EmitEventServerGameReadyParamDto = {
 			rivalNickname: rival.nickname,
 			rivalAvatar: rival.avatar,
-			myPosition: rival.id === gameDto.playerRightId ? 'LEFT' : 'RIGHT',
+			myPosition,
+			ball: {
+				x: viewMap.ball.x,
+				y: viewMap.ball.y,
+				radius: viewMap.ballRadius,
+			},
+			myRacket: {
+				x: myRacketX,
+				y: myRacketY,
+				height: racketHeight,
+				width: racketWidth,
+			},
+			rivalRacket: {
+				x: rivalRacketX,
+				y: rivalRacketY,
+				height: racketHeight,
+				width: racketWidth,
+			},
 		};
-
-		console.log(
-			'eventServerGameReadyParamDto: ',
-			JSON.stringify(eventServerGameReadyParamDto),
-		);
 
 		this.server
 			.to(client.id)
 			.emit(EVENT_SERVER_GAME_READY, eventServerGameReadyParamDto);
 	}
 
-	sendMatchStatus(
-		updateDto: UpdateDto,
-		playerSockets: {
-			left: Socket;
-			right: Socket;
-		},
-	) {
+	sendMatchStatus(updateDto: UpdateDto, playerSockets: Socket[]) {
 		const playerLeftMatchStatusDto: EmitEventMatchStatusDto = {
 			myRacket: updateDto.racketLeft,
 			rivalRacket: updateDto.racketRight,
@@ -567,20 +616,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			ball: updateDto.ball,
 		};
 		this.server
-			.to(playerSockets.left.id)
+			.to(playerSockets[0].id)
 			.emit(EVENT_MATCH_STATUS, playerLeftMatchStatusDto);
 		this.server
-			.to(playerSockets.right.id)
+			.to(playerSockets[1].id)
 			.emit(EVENT_MATCH_STATUS, playerRightMatchStatusDto);
 	}
 
-	sendMatchScore(
-		gameDto: GameDto,
-		playerSockets: {
-			left: Socket;
-			right: Socket;
-		},
-	) {
+	sendMatchScore(gameDto: GameDto, playerSockets: Socket[]) {
 		const playerLeftMatchScoreDto: EmitEventMatchScoreParamDto = {
 			myScore: gameDto.scoreLeft,
 			rivalScore: gameDto.scoreRight,
@@ -590,10 +633,28 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			rivalScore: gameDto.scoreLeft,
 		};
 		this.server
-			.to(playerSockets.left.id)
+			.to(playerSockets[0].id)
 			.emit(EVENT_MATCH_SCORE, playerLeftMatchScoreDto);
 		this.server
-			.to(playerSockets.right.id)
+			.to(playerSockets[1].id)
 			.emit(EVENT_MATCH_SCORE, playerRightMatchScoreDto);
+	}
+
+	sendError(client: Socket, statusCode: number, message: string) {
+		this.server.to(client.id).emit(EVENT_ERROR, {
+			statusCode: statusCode,
+			message: message,
+		});
+	}
+
+	sendErrorAll(clients: Socket[], statusCode: number, message: string) {
+		if (clients.length === 0) return;
+		clients.forEach((client) => {
+			// client.disconnect();
+			this.server.to(client.id).emit(EVENT_ERROR, {
+				statusCode: statusCode,
+				message: message,
+			});
+		});
 	}
 }

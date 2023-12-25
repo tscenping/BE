@@ -59,19 +59,17 @@ export class GameDto {
 	}
 
 	async setResult() {
-		if (this.scoreLeft === this.scoreRight) return false;
-		if (this.scoreLeft > this.scoreRight) {
+		if (this.scoreLeft === this.maxScore) {
 			this.winnerScore = this.scoreLeft;
 			this.winnerId = this.playerLeftId;
 			this.loserScore = this.scoreRight;
 			this.loserId = this.playerRightId;
-		} else if (this.scoreLeft < this.scoreRight) {
+		} else if (this.scoreRight === this.maxScore) {
 			this.winnerScore = this.scoreRight;
 			this.winnerId = this.playerRightId;
 			this.loserScore = this.scoreLeft;
 			this.loserId = this.playerLeftId;
 		}
-		return true;
 	}
 
 	private setGameId(gameId: number) {

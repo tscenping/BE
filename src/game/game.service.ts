@@ -218,6 +218,7 @@ export class GameService {
 			);
 
 		gameQueue.push(user);
+		console.log(`${user.nickname} 이 큐에 들어간다`);
 
 		if (gameQueue.length >= 2) {
 			let player1 = gameQueue.shift();

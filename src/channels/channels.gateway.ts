@@ -14,7 +14,7 @@ import Redis from 'ioredis';
 import { Server, Socket } from 'socket.io';
 import { AuthService } from 'src/auth/auth.service';
 import { UserStatus } from 'src/common/enum';
-import { EVENT_USER_STATUS } from 'src/common/events';
+import { EVENT_ERROR, EVENT_USER_STATUS } from 'src/common/events';
 import { WSBadRequestException } from 'src/common/exception/custom-exception';
 import { WsExceptionFilter } from 'src/common/exception/custom-ws-exception.filter';
 import { GatewayCreateChannelInvitationParamDto } from 'src/game/dto/gateway-create-channelInvitation-param-dto';
@@ -58,14 +58,13 @@ export class ChannelsGateway
 		this.usersRepository.initAllSocketIdAndUserStatus();
 	}
 
-	async handleConnection(@ConnectedSocket() client: Socket, ...args: any[]) {
+	async handleConnection(@ConnectedSocket() client: Socket) {
 		// Socket으로부터 user 정보를 가져온다.
 
 		const user = await this.authService.getUserFromSocket(client);
-		if (!user || !client.id) {
-			return client.disconnect();
-		} else if (user.channelSocketId) {
-			// throw WSBadRequestException('중복 연결입니다');
+		if (!user || !client.id) return client.disconnect();
+		if (user.channelSocketId) {
+			this.sendError(client, 400, `중복 연결입니다`);
 			return client.disconnect();
 		}
 		this.logger.log(`Client connected: userId: ${user.id}`);
@@ -267,5 +266,12 @@ export class ChannelsGateway
 		this.server
 			.to(channelId.toString())
 			.emit('notice', channelNoticeResponseDto);
+	}
+
+	sendError(client: Socket, statusCode: number, message: string) {
+		this.server.to(client.id).emit(EVENT_ERROR, {
+			statusCode: statusCode,
+			message: message,
+		});
 	}
 }
