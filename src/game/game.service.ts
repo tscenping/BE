@@ -80,6 +80,16 @@ export class GameService {
 			}
 		}
 
+		// 초대받은 user가 게임 매칭큐에 있는지 확인
+		const gameQueue = this.ChannelsGateway.getGameQueue();
+		Object.keys(gameQueue).forEach((key) => {
+			const queue = gameQueue[key];
+			if (queue.find((u) => u.id === invitedUserId))
+				throw new BadRequestException(
+					`user ${invitedUserId} is in the game queue`,
+				);
+		});
+
 		// game invitation DB 저장
 		const gameInvitation =
 			await this.gameInvitationRepository.createGameInvitation(
