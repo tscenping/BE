@@ -310,6 +310,15 @@ export class ChannelsService {
 			);
 		}
 
+		//초대받은 user가 게임 매칭큐에 있는지 확인
+		const gameQueue = this.ChannelsGateway.getGameQueue();
+		for (const queue of Object.values(gameQueue)) {
+			if (queue.find((u) => u.id === invitedUserId))
+				throw new BadRequestException(
+					`user ${invitedUserId} is in the game queue`,
+				);
+		}
+
 		const channelInvitation =
 			await this.channelInvitationRepository.createChannelInvitation(
 				createInvitationParamDto,
