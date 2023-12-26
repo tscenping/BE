@@ -110,10 +110,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			}
 			this.userIdToGameId.delete(user.id);
 		}
-		// await this.usersRepository.update(user.id, {
-		// 	status: UserStatus.ONLINE,
-		// });
-		// console.log('INGAME -> ONLINE 상태 업데이트');
+		await this.usersRepository.update(user.id, {
+			status: UserStatus.ONLINE,
+		});
+		console.log('INGAME -> ONLINE 상태 업데이트');
 		this.userIdToClient.delete(user.id);
 	}
 
@@ -138,6 +138,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			where: { id: data.gameId },
 		});
 		if (!game) return client.disconnect();
+		if (game.gameStatus !== GameStatus.WAITING) client.disconnect();
 
 		console.log(`game ${game.id} 이 준비되었습니다`);
 
@@ -165,7 +166,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			where: { id: rivalId },
 		});
 		if (!rival) {
-			// client.disconnect();
 			return this.sendError(
 				client,
 				400,
@@ -191,21 +191,20 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 		const gameDto = await this.checkGameDto(user.id, data.gameId);
 		if (!gameDto) {
-			// client.disconnect();
 			return this.sendError(client, 400, `유효하지 않은 게임입니다`);
 		}
 
-		console.log('----When matchKeyDown event coming, racket status----');
-		console.log(`before left racket y: ${gameDto.viewMap.racketLeft.y}`);
-		console.log(`before right racket y: ${gameDto.viewMap.racketRight.y}`);
+		// console.log('----When matchKeyDown event coming, racket status----');
+		// console.log(`before left racket y: ${gameDto.viewMap.racketLeft.y}`);
+		// console.log(`before right racket y: ${gameDto.viewMap.racketRight.y}`);
 		if (data.keyStatus === KEYSTATUS.down) {
-			console.log('hi im gonna update racket');
+			// console.log('hi im gonna update racket');
 			if (user.id === gameDto.playerLeftId)
 				gameDto.viewMap.updateRacketLeft(data.keyName);
 			else gameDto.viewMap.updateRacketRight(data.keyName);
 		}
-		console.log(`after left racket y: ${gameDto.viewMap.racketLeft.y}`);
-		console.log(`after right racket y: ${gameDto.viewMap.racketRight.y}`);
+		// console.log(`after left racket y: ${gameDto.viewMap.racketLeft.y}`);
+		// console.log(`after right racket y: ${gameDto.viewMap.racketRight.y}`);
 	}
 
 	@SubscribeMessage('clientGameReady')
@@ -229,14 +228,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 		const gameDto = await this.checkGameDto(user.id, data.gameId);
 		if (!gameDto) {
-			// client.disconnect();
 			return this.sendError(client, 400, `유효하지 않은 게임입니다`);
 		}
 
 		// 유효성 검사
 		const playerSockets = this.getPlayerSockets(gameDto);
 		if (playerSockets.length !== 2) {
-			// client.disconnect();
 			return this.sendError(
 				client,
 				400,
@@ -281,7 +278,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 		const gameDto = await this.checkGameDto(user.id, data.gameId);
 		if (!gameDto) {
-			// client.disconnect();
 			return this.sendError(client, 400, `유효하지 않은 게임입니다`);
 		}
 
@@ -306,18 +302,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 			// update objects
 			const updateDto = await viewMap.changes();
-			console.log('\n');
-			console.log(`----${cnt}'번째 loop에서의 오브젝트들----`);
-			console.log('racket status:');
-			console.log(`	left racket y: ${gameDto.viewMap.racketLeft.y}`);
-			console.log(`	right racket y: ${gameDto.viewMap.racketRight.y}`);
-			console.log('ball status:');
-			console.log(`	x: ${gameDto.viewMap.ball.x}`);
-			console.log(`	y: ${gameDto.viewMap.ball.y}`);
-			console.log('ball velocity status:');
-			console.log(`	x: ${gameDto.viewMap.ball.xVelocity}`);
-			console.log(`	y: ${gameDto.viewMap.ball.yVelocity}`);
-			console.log('\n');
+			// console.log('\n');
+			// console.log(`----${cnt}'번째 loop에서의 오브젝트들----`);
+			// console.log('racket status:');
+			// console.log(`	left racket y: ${gameDto.viewMap.racketLeft.y}`);
+			// console.log(`	right racket y: ${gameDto.viewMap.racketRight.y}`);
+			// console.log('ball status:');
+			// console.log(`	x: ${gameDto.viewMap.ball.x}`);
+			// console.log(`	y: ${gameDto.viewMap.ball.y}`);
+			// console.log('ball velocity status:');
+			// console.log(`	x: ${gameDto.viewMap.ball.xVelocity}`);
+			// console.log(`	y: ${gameDto.viewMap.ball.yVelocity}`);
+			// console.log('\n');
 
 			// emit update objects to each user
 			this.sendMatchStatus(updateDto, playerSockets);
@@ -430,9 +426,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			loser.ladderScore,
 		);
 
-		const winnerNewLadderScore =
-			winner.ladderScore + K * (1 - winnerWinProb);
-		const loserNewLadderScore = loser.ladderScore + K * (0 - loserWinProb);
+		const winnerNewLadderScore = Math.round(
+			winner.ladderScore + K * (1 - winnerWinProb),
+		);
+		const loserNewLadderScore = Math.round(
+			loser.ladderScore + K * (0 - loserWinProb),
+		);
 		console.log(
 			`winner's score change: before ${winner.ladderScore} -> after ${winnerNewLadderScore}`,
 		);
@@ -658,16 +657,17 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			statusCode: statusCode,
 			message: message,
 		});
+		client.disconnect();
 	}
 
 	sendErrorAll(clients: Socket[], statusCode: number, message: string) {
 		if (clients.length === 0) return;
 		clients.forEach((client) => {
-			// client.disconnect();
 			this.server.to(client.id).emit(EVENT_ERROR, {
 				statusCode: statusCode,
 				message: message,
 			});
+			client.disconnect();
 		});
 	}
 }
