@@ -1,5 +1,7 @@
+import { InjectRedis } from '@liaoliaots/nestjs-redis';
 import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import Redis from 'ioredis';
 import { UserStatus } from 'src/common/enum';
 import { DataSource, Repository } from 'typeorm';
 import { MyProfileResponseDto } from './dto/my-profile-response.dto';
@@ -7,7 +9,10 @@ import { UserProfileReturnDto } from './dto/user-profile.dto';
 import { User } from './entities/user.entity';
 
 export class UsersRepository extends Repository<User> {
-	constructor(@InjectRepository(User) private dataSource: DataSource) {
+	constructor(
+		@InjectRepository(User) private dataSource: DataSource,
+		@InjectRedis() private readonly redis: Redis,
+	) {
 		super(User, dataSource.manager);
 	}
 
@@ -34,10 +39,16 @@ export class UsersRepository extends Repository<User> {
 			throw new ForbiddenException('invalid user');
 		}
 
+		// redis에서 ladderRank 조회하기
+		const ladderRank = await this.redis.zrevrank(
+			'rankings',
+			userId.toString(),
+		);
+
 		return {
 			...myProfile,
 			totalCount: myProfile.loseCount + myProfile.winCount,
-			ladderRank: 1, // TODO: ladderRank cache에서 조회하기
+			ladderRank,
 		} as MyProfileResponseDto;
 	}
 
@@ -64,11 +75,16 @@ export class UsersRepository extends Repository<User> {
 			);
 		}
 
+		const ladderRank = await this.redis.zrevrank(
+			'rankings',
+			userProfile.id.toString(),
+		);
+
 		return {
 			...userProfile,
 			totalCount: userProfile.loseCount + userProfile.winCount,
-			ladderRank: 1, // TODO: ladderRank cache에서 조회하기,
-		};
+			ladderRank,
+		} as UserProfileReturnDto;
 	}
 
 	async findRanksInfos(users: string[]) {
