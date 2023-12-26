@@ -334,12 +334,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 				if (gameDto.isOver()) {
 					clearInterval(intervalId);
 					await this.gameEnd(gameDto);
+					return;
 				} else if (
 					!gameDto.gameInterrupted &&
 					this.getPlayerSockets(gameDto).length === 2
 				) {
-					await this.delay(1000 * 3);
+					// await this.delay(1000 * 3);
 					await gameDto.restart();
+					return;
 				}
 			}
 
@@ -357,7 +359,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 					`비정상 종료로 게임이 무효화되었습니다`,
 				);
 			}
-		}, 1000 / 10); // 테스트시엔 4초, 원래는 1/60초 (1000 / 60)
+		}, 1000 / 60); // 테스트시엔 4초, 원래는 1/60초 (1000 / 60)
 	}
 
 	async gameEnd(gameDto: GameDto) {

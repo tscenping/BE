@@ -1,5 +1,5 @@
 // ball 변하는 값
-import { KEYNAME } from '../../common/enum';
+import { KEYNAME, KEYSTATUS } from '../../common/enum';
 
 export type ball = {
 	x: number;
@@ -14,7 +14,7 @@ export type ball = {
 // racket 변하는 값
 export type racket = {
 	y: number;
-	action: string | null; // up, down
+	action: KEYSTATUS | null; // up, down
 };
 
 export class UpdateDto {
@@ -62,27 +62,32 @@ export class ViewMapDto {
 		readonly canvasWidth = 1200,
 		readonly canvasHeight = 800,
 
-		readonly ballRadius = 2,
+		readonly ballRadius = 10,
 
-		readonly racketWidth = canvasWidth * 0.05,
-		readonly racketHeight = canvasHeight * 0.1,
+		readonly racketWidth = canvasWidth * 0.01,
+		readonly racketHeight = canvasHeight * 0.25,
 		readonly racketLeftX = 10,
 		readonly racketRightX = canvasWidth - racketWidth - 10,
 		readonly racketSpeed = 6,
 
-		readonly deltaTime = 1 / 10,
+		readonly deltaTime = 1 / 60,
 	) {
 		this.updateDto = new UpdateDto();
+		if (ballSpeed == 1) this.ballSpeed = 10 * 6;
+		else if (ballSpeed == 2) this.ballSpeed = 15 * 6;
+		else this.ballSpeed = 20 * 6;
+
 		this.ball = {
 			x: canvasWidth / 2,
 			y: canvasHeight / 2,
 			vx: 0,
 			vy: 0,
-			xVelocity: ballSpeed * (Math.random() < 0.5 ? 0 : 1) === 0 ? 1 : -1,
-			yVelocity: ballSpeed * (Math.random() < 0.5 ? 0 : 1) === 0 ? 1 : -1,
+			xVelocity:
+				this.ballSpeed * ((Math.random() < 0.5 ? 0 : 1) === 0 ? 1 : -1),
+			yVelocity:
+				this.ballSpeed * ((Math.random() < 0.5 ? 0 : 1) === 0 ? 1 : -1),
 			accel: 0,
 		};
-		this.ballSpeed = ballSpeed;
 
 		this.racketLeft = {
 			y: canvasHeight / 2 - racketHeight / 2,
@@ -96,19 +101,19 @@ export class ViewMapDto {
 	}
 
 	async initObjects() {
-		this.ball.vx = 0;
-		this.ball.vy = 0;
 		this.updateDto.scoreLeft = false;
 		this.updateDto.scoreRight = false;
 
 		this.ball.x = this.canvasWidth / 2;
 		this.ball.y = this.canvasHeight / 2;
+		this.ball.vx = 0;
+		this.ball.vy = 0;
 		this.ball.xVelocity =
-			this.ballSpeed * (Math.random() < 0.5 ? 0 : 1) === 0 ? 1 : -1;
+			this.ballSpeed * ((Math.random() < 0.5 ? 0 : 1) === 0 ? 1 : -1);
 		this.ball.yVelocity =
-			this.ballSpeed * (Math.random() < 0.5 ? 0 : 1) === 0 ? 1 : -1;
+			this.ballSpeed * ((Math.random() < 0.5 ? 0 : 1) === 0 ? 1 : -1);
 
-		this.ball.accel += 0.2;
+		this.ball.accel += 2;
 		this.racketLeft.y = this.canvasHeight / 2 - this.racketHeight / 2;
 		this.racketRight.y = this.canvasHeight / 2 - this.racketHeight / 2;
 	}
