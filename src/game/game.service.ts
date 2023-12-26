@@ -225,10 +225,9 @@ export class GameService {
 		}
 
 		// 이미 큐에 존재하는지
-		const index = gameQueue.indexOf(user);
-		if (index > -1)
+		if (gameQueue.find((u) => u.id === user.id))
 			throw new BadRequestException(
-				`유저 ${user.id} 는 이미 매칭 큐에 존재합니다`,
+				`user ${user.id} is already in the game queue`,
 			);
 
 		gameQueue.push(user);
