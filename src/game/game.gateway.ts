@@ -104,12 +104,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 				} else {
 					// FINISHED는 정상 종료이기 때문에 이미 gameIdTogameDto map에 없다
 					await this.gameRepository.softDelete(gameDto.getGameId());
-					console.log('game 지워버렸어');
+					console.log('game db 데이터 지우기');
 					this.gameIdToGameDto.delete(gameId);
 				}
 			}
 			this.userIdToGameId.delete(user.id);
 		}
+		// await this.usersRepository.update(user.id, {
+		// 	status: UserStatus.ONLINE,
+		// });
+		// console.log('INGAME -> ONLINE 상태 업데이트');
 		this.userIdToClient.delete(user.id);
 	}
 
@@ -251,12 +255,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 				gameStatus: GameStatus.PLAYING,
 			});
 
+			await this.delay(1000 * 3);
 			console.log('gameStart 이벤트 보낸다 !!!');
 			this.server.to(playerSockets[0].id).emit(EVENT_GAME_START);
 			this.server.to(playerSockets[1].id).emit(EVENT_GAME_START);
 		} else return;
 
-		await this.delay(1000 * 3);
 		// TODO: game restart 될 때도 3초 지연 ? how
 		this.gameLoop(gameDto);
 	}

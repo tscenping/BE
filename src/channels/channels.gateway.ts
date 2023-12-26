@@ -67,7 +67,7 @@ export class ChannelsGateway
 			this.sendError(client, 400, `중복 연결입니다`);
 			return client.disconnect();
 		}
-		this.logger.log(`Client connected: userId: ${user.id}`);
+		this.logger.log(`Client connected: ${client.id}, userId: ${user.id}`);
 
 		// 유저의 channelSocketId와 status를 업데이트한다.
 		await this.usersRepository.update(user.id, {
