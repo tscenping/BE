@@ -137,12 +137,19 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		const game = await this.gameRepository.findOne({
 			where: { id: data.gameId },
 		});
-		if (!game) return client.disconnect();
-		if (game.gameStatus !== GameStatus.WAITING) client.disconnect();
+		if (!game) {
+			console.log(`해당 game이 없어서 disconnect 된다`);
+			return client.disconnect();
+		}
+		if (game.gameStatus !== GameStatus.WAITING) {
+			console.log(
+				`해당 game이 이미 PLAYING 이거나 FINISHED여서 disconnect 된다`,
+			);
+			client.disconnect();
+		}
 
-		console.log(`game ${game.id} 이 준비되었습니다`);
+		console.log(`game id ${game.id} 이 성공적으로 준비되었습니다`);
 
-		console.log(`data.gameId: ${data.gameId}`);
 		let gameDto = this.gameIdToGameDto.get(data.gameId);
 		if (!gameDto) {
 			gameDto = new GameDto(game);
@@ -570,7 +577,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	}
 
 	sendServerGameReady(gameDto: GameDto, rival: User, client: Socket) {
-		console.log('serverGameReady 이벤트 보낸다 !!!');
 		const viewMap = gameDto.viewMap;
 		const amILeft = rival.id === gameDto.playerRightId;
 
@@ -611,6 +617,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			},
 		};
 
+		console.log(`${client.id}에 serverGameReady 이벤트 보낸다 !!!`);
 		this.server
 			.to(client.id)
 			.emit(EVENT_SERVER_GAME_READY, eventServerGameReadyParamDto);
@@ -657,6 +664,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			statusCode: statusCode,
 			message: message,
 		});
+		console.log(
+			`${client.id}가 error message: [${message}] 로 disconnect 된다`,
+		);
 		client.disconnect();
 	}
 
@@ -667,6 +677,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 				statusCode: statusCode,
 				message: message,
 			});
+			console.log(
+				`${client.id}가 error message: [${message}] 로 disconnect 된다`,
+			);
 			client.disconnect();
 		});
 	}
