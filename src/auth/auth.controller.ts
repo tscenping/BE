@@ -48,21 +48,13 @@ export class AuthController {
 		);
 
 		// 사용자 정보를 이용해 JWT 토큰을 생성한다.
-		const { jwtAccessToken, jwtRefreshToken } =
-			await this.authService.generateJwtToken(user);
+		const jwtAccessToken = await this.authService.generateJwtToken(user);
 
 		// MFA가 활성화 되어있지 않다면 jwt 토큰을 쿠키에 저장한다.
 		if (user.isMfaEnabled == false) {
 			// token을 쿠키에 저장한다.
 			res.cookie('accessToken', jwtAccessToken, {
 				// httpOnly: true,	// 자동로그인을 위해 httpOnly를 false로 설정
-				secure: true,
-				sameSite: 'none',
-				expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
-			});
-
-			res.cookie('refreshToken', jwtRefreshToken, {
-				httpOnly: true,
 				secure: true,
 				sameSite: 'none',
 				expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
@@ -113,8 +105,9 @@ export class AuthController {
 		const existUser = await this.usersService.findUserByNickname(nickname);
 		// 이미 존재하는 유저라면 토큰을 발급한다.
 		if (existUser) {
-			const { jwtAccessToken, jwtRefreshToken } =
-				await this.authService.generateJwtToken(existUser);
+			const jwtAccessToken = await this.authService.generateJwtToken(
+				existUser,
+			);
 			// token을 쿠키에 저장한다.
 			res.cookie('accessToken', jwtAccessToken, {
 				// httpOnly: true,	// 자동로그인을 위해 httpOnly를 false로 설정
@@ -123,12 +116,12 @@ export class AuthController {
 				expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
 			});
 
-			res.cookie('refreshToken', jwtRefreshToken, {
-				httpOnly: true,
-				secure: true,
-				sameSite: 'none',
-				expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
-			});
+			// res.cookie('refreshToken', jwtRefreshToken, {
+			// 	httpOnly: true,
+			// 	secure: true,
+			// 	sameSite: 'none',
+			// 	expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
+			// });
 
 			const userSigninResponseDto: UserSigninResponseDto = {
 				userId: existUser.id,
@@ -142,8 +135,7 @@ export class AuthController {
 
 		const user = await this.usersService.createUser(nickname, 'test@test');
 
-		const { jwtAccessToken, jwtRefreshToken } =
-			await this.authService.generateJwtToken(user);
+		const jwtAccessToken = await this.authService.generateJwtToken(user);
 
 		// token을 쿠키에 저장한다.
 		res.cookie('accessToken', jwtAccessToken, {
@@ -153,12 +145,12 @@ export class AuthController {
 			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1), // 1일
 		});
 
-		res.cookie('refreshToken', jwtRefreshToken, {
-			httpOnly: true,
-			secure: true,
-			sameSite: 'none',
-			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14), // 14일
-		});
+		// res.cookie('refreshToken', jwtRefreshToken, {
+		// 	httpOnly: true,
+		// 	secure: true,
+		// 	sameSite: 'none',
+		// 	expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14), // 14일
+		// });
 
 		const userSigninResponseDto: UserSigninResponseDto = {
 			userId: user.id,
@@ -224,8 +216,7 @@ export class AuthController {
 		const user = await this.authService.verifyMfa(signinMfaRequestDto);
 
 		// 사용자 정보를 이용해 JWT 토큰을 생성한다.
-		const { jwtAccessToken, jwtRefreshToken } =
-			await this.authService.generateJwtToken(user);
+		const jwtAccessToken = await this.authService.generateJwtToken(user);
 
 		// token을 쿠키에 저장한다.
 		res.cookie('accessToken', jwtAccessToken, {
@@ -233,13 +224,6 @@ export class AuthController {
 			secure: true,
 			sameSite: 'none',
 			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1), // 1일
-		});
-
-		res.cookie('refreshToken', jwtRefreshToken, {
-			httpOnly: true,
-			secure: true,
-			sameSite: 'none',
-			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 14), // 14일
 		});
 
 		return res.send();

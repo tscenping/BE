@@ -238,23 +238,21 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			return this.sendError(client, 400, `유효하지 않은 게임입니다`);
 		}
 
-		// 유효성 검사
-		const playerSockets = this.getPlayerSockets(gameDto);
-		if (playerSockets.length !== 2) {
-			return this.sendError(
-				client,
-				400,
-				`두 플레이어의 게임 소켓이 모두 필요합니다. 게임 불가`,
-			);
-		}
-
 		gameDto.readyCnt++;
 		console.log(`ready count: ${gameDto.readyCnt}`);
 		if (gameDto.bothReady()) {
+			// 유효성 검사
+			const playerSockets = this.getPlayerSockets(gameDto);
+			if (playerSockets.length !== 2) {
+				return this.sendError(
+					client,
+					400,
+					`두 플레이어의 게임 소켓이 모두 필요합니다. 게임 불가`,
+				);
+			}
 			console.log(`It's ready!`);
 			gameDto.gameStatus = GameStatus.PLAYING;
 
-			// 이거 꼭 필요할까
 			await this.gameRepository.update(gameDto.getGameId(), {
 				gameStatus: GameStatus.PLAYING,
 			});

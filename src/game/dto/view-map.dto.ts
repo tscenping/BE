@@ -86,7 +86,7 @@ export class ViewMapDto {
 				this.ballSpeed * ((Math.random() < 0.5 ? 0 : 1) === 0 ? 1 : -1),
 			yVelocity:
 				this.ballSpeed * ((Math.random() < 0.5 ? 0 : 1) === 0 ? 1 : -1),
-			accel: 100,
+			accel: 150,
 		};
 
 		this.racketLeft = {
@@ -130,12 +130,12 @@ export class ViewMapDto {
 		const ball = this.ball;
 		const dt = this.deltaTime;
 
-		// 공의 속력 업데이트
-		ball.xVelocity += ball.accel * dt * (ball.xVelocity > 0 ? 1 : -1);
-		ball.yVelocity += ball.accel * dt * (ball.yVelocity > 0 ? 1 : -1);
 		// 공의 위치 업데이트
 		const x = ball.x + ball.xVelocity * dt + ball.accel * dt * dt * 0.5;
 		const y = ball.y + ball.yVelocity * dt + ball.accel * dt * dt * 0.5;
+		// 공의 속력 업데이트
+		// ball.xVelocity += ball.accel * dt * (ball.xVelocity > 0 ? 1 : -1);
+		// ball.yVelocity += ball.accel * dt * (ball.yVelocity > 0 ? 1 : -1);
 
 		this.ball.vx = x - ball.x;
 		this.ball.vy = y - ball.y;
@@ -181,8 +181,8 @@ export class ViewMapDto {
 
 		//score
 		if (ball.x + this.ballRadius >= this.canvasWidth)
-			updateDto.scoreRight = true; // right
-		else if (ball.x - this.ballRadius <= 0) updateDto.scoreLeft = true; // left
+			updateDto.scoreLeft = true; // right
+		else if (ball.x - this.ballRadius <= 0) updateDto.scoreRight = true; // left
 
 		// 내보내기
 		updateDto.racketLeft = {
@@ -214,17 +214,21 @@ export class ViewMapDto {
 				dy <= this.ballRadius + this.racketHeight / 2
 			) {
 				ball.xVelocity *= -1;
-				// console.log('\nbefore speed: ', Math.abs(ball.xVelocity));
-				ball.accel += 50;
-				// ball.xVelocity +=
-				// 	ball.accel * this.deltaTime * (ball.xVelocity > 0 ? 1 : -1);
-				// ball.accel += 10;
-				// console.log(
-				// 	'change right: ',
-				// 	ball.accel * this.deltaTime * (ball.xVelocity > 0 ? 1 : -1),
-				// );
-				// console.log('accel, deltaTime: ', ball.accel, this.deltaTime);
-				// console.log('after speed: ', Math.abs(ball.xVelocity));
+				console.log('\nbefore speed: ', Math.abs(ball.xVelocity));
+				ball.xVelocity +=
+					ball.accel *
+					2 *
+					this.deltaTime *
+					(ball.xVelocity > 0 ? 1 : -1);
+				console.log(
+					'collision right -> ',
+					ball.accel *
+						2 *
+						this.deltaTime *
+						(ball.xVelocity > 0 ? 1 : -1),
+				);
+				console.log('accel, deltaTime: ', ball.accel, this.deltaTime);
+				console.log('after speed: ', Math.abs(ball.xVelocity));
 			}
 		} else if (this.ball.vx < 0) {
 			dx = Math.abs(ball.x - this.getRacketLeftCenter().cx);
@@ -234,24 +238,28 @@ export class ViewMapDto {
 				dy <= this.ballRadius + this.racketHeight / 2
 			) {
 				ball.xVelocity *= -1;
-				// console.log('\nbefore speed: ', Math.abs(ball.xVelocity));
-				ball.accel += 50;
-				// ball.xVelocity +=
-				// 	ball.accel * this.deltaTime * (ball.xVelocity > 0 ? 1 : -1);
-				// console.log(
-				// 	'change left: ',
-				// 	ball.accel * this.deltaTime * (ball.xVelocity > 0 ? 1 : -1),
-				// );
-				// console.log('accel, deltaTime: ', ball.accel, this.deltaTime);
-				// console.log('after speed: ', Math.abs(ball.xVelocity));
-				// ball.accel += 10;
+				console.log('\nbefore speed: ', Math.abs(ball.xVelocity));
+				ball.xVelocity +=
+					ball.accel *
+					2 *
+					this.deltaTime *
+					(ball.xVelocity > 0 ? 1 : -1);
+				console.log(
+					'collision left -> ',
+					ball.accel *
+						2 *
+						this.deltaTime *
+						(ball.xVelocity > 0 ? 1 : -1),
+				);
+				console.log('accel, deltaTime: ', ball.accel, this.deltaTime);
+				console.log('after speed: ', Math.abs(ball.xVelocity));
 			}
 		}
 
 		// 바닥, 천장
 		if (
 			ball.y + this.ballRadius >= this.canvasHeight ||
-			ball.y - this.ballRadius <= 0
+			ball.y - this.ballRadius < 0
 		)
 			ball.yVelocity *= -1;
 	}

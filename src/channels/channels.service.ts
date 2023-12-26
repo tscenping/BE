@@ -108,24 +108,8 @@ export class ChannelsService {
 				userId,
 				channel.id,
 			);
-		// // 채널에 소환된 유저에게 알람 전송. DM의 경우에만 해당
-		// if (channel.channelType === ChannelType.DM) {
-		// 	console.log(`channelInfo.userId: ${channelInfo.userId}`)
-		// 	const targetUser = await this.usersRepository.findOne({
-		// 		where: { id: channelInfo.userId },
-		// 	});
-		// 	if (targetUser?.channelSocketId) {
-		// 		this.ChannelsGateway.sendChannelAlert(
-		// 			channel.id,
-		// 			[targetUser.channelSocketId],
-		// 		);
-		// 	}
-		// }
 
-		// TODO: cache에 user count 저장
-		this.logger.log(
-			`channel ${channel.id} is created. user count: ${userCount}`,
-		);
+		await this.redis.set(`userCount:${channel.id}`, userCount.toString()); // TODO: 필요 없을 것 같다.
 
 		const createChannelResponseDto = {
 			channelId: channel.id,
@@ -308,15 +292,6 @@ export class ChannelsService {
 			throw new BadRequestException(
 				`user already in this channel ${channelId}`,
 			);
-		}
-
-		//초대받은 user가 게임 매칭큐에 있는지 확인
-		const gameQueue = this.ChannelsGateway.getGameQueue();
-		for (const queue of Object.values(gameQueue)) {
-			if (queue.find((u) => u.id === invitedUserId))
-				throw new BadRequestException(
-					`user ${invitedUserId} is in the game queue`,
-				);
 		}
 
 		const channelInvitation =

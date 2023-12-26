@@ -80,6 +80,16 @@ export class GameService {
 			}
 		}
 
+		// 초대받은 user가 게임 매칭큐에 있는지 확인
+		const gameQueue = this.ChannelsGateway.getGameQueue();
+		Object.keys(gameQueue).forEach((key) => {
+			const queue = gameQueue[key];
+			if (queue.find((u) => u.id === invitedUserId))
+				throw new BadRequestException(
+					`user ${invitedUserId} is in the game queue`,
+				);
+		});
+
 		// game invitation DB 저장
 		const gameInvitation =
 			await this.gameInvitationRepository.createGameInvitation(
@@ -211,10 +221,9 @@ export class GameService {
 		}
 
 		// 이미 큐에 존재하는지
-		const index = gameQueue.indexOf(user);
-		if (index > -1)
+		if (gameQueue.find((u) => u.id === user.id))
 			throw new BadRequestException(
-				`유저 ${user.id} 는 이미 매칭 큐에 존재합니다`,
+				`user ${user.id} is already in the game queue`,
 			);
 
 		gameQueue.push(user);

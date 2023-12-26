@@ -5,8 +5,12 @@ export const USER_CONFIG = 'user';
 
 export default registerAs(USER_CONFIG, () => {
 	const MFA_SECRET = z.string().parse(process.env.MFA_SECRET);
+	const CRYPTO_KEY = z.string().parse(process.env.CRYPTO_KEY);
+	const CRYPTO_SECRET_IV = z.string().parse(process.env.CRYPTO_SECRET_IV);
 
 	return {
-		mfaSecret: MFA_SECRET,
+		MFA_SECRET,
+		CRYPTO_KEY,
+		CRYPTO_SECRET_IV,
 	};
 });
