@@ -8,7 +8,6 @@ import {
 } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import * as bcrypt from 'bcrypt';
 import { createCipheriv, createDecipheriv } from 'crypto';
 import { Socket } from 'socket.io';
 import * as speakeasy from 'speakeasy';
@@ -85,22 +84,22 @@ export class AuthService {
 		// accessToken 생성
 		const accessToken = await this.jwtService.signAsync(payload);
 
-		// refreshToken 생성
-		const refreshToken = await this.jwtService.signAsync({
-			id: payload.id,
-		});
+		// // refreshToken 생성
+		// const refreshToken = await this.jwtService.signAsync({
+		// 	id: payload.id,
+		// });
 
-		// 암호화된 refreshToken을 DB에 저장한다.
-		const saltOrRounds = 10;
-		const hashedRefreshToken = await bcrypt.hash(
-			refreshToken,
-			saltOrRounds,
-		);
-		await this.usersRepository.update(user.id, {
-			refreshToken: hashedRefreshToken,
-		});
+		// // 암호화된 refreshToken을 DB에 저장한다.
+		// const saltOrRounds = 10;
+		// const hashedRefreshToken = await bcrypt.hash(
+		// 	refreshToken,
+		// 	saltOrRounds,
+		// );
+		// await this.usersRepository.update(user.id, {
+		// 	refreshToken: hashedRefreshToken,
+		// });
 
-		return { jwtAccessToken: accessToken, jwtRefreshToken: refreshToken };
+		return accessToken;
 	}
 
 	async validateNickname(nickname: string) {
