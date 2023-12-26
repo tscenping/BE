@@ -67,6 +67,7 @@ export class AuthController {
 			isMfaEnabled: user.isMfaEnabled,
 			mfaUrl,
 		};
+		await this.AppService.updateRanking(user.ladderScore, user.id);
 
 		return res.send(userSigninResponseDto);
 	}
