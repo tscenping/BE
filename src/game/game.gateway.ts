@@ -72,8 +72,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 	async handleConnection(@ConnectedSocket() client: Socket) {
 		const user = await this.authService.getUserFromSocket(client);
-		if (!user || !client.id || user.gameSocketId)
-			return client.disconnect();
+		if (!user || !client.id) return client.disconnect();
+		else if (user.gameSocketId) client.disconnect();
 
 		console.log(`${user.id} is connected to game socket {${client.id}}`);
 
@@ -92,6 +92,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 		await this.usersRepository.update(user.id, {
 			gameSocketId: null,
+			status: UserStatus.ONLINE,
 		});
 
 		const gameId = this.userIdToGameId.get(user.id);
@@ -116,9 +117,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			}
 		}
 		this.userIdToClient.delete(user.id);
-		await this.usersRepository.update(user.id, {
-			status: UserStatus.ONLINE,
-		});
 	}
 
 	@SubscribeMessage('gameRequest')
