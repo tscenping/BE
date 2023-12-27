@@ -86,7 +86,7 @@ export class ViewMapDto {
 				this.ballSpeed * ((Math.random() < 0.5 ? 0 : 1) === 0 ? 1 : -1),
 			yVelocity:
 				this.ballSpeed * ((Math.random() < 0.5 ? 0 : 1) === 0 ? 1 : -1),
-			accel: 150,
+			accel: 170,
 		};
 
 		this.racketLeft = {

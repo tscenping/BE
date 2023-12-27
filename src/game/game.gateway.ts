@@ -44,6 +44,7 @@ import Redis from 'ioredis';
 import { K } from '../common/constants';
 import { UpdateDto } from './dto/view-map.dto';
 import { User } from '../users/entities/user.entity';
+import { EmitEventMatchEndParamDto } from './dto/emit-event-match-end-param.dto';
 
 @WebSocketGateway({ namespace: 'game' })
 @UseFilters(WsExceptionFilter)
@@ -96,25 +97,27 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		if (gameId) {
 			const gameDto = this.gameIdToGameDto.get(gameId);
 			if (gameDto) {
-				if (
-					gameDto.gameStatus === GameStatus.PLAYING &&
-					!gameDto.gameInterrupted
-				) {
-					gameDto.gameInterrupted = true;
-				} else {
-					// FINISHED는 정상 종료이기 때문에 이미 gameIdTogameDto map에 없다
+				if (gameDto.gameStatus === GameStatus.WAITING) {
+					gameDto.gameType = GameType.NONE;
+					await this.gameEnd(gameDto);
 					await this.gameRepository.softDelete(gameDto.getGameId());
-					console.log('game db 데이터 지우기');
+				} else if (gameDto.gameStatus === GameStatus.PLAYING) {
+					if (!gameDto.gameInterrupted) {
+						gameDto.gameInterrupted = true;
+						gameDto.loserId = user.id;
+						this.userIdToGameId.delete(user.id);
+					}
+					await this.gameEnd(gameDto);
+				} else {
 					this.gameIdToGameDto.delete(gameId);
+					this.userIdToGameId.delete(user.id);
 				}
 			}
-			this.userIdToGameId.delete(user.id);
 		}
+		this.userIdToClient.delete(user.id);
 		await this.usersRepository.update(user.id, {
 			status: UserStatus.ONLINE,
 		});
-		console.log('INGAME -> ONLINE 상태 업데이트');
-		this.userIdToClient.delete(user.id);
 	}
 
 	@SubscribeMessage('gameRequest')
@@ -127,7 +130,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		 *	1. game Data 만들기
 		 *
 		 * 	2. map 준비하기 ✅
-		 * 	3. game room join하기 ❎ -> 안해도 될듯
+		 * 	3. game room join하기 ❎
 		 * 	4. INGAME으로 상태 바꾸기 ✅
 		 * 	5. game start event emit ✅*/
 		const user = await this.authService.getUserFromSocket(client);
@@ -142,13 +145,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			return client.disconnect();
 		}
 		if (game.gameStatus !== GameStatus.WAITING) {
-			console.log(
-				`해당 game이 이미 PLAYING 이거나 FINISHED여서 disconnect 된다`,
-			);
-			client.disconnect();
+			console.log(`해당 game이 WAITING 상태가 아니어서 disconnect 된다`);
+			return client.disconnect();
 		}
-
-		console.log(`game id ${game.id} 이 성공적으로 준비되었습니다`);
 
 		let gameDto = this.gameIdToGameDto.get(data.gameId);
 		if (!gameDto) {
@@ -157,6 +156,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			this.userIdToGameId.set(user.id, gameDto.getGameId());
 		}
 		this.userIdToGameId.set(user.id, gameDto.getGameId());
+
+		console.log(`game id ${game.id} 이 성공적으로 준비되었습니다`);
 
 		// 4. INGAME으로 상태 바꾸기
 		await this.usersRepository.update(user.id, {
@@ -180,7 +181,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			);
 		}
 
-		this.sendServerGameReady(gameDto, rival, client);
+		this.sendServerGameReady(client, gameDto, rival);
 	}
 
 	@SubscribeMessage('matchKeyDown')
@@ -243,7 +244,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		if (gameDto.bothReady()) {
 			// 유효성 검사
 			const playerSockets = this.getPlayerSockets(gameDto);
-			if (playerSockets.length !== 2) {
+			if (!playerSockets.left || !playerSockets.right) {
 				return this.sendError(
 					client,
 					400,
@@ -259,8 +260,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 			await this.delay(1000 * 3);
 			console.log('gameStart 이벤트 보낸다 !!!');
-			this.server.to(playerSockets[0].id).emit(EVENT_GAME_START);
-			this.server.to(playerSockets[1].id).emit(EVENT_GAME_START);
+			this.server.to(playerSockets.left.id).emit(EVENT_GAME_START);
+			this.server.to(playerSockets.right.id).emit(EVENT_GAME_START);
 		} else return;
 
 		// TODO: game restart 될 때도 3초 지연 ? how
@@ -291,8 +292,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 	gameLoop(gameDto: GameDto) {
 		console.log('Game Loop started!');
-		const playerSockets = this.getPlayerSockets(gameDto);
-		if (playerSockets.length !== 2) {
+		let playerSockets = this.getPlayerSockets(gameDto);
+		if (!playerSockets.left || !playerSockets.right) {
 			return this.sendErrorAll(
 				playerSockets,
 				400,
@@ -321,7 +322,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			// console.log('\n');
 
 			// emit update objects to each user
-			this.sendMatchStatus(updateDto, playerSockets);
+			this.sendMatchStatus(playerSockets, updateDto);
 
 			// update score
 			if (updateDto.isScoreChanged()) {
@@ -329,62 +330,56 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 				else if (updateDto.scoreRight) gameDto.scoreRight++;
 
 				//emit score to each user
-				this.sendMatchScore(gameDto, playerSockets);
+				this.sendMatchScore(playerSockets, gameDto);
 
 				// end or restart
 				if (gameDto.isOver()) {
 					clearInterval(intervalId);
 					await this.gameEnd(gameDto);
 					return;
-				} else if (
-					!gameDto.gameInterrupted &&
-					this.getPlayerSockets(gameDto).length === 2
-				) {
-					// await this.delay(1000 * 3);
-					await gameDto.restart();
-					return;
+				} else if (!gameDto.gameInterrupted) {
+					playerSockets = this.getPlayerSockets(gameDto);
+					if (playerSockets.left && playerSockets.right) {
+						// await this.delay(1000 * 3); // 안먹어요
+						await gameDto.restart();
+						return;
+					}
 				}
 			}
 
 			// check interrupted by disconnected user
-			if (
-				gameDto.gameInterrupted ||
-				this.getPlayerSockets(gameDto).length !== 2
-			) {
+			if (gameDto.gameInterrupted) {
 				console.log('으악 게임이 강제로 중단됐다');
 				clearInterval(intervalId);
-				const playerSockets = this.getPlayerSockets(gameDto);
+				playerSockets = this.getPlayerSockets(gameDto);
 				return this.sendErrorAll(
 					playerSockets,
 					400,
-					`비정상 종료로 게임이 무효화되었습니다`,
+					`비정상 종료된 게임입니다`,
 				);
 			}
-		}, 1000 / 60); // 테스트시엔 4초, 원래는 1/60초 (1000 / 60)
+		}, 1000 / 60);
 	}
 
 	async gameEnd(gameDto: GameDto) {
+		const game = await this.gameRepository.findOne({
+			where: { id: gameDto.getGameId() },
+		});
+		if (!game) {
+			console.log('game이 이미 없는데');
+		}
+		console.log(`game type: ${game?.gameType}`);
+		const playerSockets = this.getPlayerSockets(gameDto);
+
 		await gameDto.setResult();
 
-		if (
-			!gameDto.winnerId ||
-			!gameDto.loserId ||
-			gameDto.winnerScore === 0 ||
-			gameDto.loserScore === 0
-		) {
-			const playerSockets = this.getPlayerSockets(gameDto);
-			return this.sendErrorAll(
-				playerSockets,
-				400,
-				`비정상 종료로 게임이 무효화되었습니다`,
-			);
-		}
 		// game DB 업데이트
 		const updateGameResultParamDto: UpdateGameResultParamDto = {
 			winnerId: gameDto.winnerId as number,
 			loserId: gameDto.loserId as number,
 			winnerScore: gameDto.winnerScore,
 			loserScore: gameDto.loserScore,
+			gameType: gameDto.gameType,
 			gameStatus: GameStatus.FINISHED,
 		};
 
@@ -393,25 +388,29 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			updateGameResultParamDto,
 		);
 
+		const left = await this.usersRepository.findOne({
+			where: { id: gameDto.playerLeftId },
+		});
+		const right = await this.usersRepository.findOne({
+			where: { id: gameDto.playerRightId },
+		});
+		if (!left || !right) {
+			return this.sendErrorAll(
+				playerSockets,
+				400,
+				`player 의 데이터를 찾지 못했습니다`,
+			);
+		}
+
 		// ladderScore 계산, user DB 업데이트
 		if (gameDto.gameType === GameType.LADDER) {
-			const winner = await this.usersRepository.findOne({
-				where: { id: gameDto.winnerId },
-			});
-			const loser = await this.usersRepository.findOne({
-				where: { id: gameDto.loserId },
-			});
-			if (!winner || !loser) {
-				const playerSockets = this.getPlayerSockets(gameDto);
-				return this.sendErrorAll(
-					playerSockets,
-					400,
-					`player 의 데이터를 찾지 못했습니다`,
-				);
-			}
-
+			const winner = gameDto.winnerId === left.id ? left : right;
+			const loser = gameDto.loserId === left.id ? left : right;
 			await this.updateLadderData(winner, loser);
 		}
+
+		this.sendMatchEnd(playerSockets, gameDto, left, right);
+
 		// gameDto 유저들 지워주기
 		this.userIdToGameId.delete(gameDto.playerLeftId);
 		this.userIdToGameId.delete(gameDto.playerRightId);
@@ -467,20 +466,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	}
 
 	private getPlayerSockets(gameDto: GameDto) {
-		const sockets = [];
+		const sockets = {
+			left: null as Socket | null,
+			right: null as Socket | null,
+		};
 		const playerLeftId = gameDto.playerLeftId;
 		const playerRightId = gameDto.playerRightId;
 
 		const playerLeftSocket = this.userIdToClient.get(playerLeftId);
 		const playerRightSocket = this.userIdToClient.get(playerRightId);
 
-		if (playerLeftSocket) {
-			sockets.push(playerLeftSocket);
-		}
-
-		if (playerRightSocket) {
-			sockets.push(playerRightSocket);
-		}
+		sockets.left = playerLeftSocket ? playerLeftSocket : null;
+		sockets.right = playerRightSocket ? playerRightSocket : null;
 
 		return sockets;
 	}
@@ -574,7 +571,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			});
 	}
 
-	sendServerGameReady(gameDto: GameDto, rival: User, client: Socket) {
+	sendServerGameReady(client: Socket, gameDto: GameDto, rival: User) {
 		const viewMap = gameDto.viewMap;
 		const amILeft = rival.id === gameDto.playerRightId;
 
@@ -621,7 +618,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			.emit(EVENT_SERVER_GAME_READY, eventServerGameReadyParamDto);
 	}
 
-	sendMatchStatus(updateDto: UpdateDto, playerSockets: Socket[]) {
+	sendMatchStatus(
+		playerSockets: {
+			left: Socket | null;
+			right: Socket | null;
+		},
+		updateDto: UpdateDto,
+	) {
 		const playerLeftMatchStatusDto: EmitEventMatchStatusDto = {
 			myRacket: updateDto.racketLeft,
 			rivalRacket: updateDto.racketRight,
@@ -632,15 +635,25 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			rivalRacket: updateDto.racketLeft,
 			ball: updateDto.ball,
 		};
-		this.server
-			.to(playerSockets[0].id)
-			.emit(EVENT_MATCH_STATUS, playerLeftMatchStatusDto);
-		this.server
-			.to(playerSockets[1].id)
-			.emit(EVENT_MATCH_STATUS, playerRightMatchStatusDto);
+		if (playerSockets.left) {
+			this.server
+				.to(playerSockets.left.id)
+				.emit(EVENT_MATCH_STATUS, playerLeftMatchStatusDto);
+		}
+		if (playerSockets.right) {
+			this.server
+				.to(playerSockets.right.id)
+				.emit(EVENT_MATCH_STATUS, playerRightMatchStatusDto);
+		}
 	}
 
-	sendMatchScore(gameDto: GameDto, playerSockets: Socket[]) {
+	sendMatchScore(
+		playerSockets: {
+			left: Socket | null;
+			right: Socket | null;
+		},
+		gameDto: GameDto,
+	) {
 		const playerLeftMatchScoreDto: EmitEventMatchScoreParamDto = {
 			myScore: gameDto.scoreLeft,
 			rivalScore: gameDto.scoreRight,
@@ -649,12 +662,68 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			myScore: gameDto.scoreRight,
 			rivalScore: gameDto.scoreLeft,
 		};
-		this.server
-			.to(playerSockets[0].id)
-			.emit(EVENT_MATCH_SCORE, playerLeftMatchScoreDto);
-		this.server
-			.to(playerSockets[1].id)
-			.emit(EVENT_MATCH_SCORE, playerRightMatchScoreDto);
+		if (playerSockets.left) {
+			this.server
+				.to(playerSockets.left.id)
+				.emit(EVENT_MATCH_SCORE, playerLeftMatchScoreDto);
+		}
+		if (playerSockets.right) {
+			this.server
+				.to(playerSockets.right.id)
+				.emit(EVENT_MATCH_SCORE, playerRightMatchScoreDto);
+		}
+	}
+
+	sendMatchEnd(
+		playerSockets: {
+			left: Socket | null;
+			right: Socket | null;
+		},
+		gameDto: GameDto,
+		left: User,
+		right: User,
+	) {
+		const leftMatchEndParamDtos: EmitEventMatchEndParamDto = {
+			gameType: gameDto.gameType,
+			rivalName: right.nickname,
+			rivalAvatar: right.avatar,
+			rivalScore: gameDto.scoreRight,
+			myScore: gameDto.scoreLeft,
+			isWin: gameDto.scoreLeft > gameDto.scoreRight,
+			myLadderScore:
+				gameDto.gameType === GameType.LADDER ? left.ladderScore : null,
+			rivalLadderScore:
+				gameDto.gameType === GameType.LADDER ? right.ladderScore : null,
+		};
+		const rightMatchEndParamDtos: EmitEventMatchEndParamDto = {
+			gameType: gameDto.gameType,
+			rivalName: left.nickname,
+			rivalAvatar: left.avatar,
+			rivalScore: gameDto.scoreLeft,
+			myScore: gameDto.scoreRight,
+			isWin: gameDto.scoreRight > gameDto.scoreLeft,
+			myLadderScore:
+				gameDto.gameType === GameType.LADDER ? right.ladderScore : null,
+			rivalLadderScore:
+				gameDto.gameType === GameType.LADDER ? left.ladderScore : null,
+		};
+
+		if (playerSockets.left) {
+			console.log(
+				`${playerSockets.left.id}에 matchEnd 이벤트 보낸다 !!!`,
+			);
+			this.server
+				.to(playerSockets.left.id)
+				.emit(EVENT_MATCH_SCORE, leftMatchEndParamDtos);
+		}
+		if (playerSockets.right) {
+			console.log(
+				`${playerSockets.right.id}에 matchEnd 이벤트 보낸다 !!!`,
+			);
+			this.server
+				.to(playerSockets.right.id)
+				.emit(EVENT_MATCH_SCORE, rightMatchEndParamDtos);
+		}
 	}
 
 	sendError(client: Socket, statusCode: number, message: string) {
@@ -662,23 +731,37 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			statusCode: statusCode,
 			message: message,
 		});
-		console.log(
-			`${client.id}가 error message: [${message}] 로 disconnect 된다`,
-		);
+		console.log(`${client.id}가 ${message} 이유로 di로sconnect 된다`);
 		client.disconnect();
 	}
 
-	sendErrorAll(clients: Socket[], statusCode: number, message: string) {
-		if (clients.length === 0) return;
-		clients.forEach((client) => {
-			this.server.to(client.id).emit(EVENT_ERROR, {
+	sendErrorAll(
+		clients: {
+			left: Socket | null;
+			right: Socket | null;
+		},
+		statusCode: number,
+		message: string,
+	) {
+		if (clients.left) {
+			this.server.to(clients.left.id).emit(EVENT_ERROR, {
 				statusCode: statusCode,
 				message: message,
 			});
 			console.log(
-				`${client.id}가 error message: [${message}] 로 disconnect 된다`,
+				`${clients.left.id}가 ${message} 이유로 disconnect 된다`,
 			);
-			client.disconnect();
-		});
+			clients.left.disconnect();
+		}
+		if (clients.right) {
+			this.server.to(clients.right.id).emit(EVENT_ERROR, {
+				statusCode: statusCode,
+				message: message,
+			});
+			console.log(
+				`${clients.right.id}가 error message: [${message}] 로 disconnect 된다`,
+			);
+			clients.right.disconnect();
+		}
 	}
 }

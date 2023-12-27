@@ -59,16 +59,32 @@ export class GameDto {
 	}
 
 	async setResult() {
-		if (this.scoreLeft === this.maxScore) {
-			this.winnerScore = this.scoreLeft;
+		if (this.gameType === GameType.NONE) {
 			this.winnerId = this.playerLeftId;
-			this.loserScore = this.scoreRight;
+			this.winnerScore = 0;
 			this.loserId = this.playerRightId;
-		} else if (this.scoreRight === this.maxScore) {
-			this.winnerScore = this.scoreRight;
-			this.winnerId = this.playerRightId;
-			this.loserScore = this.scoreLeft;
-			this.loserId = this.playerLeftId;
+			this.loserScore = 0;
+			return;
+		}
+		if (this.loserId) {
+			this.loserScore = 0;
+			this.winnerScore = this.maxScore;
+			this.winnerId =
+				this.loserId === this.playerLeftId
+					? this.playerRightId
+					: this.playerLeftId;
+		} else {
+			if (this.scoreLeft === this.maxScore) {
+				this.winnerScore = this.scoreLeft;
+				this.winnerId = this.playerLeftId;
+				this.loserScore = this.scoreRight;
+				this.loserId = this.playerRightId;
+			} else if (this.scoreRight === this.maxScore) {
+				this.winnerScore = this.scoreRight;
+				this.winnerId = this.playerRightId;
+				this.loserScore = this.scoreLeft;
+				this.loserId = this.playerLeftId;
+			}
 		}
 	}
 
