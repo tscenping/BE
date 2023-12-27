@@ -40,10 +40,13 @@ export class UsersRepository extends Repository<User> {
 		}
 
 		// redis에서 ladderRank 조회하기
-		const ladderRank = await this.redis.zrevrank(
+		let ladderRank = await this.redis.zrevrank(
 			'rankings',
 			userId.toString(),
 		);
+		if (ladderRank !== null) {
+			ladderRank += 1;
+		}
 
 		return {
 			...myProfile,
@@ -75,10 +78,14 @@ export class UsersRepository extends Repository<User> {
 			);
 		}
 
-		const ladderRank = await this.redis.zrevrank(
+		let ladderRank = await this.redis.zrevrank(
 			'rankings',
 			userProfile.id.toString(),
 		);
+
+		if (ladderRank !== null) {
+			ladderRank += 1;
+		}
 
 		return {
 			...userProfile,
