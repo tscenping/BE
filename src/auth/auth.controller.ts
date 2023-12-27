@@ -158,10 +158,6 @@ export class AuthController {
 			isMfaEnabled: false,
 			mfaUrl: undefined,
 		};
-		Logger.log(
-			`updateRanking(ladderScore, id): ${user.ladderScore}, ${user.id}`,
-		);
-		await this.AppService.updateRanking(user.ladderScore, user.id); // TODO: 필요한 부분인가?
 
 		return res.send(userSigninResponseDto);
 	}
