@@ -19,6 +19,7 @@ import {
 	EVENT_GAME_INVITATION_REPLY,
 	EVENT_GAME_MATCHED,
 	EVENT_GAME_START,
+	EVENT_MATCH_END,
 	EVENT_MATCH_SCORE,
 	EVENT_MATCH_STATUS,
 	EVENT_SERVER_GAME_READY,
@@ -685,8 +686,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	) {
 		const leftMatchEndParamDtos: EmitEventMatchEndParamDto = {
 			gameType: gameDto.gameType,
-			rivalName: right.nickname,
-			rivalAvatar: right.avatar,
 			rivalScore: gameDto.scoreRight,
 			myScore: gameDto.scoreLeft,
 			isWin: gameDto.scoreLeft > gameDto.scoreRight,
@@ -697,8 +696,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		};
 		const rightMatchEndParamDtos: EmitEventMatchEndParamDto = {
 			gameType: gameDto.gameType,
-			rivalName: left.nickname,
-			rivalAvatar: left.avatar,
 			rivalScore: gameDto.scoreLeft,
 			myScore: gameDto.scoreRight,
 			isWin: gameDto.scoreRight > gameDto.scoreLeft,
@@ -714,7 +711,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			);
 			this.server
 				.to(playerSockets.left.id)
-				.emit(EVENT_MATCH_SCORE, leftMatchEndParamDtos);
+				.emit(EVENT_MATCH_END, leftMatchEndParamDtos);
 		}
 		if (playerSockets.right) {
 			console.log(
@@ -722,7 +719,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			);
 			this.server
 				.to(playerSockets.right.id)
-				.emit(EVENT_MATCH_SCORE, rightMatchEndParamDtos);
+				.emit(EVENT_MATCH_END, rightMatchEndParamDtos);
 		}
 	}
 
