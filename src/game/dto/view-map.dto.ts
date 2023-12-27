@@ -68,14 +68,14 @@ export class ViewMapDto {
 		readonly racketHeight = canvasHeight * 0.25,
 		readonly racketLeftX = 10,
 		readonly racketRightX = canvasWidth - racketWidth - 10,
-		readonly racketSpeed = 10,
+		readonly racketSpeed = 20,
 
 		readonly deltaTime = 1 / 60,
 	) {
 		this.updateDto = new UpdateDto();
-		if (ballSpeed == 1) this.ballSpeed = 240;
-		else if (ballSpeed == 2) this.ballSpeed = 360;
-		else this.ballSpeed = 480;
+		if (ballSpeed == 1) this.ballSpeed = 300;
+		else if (ballSpeed == 2) this.ballSpeed = 400;
+		else this.ballSpeed = 500;
 
 		this.ball = {
 			x: canvasWidth / 2,
@@ -86,7 +86,7 @@ export class ViewMapDto {
 				this.ballSpeed * ((Math.random() < 0.5 ? 0 : 1) === 0 ? 1 : -1),
 			yVelocity:
 				this.ballSpeed * ((Math.random() < 0.5 ? 0 : 1) === 0 ? 1 : -1),
-			accel: 170,
+			accel: 200,
 		};
 
 		this.racketLeft = {
