@@ -20,7 +20,7 @@ export default registerAs('typeorm', () => {
 				: process.env.POSTGRES_DB,
 		);
 	const ENTITIES = [__dirname + '/../**/entities/*.entity.{js,ts}'];
-	const SYNCHRONIZE = false;
+	const SYNCHRONIZE = true;
 
 	return {
 		type: TYPE,
