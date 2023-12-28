@@ -76,7 +76,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		else if (user.gameSocketId) {
 			console.log('game socket 갈아끼운다 ~?!');
 			const socket = this.userIdToClient.get(user.id);
-			if (socket) socket?.disconnect();
+			if (socket) socket.disconnect();
 			else {
 				await this.usersRepository.update(user.id, {
 					gameSocketId: null,
@@ -85,7 +85,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			}
 		}
 
-		console.log(`${user.id} is connected to game socket {${client.id}}`);
+		console.log(
+			`${user.id}, ${user.nickname} is connected to game socket {${client.id}}`,
+		);
 
 		// 연결된 게임소켓 id를 저장한다.
 		await this.usersRepository.update(user.id, {
@@ -95,10 +97,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	}
 
 	async handleDisconnect(@ConnectedSocket() client: Socket) {
+		// 끊기고 실행되는 로직. .
 		const user = await this.authService.getUserFromSocket(client);
 		if (!user || client.id !== user.gameSocketId) return;
 
-		console.log(`${user.id} is disconnected to game socket {${client.id}}`);
+		console.log(
+			`${user.id}, ${user.nickname} is disconnected to game socket {${client.id}}`,
+		);
 
 		await this.usersRepository.update(user.id, {
 			gameSocketId: null,
@@ -109,38 +114,78 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		if (gameId) {
 			const gameDto = this.gameIdToGameDto.get(gameId);
 			if (gameDto) {
-				if (gameDto.gameStatus === GameStatus.WAITING) {
-					gameDto.gameType = GameType.NONE;
-					await this.gameEnd(gameDto);
+				if (
+					gameDto.gameStatus === GameStatus.PLAYING &&
+					!gameDto.interrupted
+				) {
+					gameDto.interrupted = true;
+					gameDto.loserId = user.id;
+				} else if (gameDto.gameStatus === GameStatus.WAITING) {
+					await gameDto.setNone();
+					const playerSockets = await this.getPlayerSockets(gameDto);
+					/* game update */
+					const updateGameResultParamDto: UpdateGameResultParamDto = {
+						winnerId: gameDto.winnerId as number,
+						loserId: gameDto.loserId as number,
+						winnerScore: gameDto.winnerScore,
+						loserScore: gameDto.loserScore,
+						gameType: gameDto.gameType,
+						gameStatus: GameStatus.FINISHED,
+					};
+
+					await this.gameRepository.update(
+						gameDto.getGameId(),
+						updateGameResultParamDto,
+					);
+
+					const left = await this.usersRepository.findOne({
+						where: { id: gameDto.playerLeftId },
+					});
+					const right = await this.usersRepository.findOne({
+						where: { id: gameDto.playerRightId },
+					});
+					if (!left || !right) {
+						return this.sendErrorAll(
+							playerSockets,
+							400,
+							`player 의 데이터를 찾지 못했습니다`,
+						);
+					}
+					/* emit */
+					this.sendMatchEnd(playerSockets, gameDto, left, right);
+					/* game 지우기 */
 					await this.gameRepository.softDelete(gameDto.getGameId());
-				} else if (gameDto.gameStatus === GameStatus.PLAYING) {
-					if (!gameDto.gameInterrupted) {
-						gameDto.gameInterrupted = true;
-						gameDto.loserId = user.id;
-						this.userIdToGameId.delete(user.id);
-					}
-					await this.gameEnd(gameDto);
-				} else {
-					this.gameIdToGameDto.delete(gameId);
-					// 상대도 disconnect 하고 socket 매핑도 지워주기
-					if (user.id === gameDto.playerLeftId) {
-						const socket = this.userIdToClient.get(
-							gameDto.playerRightId,
+					/* disconnect */
+					// gameDto 유저들 지워주기
+					this.userIdToGameId.delete(gameDto.playerLeftId);
+					console.log(
+						`${gameDto.playerLeftId} 를 userId-gameId 맵에서 지웁니다 ?!!`,
+					);
+					this.userIdToGameId.delete(gameDto.playerRightId);
+					console.log(
+						`${gameDto.playerRightId} 를 userId-gameId 맵에서 지웁니다 ?!!`,
+					);
+					/* gameDto 지워주기 */
+					this.gameIdToGameDto.delete(gameDto.getGameId());
+					console.log(
+						`${gameDto.getGameId()} 를 gameId-gameDto 맵에서 지웁니다 ?!!`,
+					);
+
+					if (playerSockets.left) {
+						console.log(
+							`${playerSockets.left} 를 gameId-gameDto 맵에서 지웁니다 ?!!`,
 						);
-						socket?.disconnect();
-						this.userIdToGameId.delete(gameDto.playerRightId);
-						this.userIdToClient.delete(gameDto.playerRightId);
-					} else {
-						const socket = this.userIdToClient.get(
-							gameDto.playerLeftId,
+						playerSockets.left.disconnect();
+					} else console.log(`playerSockets.left가 없음`);
+					playerSockets.right?.disconnect();
+					if (playerSockets.right) {
+						console.log(
+							`${playerSockets.right} 를 gameId-gameDto 맵에서 지웁니다 ?!!`,
 						);
-						socket?.disconnect();
-						this.userIdToGameId.delete(gameDto.playerLeftId);
-						this.userIdToClient.delete(gameDto.playerLeftId);
-					}
+						playerSockets.right.disconnect();
+					} else console.log(`playerSockets.right가 없음`);
 				}
 			}
-			this.userIdToGameId.delete(user.id);
 		}
 		this.userIdToClient.delete(user.id);
 		this.sendError(client, 200, `${client.id} 가 정상적으로 나간다 !`);
@@ -266,19 +311,18 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		if (!gameDto) {
 			return this.sendError(client, 400, `유효하지 않은 게임입니다`);
 		}
+		const playerSockets = await this.getPlayerSockets(gameDto);
+		if (!playerSockets.left || !playerSockets.right) {
+			return this.sendError(
+				client,
+				400,
+				`두 플레이어의 게임 소켓이 모두 필요합니다. 게임 불가`,
+			);
+		}
 
 		gameDto.readyCnt++;
 		console.log(`ready count: ${gameDto.readyCnt}`);
 		if (gameDto.bothReady()) {
-			// 유효성 검사
-			const playerSockets = this.getPlayerSockets(gameDto);
-			if (!playerSockets.left || !playerSockets.right) {
-				return this.sendError(
-					client,
-					400,
-					`두 플레이어의 게임 소켓이 모두 필요합니다. 게임 불가`,
-				);
-			}
 			console.log(`It's ready!`);
 			gameDto.gameStatus = GameStatus.PLAYING;
 
@@ -293,7 +337,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		} else return;
 
 		// TODO: game restart 될 때도 3초 지연 ? how
-		this.gameLoop(gameDto);
+		await this.gameLoop(gameDto);
 	}
 
 	// 테스트에만 쓰임
@@ -318,16 +362,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		await gameDto.testSetScore(data.scoreLeft, data.scoreRight);
 	}
 
-	gameLoop(gameDto: GameDto) {
+	async gameLoop(gameDto: GameDto) {
 		console.log('Game Loop started!');
-		let playerSockets = this.getPlayerSockets(gameDto);
-		if (!playerSockets.left || !playerSockets.right) {
-			return this.sendErrorAll(
-				playerSockets,
-				400,
-				`두 플레이어의 게임 소켓이 모두 필요합니다. 게임 불가`,
-			);
-		}
+		let playerSockets = await this.getPlayerSockets(gameDto);
+		// if (!playerSockets.left || !playerSockets.right) {
+		// 	return this.sendErrorAll(
+		// 		playerSockets,
+		// 		400,
+		// 		`두 플레이어의 게임 소켓이 모두 필요합니다. 게임 불가`,
+		// 	);
+		// }
 
 		let cnt = 0;
 		const intervalId: NodeJS.Timeout = setInterval(async () => {
@@ -365,8 +409,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 					clearInterval(intervalId);
 					await this.gameEnd(gameDto);
 					return;
-				} else if (!gameDto.gameInterrupted) {
-					playerSockets = this.getPlayerSockets(gameDto);
+				} else if (!gameDto.interrupted) {
+					playerSockets = await this.getPlayerSockets(gameDto);
 					if (playerSockets.left && playerSockets.right) {
 						// await this.delay(1000 * 3); // 안먹어요
 						await gameDto.restart();
@@ -376,30 +420,91 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			}
 
 			// check interrupted by disconnected user
-			if (gameDto.gameInterrupted) {
+			if (gameDto.interrupted) {
 				console.log('으악 게임이 강제로 중단됐다');
 				clearInterval(intervalId);
-				playerSockets = this.getPlayerSockets(gameDto);
-				return this.sendErrorAll(
-					playerSockets,
-					400,
-					`비정상 종료된 게임입니다`,
-				);
+				await this.gameInterrupted(gameDto);
 			}
 		}, 1000 / 60);
 	}
 
-	async gameEnd(gameDto: GameDto) {
-		const game = await this.gameRepository.findOne({
-			where: { id: gameDto.getGameId() },
-		});
-		if (!game) {
-			console.log('game이 이미 없는데');
-		}
-		console.log(`game type: ${game?.gameType}`);
-		const playerSockets = this.getPlayerSockets(gameDto);
+	async gameInterrupted(gameDto: GameDto) {
+		const playerSockets = await this.getPlayerSockets(gameDto);
 
-		await gameDto.setResult();
+		await gameDto.setGameInterrupted();
+
+		if (gameDto.interrupted) {
+			/* game update */
+			const updateGameResultParamDto: UpdateGameResultParamDto = {
+				winnerId: gameDto.winnerId as number,
+				loserId: gameDto.loserId as number,
+				winnerScore: gameDto.winnerScore,
+				loserScore: gameDto.loserScore,
+				gameType: gameDto.gameType,
+				gameStatus: GameStatus.FINISHED,
+			};
+
+			await this.gameRepository.update(
+				gameDto.getGameId(),
+				updateGameResultParamDto,
+			);
+			/* user update */
+			const left = await this.usersRepository.findOne({
+				where: { id: gameDto.playerLeftId },
+			});
+			const right = await this.usersRepository.findOne({
+				where: { id: gameDto.playerRightId },
+			});
+			if (!left || !right) {
+				return this.sendErrorAll(
+					playerSockets,
+					400,
+					`player 의 데이터를 찾지 못했습니다`,
+				);
+			}
+			if (gameDto.gameType === GameType.LADDER) {
+				const winner = gameDto.winnerId === left.id ? left : right;
+				const loser = gameDto.loserId === left.id ? left : right;
+				await this.updateLadderData(winner, loser);
+			}
+			/* emit */
+			this.sendMatchEnd(playerSockets, gameDto, left, right);
+			/* disconnect */
+			// gameDto 유저들 지워주기
+			this.userIdToGameId.delete(gameDto.playerLeftId);
+			console.log(
+				`${gameDto.playerLeftId} 를 userId-gameId 맵에서 지웁니다 ?!!`,
+			);
+			this.userIdToGameId.delete(gameDto.playerRightId);
+			console.log(
+				`${gameDto.playerRightId} 를 userId-gameId 맵에서 지웁니다 ?!!`,
+			);
+			// gameDto 지워주기
+			this.gameIdToGameDto.delete(gameDto.getGameId());
+			console.log(
+				`${gameDto.getGameId()} 를 gameId-gameDto 맵에서 지웁니다 ?!!`,
+			);
+
+			if (playerSockets.left) {
+				console.log(
+					`${playerSockets.left} 를 gameId-gameDto 맵에서 지웁니다 ?!!`,
+				);
+				playerSockets.left.disconnect();
+			} else console.log(`playerSockets.left가 없음`);
+			playerSockets.right?.disconnect();
+			if (playerSockets.right) {
+				console.log(
+					`${playerSockets.right} 를 gameId-gameDto 맵에서 지웁니다 ?!!`,
+				);
+				playerSockets.right.disconnect();
+			} else console.log(`playerSockets.right가 없음`);
+		}
+	}
+
+	async gameEnd(gameDto: GameDto) {
+		const playerSockets = await this.getPlayerSockets(gameDto);
+
+		await gameDto.setGameOver();
 
 		// game DB 업데이트
 		const updateGameResultParamDto: UpdateGameResultParamDto = {
@@ -441,12 +546,31 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 		// gameDto 유저들 지워주기
 		this.userIdToGameId.delete(gameDto.playerLeftId);
+		console.log(
+			`${gameDto.playerLeftId} 를 userId-gameId 맵에서 지웁니다 ?!!`,
+		);
 		this.userIdToGameId.delete(gameDto.playerRightId);
+		console.log(
+			`${gameDto.playerRightId} 를 userId-gameId 맵에서 지웁니다 ?!!`,
+		);
 		// gameDto 지워주기
 		this.gameIdToGameDto.delete(gameDto.getGameId());
+		console.log(
+			`${gameDto.getGameId()} 를 gameId-gameDto 맵에서 지웁니다 ?!!`,
+		);
 
 		playerSockets.left?.disconnect();
+		if (playerSockets.left)
+			console.log(
+				`${playerSockets.left} 를 gameId-gameDto 맵에서 지웁니다 ?!!`,
+			);
+		else console.log(`playerSockets.left가 없음`);
 		playerSockets.right?.disconnect();
+		if (playerSockets.right)
+			console.log(
+				`${playerSockets.right} 를 gameId-gameDto 맵에서 지웁니다 ?!!`,
+			);
+		else console.log(`playerSockets.right가 없음`);
 	}
 
 	private async updateLadderData(winner: User, loser: User) {
@@ -496,7 +620,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		return 1.0 / (1.0 + Math.pow(10, (rating1 - rating2) / 400));
 	}
 
-	private getPlayerSockets(gameDto: GameDto) {
+	private async getPlayerSockets(gameDto: GameDto) {
 		const sockets = {
 			left: null as Socket | null,
 			right: null as Socket | null,
@@ -505,10 +629,23 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		const playerRightId = gameDto.playerRightId;
 
 		const playerLeftSocket = this.userIdToClient.get(playerLeftId);
+		if (
+			playerLeftSocket &&
+			(await this.isSocketConnected(playerLeftSocket))
+		) {
+			sockets.left = playerLeftSocket;
+		} else {
+			sockets.left = null;
+		}
 		const playerRightSocket = this.userIdToClient.get(playerRightId);
-
-		sockets.left = playerLeftSocket ? playerLeftSocket : null;
-		sockets.right = playerRightSocket ? playerRightSocket : null;
+		if (
+			playerRightSocket &&
+			(await this.isSocketConnected(playerRightSocket))
+		) {
+			sockets.right = playerRightSocket;
+		} else {
+			sockets.right = null;
+		}
 
 		return sockets;
 	}
@@ -532,7 +669,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		if (!gameDto) {
 			return null;
 		} else {
-			if (gameDto.gameInterrupted) return null;
+			if (gameDto.interrupted) return null;
 		}
 
 		return gameDto;
@@ -740,22 +877,22 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		};
 
 		if (playerSockets.left) {
-			console.log(
-				`${playerSockets.left.id}에 matchEnd 이벤트 보낸다 !!!`,
-			);
-			console.log(`내용은: ${JSON.stringify(leftMatchEndParamDtos)}`);
 			this.server
 				.to(playerSockets.left.id)
 				.emit(EVENT_MATCH_END, leftMatchEndParamDtos);
+			console.log(
+				`${playerSockets.left.id}에 matchEnd 이벤트 보냈다 !!!`,
+			);
+			console.log(`내용은: ${JSON.stringify(leftMatchEndParamDtos)}`);
 		}
 		if (playerSockets.right) {
-			console.log(
-				`${playerSockets.right.id}에 matchEnd 이벤트 보낸다 !!!`,
-			);
-			console.log(`내용은: ${JSON.stringify(rightMatchEndParamDtos)}`);
 			this.server
 				.to(playerSockets.right.id)
 				.emit(EVENT_MATCH_END, rightMatchEndParamDtos);
+			console.log(
+				`${playerSockets.right.id}에 matchEnd 이벤트 보냈다 !!!`,
+			);
+			console.log(`내용은: ${JSON.stringify(rightMatchEndParamDtos)}`);
 		}
 	}
 
@@ -764,7 +901,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			statusCode: statusCode,
 			message: message,
 		});
-		console.log(`${client.id}가 ${message} 이유로 di로sconnect 된다`);
+		console.log(`${client.id}가 ${message} 이유로 disconnect 된다`);
 		client.disconnect();
 	}
 
@@ -792,7 +929,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 				message: message,
 			});
 			console.log(
-				`${clients.right.id}가 error message: [${message}] 로 disconnect 된다`,
+				`${clients.right.id}가 가 ${message} 이유로 disconnect 된다`,
 			);
 			clients.right.disconnect();
 		}

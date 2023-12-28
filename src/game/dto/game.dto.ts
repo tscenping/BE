@@ -16,7 +16,7 @@ export class GameDto {
 	gameStatus: GameStatus;
 	viewMap: ViewMapDto;
 	readyCnt: number;
-	gameInterrupted: boolean;
+	interrupted: boolean;
 
 	constructor(game: Game, readonly maxScore = 7) {
 		this.setGameId(game.id);
@@ -32,7 +32,7 @@ export class GameDto {
 		this.gameStatus = game.gameStatus;
 		this.viewMap = new ViewMapDto(game.ballSpeed, game.racketSize);
 		this.readyCnt = 0;
-		this.gameInterrupted = false;
+		this.interrupted = false;
 	}
 
 	getGameId() {
@@ -58,15 +58,22 @@ export class GameDto {
 		await this.viewMap.initObjects();
 	}
 
-	async setResult() {
-		if (this.gameType === GameType.NONE) {
-			this.scoreLeft = this.scoreRight = 0;
+	async setGameOver() {
+		if (this.scoreLeft === this.maxScore) {
+			this.winnerScore = this.scoreLeft;
 			this.winnerId = this.playerLeftId;
-			this.winnerScore = this.loserScore = 0;
+			this.loserScore = this.scoreRight;
 			this.loserId = this.playerRightId;
-			this.loserScore = 0;
-			return;
+		} else if (this.scoreRight === this.maxScore) {
+			this.winnerScore = this.scoreRight;
+			this.winnerId = this.playerRightId;
+			this.loserScore = this.scoreLeft;
+			this.loserId = this.playerLeftId;
 		}
+	}
+
+	async setGameInterrupted() {
+		// 게임 중에 비정상 종료돼서 몰수패 처리
 		if (this.loserId) {
 			const isLoserLeft = this.loserId === this.playerLeftId;
 			if (isLoserLeft) {
@@ -78,19 +85,18 @@ export class GameDto {
 				this.scoreLeft = this.winnerScore = this.maxScore;
 				this.winnerId = this.playerLeftId;
 			}
-		} else {
-			if (this.scoreLeft === this.maxScore) {
-				this.winnerScore = this.scoreLeft;
-				this.winnerId = this.playerLeftId;
-				this.loserScore = this.scoreRight;
-				this.loserId = this.playerRightId;
-			} else if (this.scoreRight === this.maxScore) {
-				this.winnerScore = this.scoreRight;
-				this.winnerId = this.playerRightId;
-				this.loserScore = this.scoreLeft;
-				this.loserId = this.playerLeftId;
-			}
 		}
+	}
+
+	async setNone() {
+		// 게임 시작 전 비정상 종료돼서 게임 자체를 무효 처리
+		this.scoreLeft = this.scoreRight = 0;
+		this.winnerId = this.playerLeftId;
+		this.winnerScore = this.loserScore = 0;
+		this.loserId = this.playerRightId;
+		this.loserScore = 0;
+		this.gameType = GameType.NONE;
+		this.gameStatus = GameStatus.FINISHED;
 	}
 
 	private setGameId(gameId: number) {
