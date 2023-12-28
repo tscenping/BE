@@ -73,7 +73,17 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	async handleConnection(@ConnectedSocket() client: Socket) {
 		const user = await this.authService.getUserFromSocket(client);
 		if (!user || !client.id) return client.disconnect();
-		else if (user.gameSocketId) client.disconnect();
+		else if (user.gameSocketId) {
+			console.log('game socket 갈아끼운다 ~?!');
+			const socket = this.userIdToClient.get(user.id);
+			if (socket) socket?.disconnect();
+			else {
+				await this.usersRepository.update(user.id, {
+					gameSocketId: null,
+					status: UserStatus.ONLINE,
+				});
+			}
+		}
 
 		console.log(`${user.id} is connected to game socket {${client.id}}`);
 
@@ -112,11 +122,28 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 					await this.gameEnd(gameDto);
 				} else {
 					this.gameIdToGameDto.delete(gameId);
-					this.userIdToGameId.delete(user.id);
+					// 상대도 disconnect 하고 socket 매핑도 지워주기
+					if (user.id === gameDto.playerLeftId) {
+						const socket = this.userIdToClient.get(
+							gameDto.playerRightId,
+						);
+						socket?.disconnect();
+						this.userIdToGameId.delete(gameDto.playerRightId);
+						this.userIdToClient.delete(gameDto.playerRightId);
+					} else {
+						const socket = this.userIdToClient.get(
+							gameDto.playerLeftId,
+						);
+						socket?.disconnect();
+						this.userIdToGameId.delete(gameDto.playerLeftId);
+						this.userIdToClient.delete(gameDto.playerLeftId);
+					}
 				}
 			}
+			this.userIdToGameId.delete(user.id);
 		}
 		this.userIdToClient.delete(user.id);
+		this.sendError(client, 200, `${client.id} 가 정상적으로 나간다 !`);
 	}
 
 	@SubscribeMessage('gameRequest')
@@ -140,11 +167,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			where: { id: data.gameId },
 		});
 		if (!game) {
-			console.log(`해당 game이 없어서 disconnect 된다`);
+			console.log(`해당 game ${data.gameId} 이 없어서 disconnect 된다`);
 			return client.disconnect();
 		}
 		if (game.gameStatus !== GameStatus.WAITING) {
-			console.log(`해당 game이 WAITING 상태가 아니어서 disconnect 된다`);
+			console.log(
+				`해당 game ${data.gameId} 이 WAITING 상태가 아니어서 disconnect 된다`,
+			);
 			return client.disconnect();
 		}
 
@@ -415,6 +444,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		this.userIdToGameId.delete(gameDto.playerRightId);
 		// gameDto 지워주기
 		this.gameIdToGameDto.delete(gameDto.getGameId());
+
+		playerSockets.left?.disconnect();
+		playerSockets.right?.disconnect();
 	}
 
 	private async updateLadderData(winner: User, loser: User) {
