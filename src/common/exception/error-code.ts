@@ -13,12 +13,12 @@ class ErrorCodeValueObject {
 export type ErrorCode = ErrorCodeValueObject;
 
 export const DB_UPDATE_FAILURE = new ErrorCodeValueObject(
-	HttpStatus.I_AM_A_TEAPOT,
+	HttpStatus.INTERNAL_SERVER_ERROR,
 	'DataBase task could not be done',
 );
 
 export const DB_QUERY_ERROR = new ErrorCodeValueObject(
-	HttpStatus.I_AM_A_TEAPOT,
+	HttpStatus.INTERNAL_SERVER_ERROR,
 	'Query task could not be done',
 );
 
@@ -30,4 +30,9 @@ export const WS_UNAUTHORIZED_ERROR = new ErrorCodeValueObject(
 export const WS_BAD_REQUEST_ERROR = new ErrorCodeValueObject(
 	HttpStatus.BAD_REQUEST,
 	'WebSocket: bad request',
+);
+
+export const WS_DB_UPDATE_FAILURE = new ErrorCodeValueObject(
+	HttpStatus.INTERNAL_SERVER_ERROR,
+	'WebSocket: DataBase task could not be done',
 );
