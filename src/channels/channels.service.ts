@@ -109,8 +109,6 @@ export class ChannelsService {
 				channel.id,
 			);
 
-		await this.redis.set(`userCount:${channel.id}`, userCount.toString()); // TODO: 필요 없을 것 같다.
-
 		const createChannelResponseDto = {
 			channelId: channel.id,
 			channelUsers: channelUserInfoList,
