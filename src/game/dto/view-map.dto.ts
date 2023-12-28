@@ -181,19 +181,19 @@ export class ViewMapDto {
 		for (let i = 0; i < Math.floor(piece); i++) {
 			ball.x += xChange * (ball.xVelocity > 0 ? 1 : -1);
 			ball.y += yChange * (ball.yVelocity > 0 ? 1 : -1);
-			console.log(`\nbefore piece ball.x: ${ball.x}`);
-			console.log(`before piece xVelocity: ${ball.xVelocity}`);
+			// console.log(`\nbefore piece ball.x: ${ball.x}`);
+			// console.log(`before piece xVelocity: ${ball.xVelocity}`);
 			await this.detectCollision();
-			console.log(`after piece ball.x: ${ball.x}`);
-			console.log(`after piece xVelocity: ${ball.xVelocity}`);
+			// console.log(`after piece ball.x: ${ball.x}`);
+			// console.log(`after piece xVelocity: ${ball.xVelocity}`);
 		}
 		ball.x += xRemain * (ball.xVelocity > 0 ? 1 : -1);
 		ball.y += yRemain * (ball.yVelocity > 0 ? 1 : -1);
-		console.log(`before remain ball.x: ${ball.x}`);
-		console.log(`before remain xVelocity: ${ball.xVelocity}`);
+		// console.log(`before remain ball.x: ${ball.x}`);
+		// console.log(`before remain xVelocity: ${ball.xVelocity}`);
 		await this.detectCollision();
-		console.log(`after remain ball.x: ${ball.x}`);
-		console.log(`after remain xVelocity: ${ball.xVelocity}`);
+		// console.log(`after remain ball.x: ${ball.x}`);
+		// console.log(`after remain xVelocity: ${ball.xVelocity}`);
 
 		//score
 		if (ball.x + this.ballRadius >= this.canvasWidth)
