@@ -1,6 +1,6 @@
-FROM --platform=linux/arm64 node:latest AS node-arm64-build
+FROM node:latest
 
-FROM node-arm64-build
+RUN apt-get update && apt-get install -y libnss3-tools
 
 COPY ./entry.sh /tmp/entry.sh
 RUN chmod +x /tmp/entry.sh
