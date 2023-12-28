@@ -41,7 +41,7 @@ export class FriendsService {
 			fromUserId,
 			toUserId,
 		});
-		this.logger.log('friend: ', friend);
+		// this.logger.log('friend: ', friend);
 		await this.friendsRepository.save(friend);
 	}
 
@@ -73,7 +73,6 @@ export class FriendsService {
 				`Failed to delete friend with ${toUserId}`,
 			);
 		}
-		this.logger.log('result: ', result);
 	}
 
 	/**
@@ -99,7 +98,7 @@ export class FriendsService {
 			},
 		});
 
-		this.logger.log('friends: ', friends);
+		// this.logger.log('friends: ', friends);
 		this.logger.log('totalItemCount: ', totalItemCount);
 
 		return { friends, totalItemCount };
