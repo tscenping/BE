@@ -173,19 +173,21 @@ export class ViewMapDto {
 		await this.calculateNextBallLocation();
 
 		const xChange = this.ballRadius;
-		const piece = ball.vx / xChange;
-		const xRemain = ball.vx % xChange;
-		const yChange = xChange * (ball.vy / ball.vx);
-		const yRemain = ball.vy % yChange;
+		const piece = Math.abs(ball.vx / xChange);
+		const xRemain = Math.abs(ball.vx % xChange);
+		const yChange = Math.abs(xChange * (ball.vy / ball.vx));
+		const yRemain = Math.abs(ball.vy % yChange);
 
-		for (let i = 0; i < piece; i++) {
+		console.log(`piece: ${piece}`);
+		for (let i = 0; i < Math.floor(piece); i++) {
 			ball.x += xChange * (ball.xVelocity > 0 ? 1 : -1);
 			ball.y += yChange * (ball.yVelocity > 0 ? 1 : -1);
-			this.detectCollision();
+			await this.detectCollision();
 		}
 		ball.x += xRemain * (ball.xVelocity > 0 ? 1 : -1);
 		ball.y += yRemain * (ball.yVelocity > 0 ? 1 : -1);
-		this.detectCollision();
+		console.log(`yVelocity: ${ball.yVelocity}`);
+		await this.detectCollision();
 
 		//score
 		if (ball.x + this.ballRadius >= this.canvasWidth)
@@ -264,6 +266,7 @@ export class ViewMapDto {
 			}
 		}
 
+		console.log(`this ball.y: ${ball.y}`);
 		// 바닥, 천장
 		if (
 			ball.y + this.ballRadius >= this.canvasHeight ||
