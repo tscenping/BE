@@ -8,7 +8,7 @@ export class AppService {
 
 	// push data to redis using zadd
 	async updateRanking(score: number, id: number) {
-		Logger.log(`Redis updateRanking: ${score}, ${id}`)
+		// Logger.log(`Redis updateRanking: ${score}, ${id}`);
 		await this.redis.zadd('rankings', score, id);
 	}
 }

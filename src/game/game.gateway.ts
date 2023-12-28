@@ -883,7 +883,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			console.log(
 				`${playerSockets.left.id}에 matchEnd 이벤트 보냈다 !!!`,
 			);
-			console.log(`내용은: ${JSON.stringify(leftMatchEndParamDtos)}`);
 		}
 		if (playerSockets.right) {
 			this.server
@@ -892,7 +891,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			console.log(
 				`${playerSockets.right.id}에 matchEnd 이벤트 보냈다 !!!`,
 			);
-			console.log(`내용은: ${JSON.stringify(rightMatchEndParamDtos)}`);
 		}
 	}
 
