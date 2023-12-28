@@ -60,19 +60,24 @@ export class GameDto {
 
 	async setResult() {
 		if (this.gameType === GameType.NONE) {
+			this.scoreLeft = this.scoreRight = 0;
 			this.winnerId = this.playerLeftId;
-			this.winnerScore = 0;
+			this.winnerScore = this.loserScore = 0;
 			this.loserId = this.playerRightId;
 			this.loserScore = 0;
 			return;
 		}
 		if (this.loserId) {
-			this.loserScore = 0;
-			this.winnerScore = this.maxScore;
-			this.winnerId =
-				this.loserId === this.playerLeftId
-					? this.playerRightId
-					: this.playerLeftId;
+			const isLoserLeft = this.loserId === this.playerLeftId;
+			if (isLoserLeft) {
+				this.scoreLeft = this.loserScore = 0;
+				this.scoreRight = this.winnerScore = this.maxScore;
+				this.winnerId = this.playerRightId;
+			} else {
+				this.scoreRight = this.loserScore = 0;
+				this.scoreLeft = this.winnerScore = this.maxScore;
+				this.winnerId = this.playerLeftId;
+			}
 		} else {
 			if (this.scoreLeft === this.maxScore) {
 				this.winnerScore = this.scoreLeft;

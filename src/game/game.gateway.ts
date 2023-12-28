@@ -716,6 +716,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	) {
 		const leftMatchEndParamDtos: EmitEventMatchEndParamDto = {
 			gameType: gameDto.gameType,
+			rivalName: right.nickname,
+			rivalAvatar: right.avatar,
 			rivalScore: gameDto.scoreRight,
 			myScore: gameDto.scoreLeft,
 			isWin: gameDto.scoreLeft > gameDto.scoreRight,
@@ -726,6 +728,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		};
 		const rightMatchEndParamDtos: EmitEventMatchEndParamDto = {
 			gameType: gameDto.gameType,
+			rivalName: left.nickname,
+			rivalAvatar: left.avatar,
 			rivalScore: gameDto.scoreLeft,
 			myScore: gameDto.scoreRight,
 			isWin: gameDto.scoreRight > gameDto.scoreLeft,
@@ -739,6 +743,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			console.log(
 				`${playerSockets.left.id}에 matchEnd 이벤트 보낸다 !!!`,
 			);
+			console.log(`내용은: ${JSON.stringify(leftMatchEndParamDtos)}`);
 			this.server
 				.to(playerSockets.left.id)
 				.emit(EVENT_MATCH_END, leftMatchEndParamDtos);
@@ -747,6 +752,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			console.log(
 				`${playerSockets.right.id}에 matchEnd 이벤트 보낸다 !!!`,
 			);
+			console.log(`내용은: ${JSON.stringify(rightMatchEndParamDtos)}`);
 			this.server
 				.to(playerSockets.right.id)
 				.emit(EVENT_MATCH_END, rightMatchEndParamDtos);
