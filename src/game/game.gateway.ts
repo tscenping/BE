@@ -8,6 +8,7 @@ import {
 	WebSocketServer,
 } from '@nestjs/websockets';
 import { UsersRepository } from '../users/users.repository';
+import { FriendsRepository } from '../users/friends.repository';
 import { Server, Socket } from 'socket.io';
 import { AuthService } from '../auth/auth.service';
 import { UseFilters, UsePipes, ValidationPipe } from '@nestjs/common';
@@ -23,6 +24,7 @@ import {
 	EVENT_MATCH_SCORE,
 	EVENT_MATCH_STATUS,
 	EVENT_SERVER_GAME_READY,
+	EVENT_USER_STATUS,
 } from '../common/events';
 import { ChannelsGateway } from '../channels/channels.gateway';
 import { EmitEventInvitationReplyDto } from './dto/emit-event-invitation-reply.dto';
@@ -58,6 +60,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	constructor(
 		private readonly authService: AuthService,
 		private readonly usersRepository: UsersRepository,
+		private readonly friendsRepository: FriendsRepository,
 		private readonly gameRepository: GameRepository,
 		private readonly channelsGateway: ChannelsGateway,
 		@InjectRedis() private readonly redis: Redis,
@@ -76,8 +79,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		else if (user.gameSocketId) {
 			console.log('game socket 갈아끼운다 ~?!');
 			const socket = this.userIdToClient.get(user.id);
-			if (socket) socket.disconnect();
-			else {
+			if (socket) {
+				const result = await this.isSocketConnected(socket);
+				if (result) socket.disconnect();
+				else this.userIdToClient.delete(user.id);
+			} else {
 				await this.usersRepository.update(user.id, {
 					gameSocketId: null,
 					status: UserStatus.ONLINE,
@@ -188,7 +194,22 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			}
 		}
 		this.userIdToClient.delete(user.id);
-		this.sendError(client, 200, `${client.id} 가 정상적으로 나간다 !`);
+
+		const friendChannelSocketIdList =
+			await this.friendsRepository.findAllFriendChannelSocketIdByUserId(
+				user.id,
+			);
+
+		const eventUserStatusEmitDto = {
+			userId: user.id,
+			status: UserStatus.ONLINE,
+		};
+
+		for (const friendChannelSocketId of friendChannelSocketIdList) {
+			this.channelsGateway.server
+				.to(friendChannelSocketId.channelSocketId)
+				.emit(EVENT_USER_STATUS, eventUserStatusEmitDto);
+		}
 	}
 
 	@SubscribeMessage('gameRequest')
@@ -232,10 +253,26 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 		console.log(`game id ${game.id} 이 성공적으로 준비되었습니다`);
 
-		// 4. INGAME으로 상태 바꾸기
+		// 4. INGAME으로 상태 바꾸고 친구들한테 보내기
 		await this.usersRepository.update(user.id, {
 			status: UserStatus.INGAME,
 		});
+
+		const friendChannelSocketIdList =
+			await this.friendsRepository.findAllFriendChannelSocketIdByUserId(
+				user.id,
+			);
+
+		const eventUserStatusEmitDto = {
+			userId: user.id,
+			status: UserStatus.INGAME,
+		};
+
+		for (const friendChannelSocketId of friendChannelSocketIdList) {
+			this.channelsGateway.server
+				.to(friendChannelSocketId.channelSocketId)
+				.emit(EVENT_USER_STATUS, eventUserStatusEmitDto);
+		}
 
 		// rival 정보 보내기
 		const rivalId =
