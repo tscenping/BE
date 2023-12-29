@@ -126,21 +126,17 @@ export class ViewMapDto {
 		this.racketRight.y = this.canvasHeight / 2 - this.racketHeight / 2;
 	}
 
-	private async updateBall() {
+	private async calculateNextBallLocation() {
 		const ball = this.ball;
 		const dt = this.deltaTime;
 
-		// 공의 위치 업데이트
-		const x = ball.x + ball.xVelocity * dt + ball.accel * dt * dt * 0.5;
-		const y = ball.y + ball.yVelocity * dt + ball.accel * dt * dt * 0.5;
-		// 공의 속력 업데이트
-		// ball.xVelocity += ball.accel * dt * (ball.xVelocity > 0 ? 1 : -1);
-		// ball.yVelocity += ball.accel * dt * (ball.yVelocity > 0 ? 1 : -1);
-
-		this.ball.vx = x - ball.x;
-		this.ball.vy = y - ball.y;
-		this.ball.x = x;
-		this.ball.y = y;
+		// 공의 위치 변화량 계산
+		ball.vx =
+			ball.xVelocity * dt +
+			(ball.xVelocity < 0 ? ball.accel * -1 : ball.accel) * dt * dt * 0.5;
+		ball.vy =
+			ball.yVelocity * dt +
+			(ball.yVelocity < 0 ? ball.accel * -1 : ball.accel) * dt * dt * 0.5;
 	}
 
 	updateRacketLeft(action: KEYNAME) {
@@ -174,10 +170,30 @@ export class ViewMapDto {
 	async changes() {
 		const updateDto = this.updateDto;
 		const ball = this.ball;
-		await this.updateBall();
+		await this.calculateNextBallLocation();
 
-		// racket, 천장, 바닥에 부딪히는지
+		const xChange = this.ballRadius;
+		const piece = Math.abs(ball.vx / xChange);
+		const xRemain = Math.abs(ball.vx % xChange);
+		const yChange = Math.abs(xChange * (ball.vy / ball.vx));
+		const yRemain = Math.abs(ball.vy % yChange);
+
+		for (let i = 0; i < Math.floor(piece); i++) {
+			ball.x += xChange * (ball.xVelocity > 0 ? 1 : -1);
+			ball.y += yChange * (ball.yVelocity > 0 ? 1 : -1);
+			// console.log(`\nbefore piece ball.x: ${ball.x}`);
+			// console.log(`before piece xVelocity: ${ball.xVelocity}`);
+			await this.detectCollision();
+			// console.log(`after piece ball.x: ${ball.x}`);
+			// console.log(`after piece xVelocity: ${ball.xVelocity}`);
+		}
+		ball.x += xRemain * (ball.xVelocity > 0 ? 1 : -1);
+		ball.y += yRemain * (ball.yVelocity > 0 ? 1 : -1);
+		// console.log(`before remain ball.x: ${ball.x}`);
+		// console.log(`before remain xVelocity: ${ball.xVelocity}`);
 		await this.detectCollision();
+		// console.log(`after remain ball.x: ${ball.x}`);
+		// console.log(`after remain xVelocity: ${ball.xVelocity}`);
 
 		//score
 		if (ball.x + this.ballRadius >= this.canvasWidth)
@@ -211,22 +227,24 @@ export class ViewMapDto {
 			dy = Math.abs(ball.y - this.getRacketRightCenter().cy);
 			if (
 				dx <= this.ballRadius + this.racketWidth / 2 &&
-				dy <= this.ballRadius + this.racketHeight / 2
+				dy <= this.ballRadius + this.racketHeight / 2 &&
+				ball.xVelocity > 0
 			) {
 				ball.xVelocity *= -1;
-				console.log('\nbefore speed: ', Math.abs(ball.xVelocity));
+				// console.log('\nbefore speed: ', Math.abs(ball.xVelocity));
 				ball.xVelocity +=
 					ball.accel *
 					2 *
 					this.deltaTime *
 					(ball.xVelocity > 0 ? 1 : -1);
-				console.log(
-					'collision right -> ',
-					ball.accel *
-						2 *
-						this.deltaTime *
-						(ball.xVelocity > 0 ? 1 : -1),
-				);
+
+				// console.log(
+				// 	'collision right -> ',
+				// 	ball.accel *
+				// 		2 *
+				// 		this.deltaTime *
+				// 		(ball.xVelocity > 0 ? 1 : -1),
+				// );
 				console.log('accel, deltaTime: ', ball.accel, this.deltaTime);
 				console.log('after speed: ', Math.abs(ball.xVelocity));
 			}
@@ -235,22 +253,23 @@ export class ViewMapDto {
 			dy = Math.abs(ball.y - this.getRacketLeftCenter().cy);
 			if (
 				dx <= this.ballRadius + this.racketWidth / 2 &&
-				dy <= this.ballRadius + this.racketHeight / 2
+				dy <= this.ballRadius + this.racketHeight / 2 &&
+				ball.xVelocity < 0
 			) {
 				ball.xVelocity *= -1;
-				console.log('\nbefore speed: ', Math.abs(ball.xVelocity));
+				// console.log('\nbefore speed: ', Math.abs(ball.xVelocity));
 				ball.xVelocity +=
 					ball.accel *
 					2 *
 					this.deltaTime *
 					(ball.xVelocity > 0 ? 1 : -1);
-				console.log(
-					'collision left -> ',
-					ball.accel *
-						2 *
-						this.deltaTime *
-						(ball.xVelocity > 0 ? 1 : -1),
-				);
+				// console.log(
+				// 	'collision left -> ',
+				// 	ball.accel *
+				// 		2 *
+				// 		this.deltaTime *
+				// 		(ball.xVelocity > 0 ? 1 : -1),
+				// );
 				console.log('accel, deltaTime: ', ball.accel, this.deltaTime);
 				console.log('after speed: ', Math.abs(ball.xVelocity));
 			}
@@ -258,8 +277,9 @@ export class ViewMapDto {
 
 		// 바닥, 천장
 		if (
-			ball.y + this.ballRadius >= this.canvasHeight ||
-			ball.y - this.ballRadius < 0
+			(ball.y + this.ballRadius >= this.canvasHeight &&
+				ball.yVelocity > 0) ||
+			(ball.y - this.ballRadius < 0 && ball.yVelocity < 0)
 		)
 			ball.yVelocity *= -1;
 	}

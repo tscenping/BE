@@ -41,9 +41,9 @@ export class RanksService {
 			// user중 nickname이 없는 유저는 랭킹에 올라가지 않는다.
 			{ where: { nickname: Not(IsNull()) } },
 		);
-		console.log(users);
+		// console.log(users);
 		for (const user of users) {
-			Logger.log(`updateRanking: ${user.ladderScore}, ${user.id}`);
+			// Logger.log(`updateRanking: ${user.ladderScore}, ${user.id}`);
 			await this.AppService.updateRanking(user.ladderScore, user.id);
 		}
 	}
