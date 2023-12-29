@@ -44,7 +44,6 @@ import { ChannelsGateway } from 'src/channels/channels.gateway';
 		GameRepository,
 		GameInvitationRepository,
 		UsersRepository,
-		ChannelsGateway,
 	],
 })
 export class GameModule {}

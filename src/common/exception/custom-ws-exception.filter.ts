@@ -8,6 +8,7 @@ export class WsExceptionFilter extends BaseWsExceptionFilter {
 		const client = host.switchToWs().getClient();
 		client.packet({
 			type: PacketType.ACK,
+			namespace: ['channels', 'game'],
 			data: [{ sucess: false, error: exception?.message }],
 			id: client.nsp._ids++,
 		});

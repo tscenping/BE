@@ -10,6 +10,7 @@ export enum GameType {
 	NORMAL_INVITE = 'NORMAL_INVITE',
 	SPECIAL_MATCHING = 'SPECIAL_MATCHING',
 	SPECIAL_INVITE = 'SPECIAL_INVITE',
+	NONE = 'NONE',
 }
 
 export enum GameStatus {
