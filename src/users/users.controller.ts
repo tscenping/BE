@@ -1,5 +1,4 @@
 import {
-	BadRequestException,
 	Body,
 	Controller,
 	Delete,
@@ -22,6 +21,7 @@ import { User } from './entities/user.entity';
 import { FriendsService } from './friends.service';
 import { RanksService } from './ranks.service';
 import { UsersService } from './users.service';
+import { BadRequestException } from '../common/exception/custom-exception';
 
 @Controller('users')
 @ApiTags('users')
@@ -203,7 +203,7 @@ export class UsersController {
 	) {
 		// statusMessage 정규식 검사
 		if (statusMessage && statusMessage.length > 20) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				'20자 이하의 statusMessage를 입력해주세요.',
 			);
 		}
@@ -211,7 +211,7 @@ export class UsersController {
 			statusMessage &&
 			statusMessage.match(STATUS_MESSAGE_STRING) === null
 		) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				'한글, 영문, 숫자만 입력 가능합니다.',
 			);
 		}

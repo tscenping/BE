@@ -1,5 +1,11 @@
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
-import { Logger, UseFilters, UsePipes, ValidationPipe } from '@nestjs/common';
+import {
+	Logger,
+	UseFilters,
+	UseGuards,
+	UsePipes,
+	ValidationPipe,
+} from '@nestjs/common';
 import {
 	ConnectedSocket,
 	MessageBody,
@@ -15,8 +21,10 @@ import { Server, Socket } from 'socket.io';
 import { AuthService } from 'src/auth/auth.service';
 import { UserStatus } from 'src/common/enum';
 import { EVENT_ERROR, EVENT_USER_STATUS } from 'src/common/events';
-import { WSBadRequestException } from 'src/common/exception/custom-exception';
-import { WsExceptionFilter } from 'src/common/exception/custom-ws-exception.filter';
+import {
+	BadRequestException,
+	WSBadRequestException,
+} from 'src/common/exception/custom-exception';
 import { GatewayCreateChannelInvitationParamDto } from 'src/game/dto/gateway-create-channelInvitation-param-dto';
 import { FriendsRepository } from 'src/users/friends.repository';
 import { UsersRepository } from 'src/users/users.repository';
@@ -25,9 +33,11 @@ import { ChannelUsersRepository } from './channel-users.repository';
 import { ChannelNoticeResponseDto } from './dto/channel-notice.response.dto';
 import { EventMessageOnDto } from './dto/event-message-on.dto';
 import { User } from 'src/users/entities/user.entity';
+import { SocketWithAuth } from '../socket-adapter/socket-io.adapter';
+import { WsAuthGuard } from '../auth/guards/ws-auth.guard';
 
 @WebSocketGateway({ namespace: 'channels' })
-@UseFilters(WsExceptionFilter)
+@UseGuards(WsAuthGuard)
 @UsePipes(ValidationPipe)
 export class ChannelsGateway
 	implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
@@ -58,14 +68,15 @@ export class ChannelsGateway
 		this.usersRepository.initAllSocketIdAndUserStatus();
 	}
 
-	async handleConnection(@ConnectedSocket() client: Socket) {
+	async handleConnection(@ConnectedSocket() client: SocketWithAuth) {
 		// Socket으로부터 user 정보를 가져온다.
 
-		const user = await this.authService.getUserFromSocket(client);
+		const user = client.user;
 		if (!user || !client.id) return client.disconnect();
 		if (user.channelSocketId) {
-			this.sendError(client, 400, `중복 연결입니다`);
-			return client.disconnect();
+			throw WSBadRequestException(`중복 연결입니다`);
+			// this.sendError(client, 400, `중복 연결입니다`);
+			// return client.disconnect();
 		}
 		this.logger.log(`Client connected: ${client.id}, userId: ${user.id}`);
 
@@ -101,7 +112,7 @@ export class ChannelsGateway
 		}
 	}
 
-	async handleDisconnect(@ConnectedSocket() client: Socket) {
+	async handleDisconnect(@ConnectedSocket() client: SocketWithAuth) {
 		this.logger.log(`Client disconnected: ${client.id}`);
 		const gameQueue = this.gameQueue;
 		const user = await this.authService.getUserFromSocket(client);
@@ -147,7 +158,7 @@ export class ChannelsGateway
 
 	@SubscribeMessage('message')
 	async handleMessage(
-		@ConnectedSocket() client: Socket,
+		@ConnectedSocket() client: SocketWithAuth,
 		@MessageBody() data: EventMessageOnDto,
 	) {
 		// Socket으로부터 user 정보를 가져온다.
@@ -197,7 +208,8 @@ export class ChannelsGateway
 			(s) => s.id === channelSocketId,
 		);
 		if (!socket) {
-			return WSBadRequestException('socket이 존재하지 않습니다.');
+			throw BadRequestException('socket이 존재하지 않습니다.');
+			// WsBadRequestException을 던져서 controller에서 http exception으로 바꿔 던져야할지?
 		}
 		this.logger.log(`socket.id: `, socket.id);
 		socket.join(channelRoomName);
@@ -213,7 +225,8 @@ export class ChannelsGateway
 			(s) => s.id === channelSocketId,
 		);
 		if (!socket) {
-			return WSBadRequestException('socket이 존재하지 않습니다.');
+			throw BadRequestException('socket이 존재하지 않습니다.');
+			// WsBadRequestException을 던져서 controller에서 http exception으로 바꿔 던져야할지?
 		}
 		this.logger.log(`socket.id: `, socket.id);
 		socket.leave(channelRoomName);
@@ -231,7 +244,8 @@ export class ChannelsGateway
 			where: { id: gatewayInvitationDto.invitingUserId },
 		});
 		if (!invitingUser) {
-			throw WSBadRequestException('유저가 유효하지 않습니다.');
+			throw BadRequestException('유저가 유효하지 않습니다.');
+			// WsBadRequestException을 던져서 controller에서 http exception으로 바꿔 던져야할지?
 		}
 
 		const invitationEmitDto = {
@@ -246,7 +260,8 @@ export class ChannelsGateway
 			invitingUser.status === UserStatus.OFFLINE ||
 			!invitedUser.channelSocketId
 		) {
-			throw WSBadRequestException('유저가 유효하지 않습니다.');
+			throw BadRequestException('유저가 유효하지 않습니다.');
+			// WsBadRequestException을 던져서 controller에서 http exception으로 바꿔 던져야할지?
 		}
 		const isBlocked = await this.BlocksRepository.findOne({
 			where: { fromUserId: invitedUser.id, toUserId: invitingUser.id },

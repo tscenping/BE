@@ -1,11 +1,4 @@
-import {
-	BadRequestException,
-	ConflictException,
-	Inject,
-	Injectable,
-	Logger,
-	UnauthorizedException,
-} from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { createCipheriv, createDecipheriv } from 'crypto';
@@ -18,6 +11,10 @@ import { UsersRepository } from '../users/users.repository';
 import { FtUserParamDto } from './dto/ft-user-param.dto';
 import { SigninMfaRequestDto } from './dto/signin-mfa-request.dto';
 import { UserFindReturnDto } from './dto/user-find-return.dto';
+import {
+	BadRequestException, ConflictException,
+	UnauthorizedException,
+} from '../common/exception/custom-exception';
 
 @Injectable()
 export class AuthService {
@@ -105,7 +102,7 @@ export class AuthService {
 	async validateNickname(nickname: string) {
 		const user = await this.usersRepository.findUserByNickname(nickname);
 		if (user) {
-			throw new ConflictException('이미 존재하는 닉네임입니다.');
+			throw ConflictException('이미 존재하는 닉네임입니다.');
 		}
 	}
 
@@ -157,10 +154,10 @@ export class AuthService {
 		});
 
 		if (!user) {
-			throw new BadRequestException('존재하지 않는 유저입니다.');
+			throw BadRequestException('존재하지 않는 유저입니다.');
 		}
 		if (!user.mfaSecret) {
-			throw new BadRequestException('MFA가 활성화되어 있지 않습니다.');
+			throw BadRequestException('MFA가 활성화되어 있지 않습니다.');
 		}
 
 		// mfaCode(token) 검증
@@ -172,7 +169,7 @@ export class AuthService {
 		});
 
 		if (!verified) {
-			throw new UnauthorizedException('MFA 인증에 실패했습니다.');
+			throw UnauthorizedException('MFA 인증에 실패했습니다.');
 		}
 
 		return user;

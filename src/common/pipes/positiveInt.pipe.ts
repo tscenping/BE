@@ -1,10 +1,11 @@
-import { HttpException, HttpStatus, Injectable, PipeTransform } from '@nestjs/common';
+import { Injectable, PipeTransform } from '@nestjs/common';
+import { BadRequestException } from '../exception/custom-exception';
 
 @Injectable()
 export class PositiveIntPipe implements PipeTransform {
 	transform(value: number) {
 		if (value < 0) {
-			throw new HttpException('value > 0', HttpStatus.BAD_REQUEST);
+			throw BadRequestException('value > 0');
 		}
 		return value;
 	}

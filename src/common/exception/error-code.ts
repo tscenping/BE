@@ -1,16 +1,36 @@
 import { HttpStatus } from '@nestjs/common';
 
 class ErrorCodeValueObject {
-	readonly statusCode: number;
+	readonly errorCode: number;
 	readonly message: string;
 
-	constructor(statusCode: number, message: string) {
-		this.statusCode = statusCode;
+	constructor(errorCode: number, message: string) {
+		this.errorCode = errorCode;
 		this.message = message;
 	}
 }
 
 export type ErrorCode = ErrorCodeValueObject;
+
+export const UNAUTHORIZED_ERROR = new ErrorCodeValueObject(
+	HttpStatus.UNAUTHORIZED,
+	'Unauthorized user detected',
+);
+
+export const BAD_REQUEST_ERROR = new ErrorCodeValueObject(
+	HttpStatus.BAD_REQUEST,
+	'Bad request',
+);
+
+export const CONFLICT_ERROR = new ErrorCodeValueObject(
+	HttpStatus.CONFLICT,
+	'Conflict',
+);
+
+export const FORBIDDEN_ERROR = new ErrorCodeValueObject(
+	HttpStatus.FORBIDDEN,
+	'Forbidden',
+);
 
 export const DB_UPDATE_FAILURE = new ErrorCodeValueObject(
 	HttpStatus.INTERNAL_SERVER_ERROR,
@@ -19,9 +39,10 @@ export const DB_UPDATE_FAILURE = new ErrorCodeValueObject(
 
 export const DB_QUERY_ERROR = new ErrorCodeValueObject(
 	HttpStatus.INTERNAL_SERVER_ERROR,
-	'Query task could not be done',
+	'Sending query could not be done',
 );
 
+// socket
 export const WS_UNAUTHORIZED_ERROR = new ErrorCodeValueObject(
 	HttpStatus.UNAUTHORIZED,
 	'WebSocket: unauthorized user detected',
@@ -34,5 +55,5 @@ export const WS_BAD_REQUEST_ERROR = new ErrorCodeValueObject(
 
 export const WS_DB_UPDATE_FAILURE = new ErrorCodeValueObject(
 	HttpStatus.INTERNAL_SERVER_ERROR,
-	'WebSocket: DataBase task could not be done',
+	'WebSocket: dataBase task could not be done',
 );

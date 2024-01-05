@@ -36,7 +36,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 // 		const user = await this.userRepository.findOneBy({ id });
 
 // 		if (!user) {
-// 			throw new UnauthorizedException();
+// 			throw UnauthorizedException();
 // 		}
 
 // 		return user;

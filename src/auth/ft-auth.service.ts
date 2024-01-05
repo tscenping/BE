@@ -1,14 +1,10 @@
-import {
-	Inject,
-	Injectable,
-	Logger,
-	UnauthorizedException,
-} from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import axios from 'axios';
 import ftConfig from '../config/ft.config';
 import { FtUserParamDto } from './dto/ft-user-param.dto';
 import { FtOauthResponseDto } from './dto/ft-oauth-response.dto';
+import { UnauthorizedException } from '../common/exception/custom-exception';
 
 @Injectable()
 export class FtAuthService {
@@ -41,7 +37,7 @@ export class FtAuthService {
 			return response.data.access_token;
 		} catch (error) {
 			this.logger.error(error);
-			throw new UnauthorizedException('Invalid 42 code');
+			throw UnauthorizedException('Invalid 42 code');
 		}
 	}
 
@@ -62,7 +58,7 @@ export class FtAuthService {
 			return userData;
 		} catch (error) {
 			this.logger.error(error);
-			throw new UnauthorizedException('Invalid 42 access token');
+			throw UnauthorizedException('Invalid 42 access token');
 		}
 	}
 }

@@ -1,4 +1,4 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable} from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -9,6 +9,7 @@ import jwtConfig from 'src/config/jwt.config';
 import { User } from 'src/users/entities/user.entity';
 import { UsersRepository } from 'src/users/users.repository';
 import { JwtRefreshPayloadDto } from './dto/jwt-refresh-payload.dto';
+import { UnauthorizedException } from '../common/exception/custom-exception';
 
 @Injectable()
 export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'refresh') {
@@ -35,14 +36,14 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'refresh') {
 
 		if (!user) {
 			console.log(`Invalid user`);
-			throw new UnauthorizedException();
+			throw UnauthorizedException();
 		}
 
 		console.log(`user.refreshToken: ${user.refreshToken}`);
 		console.log(`refreshToken: ${refreshToken}`);
 
 		if (!user.refreshToken || !refreshToken) {
-			throw new UnauthorizedException();
+			throw UnauthorizedException();
 		}
 
 		const isRefreshTokenValid = await bcrypt.compare(
@@ -52,7 +53,7 @@ export class JwtRefreshStrategy extends PassportStrategy(Strategy, 'refresh') {
 
 		if (!isRefreshTokenValid) {
 			console.log(`token match failed`);
-			throw new UnauthorizedException();
+			throw UnauthorizedException();
 		}
 
 		console.log('jwt-refresh.strategy.ts: validate: user: ', user);

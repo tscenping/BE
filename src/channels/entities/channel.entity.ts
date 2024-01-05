@@ -1,4 +1,4 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException } from '../../common/exception/custom-exception';
 import * as bycrypt from 'bcrypt';
 import {
 	IsEnum,
@@ -52,7 +52,7 @@ export class Channel extends BaseEntity {
 				this.password = await bycrypt.hash(this.password, 10);
 			} catch (e) {
 				console.error(e);
-				throw new BadRequestException(
+				throw BadRequestException(
 					`비밀번호 암호화에 실패했습니다.`,
 				);
 			}

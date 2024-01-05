@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { UserStatus } from 'src/common/enum';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
@@ -8,6 +8,7 @@ import { UserProfileResponseDto } from './dto/user-profile.dto';
 import { User } from './entities/user.entity';
 import { FriendsRepository } from './friends.repository';
 import { UsersRepository } from './users.repository';
+import { BadRequestException } from '../common/exception/custom-exception';
 
 @Injectable()
 export class UsersService {
@@ -26,7 +27,7 @@ export class UsersService {
 			nickname,
 		);
 		if (!targetUser) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				`there is no user with nickname ${nickname}`,
 			);
 		}
@@ -106,23 +107,21 @@ export class UsersService {
 		});
 
 		if (!user) {
-			throw new BadRequestException(
-				`User with id ${userId} doesn't exist`,
-			);
+			throw BadRequestException(`User with id ${userId} doesn't exist`);
 		}
 		return user;
 	}
 
 	async validateUserAlreadySignUp(user: User) {
 		if (user.nickname)
-			throw new BadRequestException(`${user.id} is already signed up`);
+			throw BadRequestException(`${user.id} is already signed up`);
 	}
 
 	async validateNickname(nickname: string) {
 		const user = await this.userRepository.findUserByNickname(nickname);
 
 		if (user)
-			throw new BadRequestException(
+			throw BadRequestException(
 				`nickname '${nickname}' is already exist! Try again`,
 			);
 	}

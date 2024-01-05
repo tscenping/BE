@@ -1,5 +1,5 @@
 import { ChannelsGateway } from 'src/channels/channels.gateway';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { GameRepository } from './game.repository';
 import { UsersRepository } from '../users/users.repository';
 import { CreateGameInvitationParamDto } from './dto/create-invitation-param.dto';
@@ -17,6 +17,7 @@ import { BlocksRepository } from '../users/blocks.repository';
 import { gameMatchStartParamDto } from './dto/match-game-param.dto';
 import { EmitEventMatchmakingReplyDto } from './dto/emit-event-matchmaking-param.dto';
 import { gameMatchDeleteParamDto } from './dto/match-game-delete-param.dto';
+import { BadRequestException } from '../common/exception/custom-exception';
 
 @Injectable()
 export class GameService {
@@ -36,7 +37,7 @@ export class GameService {
 
 		// 본인 스스로인지
 		if (invitingUser.id === invitedUserId)
-			throw new BadRequestException('자기 자신을 초대할 수 없습니다');
+			throw BadRequestException('자기 자신을 초대할 수 없습니다');
 
 		// 상대가 존재하는 유저인지
 		const invitedUser = await this.checkUserExist(invitedUserId);
@@ -46,7 +47,7 @@ export class GameService {
 			invitedUser.status !== UserStatus.ONLINE ||
 			!invitedUser.channelSocketId
 		)
-			throw new BadRequestException(
+			throw BadRequestException(
 				`초대된 유저 ${invitedUserId} 는 OFFLINE 상태이거나 게임 중입니다`,
 			);
 
@@ -69,7 +70,7 @@ export class GameService {
 			const diff = currentTime.diff(olderInvitation.createdAt, 'seconds');
 
 			if (diff < 10) {
-				throw new BadRequestException(
+				throw BadRequestException(
 					`아직 응답을 기다리고 있는 초대입니다`,
 				);
 			} else {
@@ -85,7 +86,7 @@ export class GameService {
 		Object.keys(gameQueue).forEach((key) => {
 			const queue = gameQueue[key];
 			if (queue.find((u) => u.id === invitedUserId))
-				throw new BadRequestException(
+				throw BadRequestException(
 					`user ${invitedUserId} is in the game queue`,
 				);
 		});
@@ -122,7 +123,7 @@ export class GameService {
 			},
 		});
 		if (!invitation)
-			throw new BadRequestException(
+			throw BadRequestException(
 				`해당하는 invitation id ${invitationId} 가 없습니다`,
 			);
 
@@ -131,7 +132,7 @@ export class GameService {
 		const diff = currentTime.diff(invitation.createdAt, 'seconds');
 
 		if (diff >= 60) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				`시간초과로 유효하지 않은 요청입니다`,
 			);
 		}
@@ -141,7 +142,7 @@ export class GameService {
 			invitedUser.status !== UserStatus.ONLINE ||
 			!invitedUser.channelSocketId
 		)
-			throw new BadRequestException(
+			throw BadRequestException(
 				`초대된 유저 ${invitedUser.id} 는 OFFLINE 상태이거나 게임중입니다`,
 			);
 		const invitingUser = await this.checkUserExist(
@@ -151,7 +152,7 @@ export class GameService {
 			invitingUser.status !== UserStatus.ONLINE ||
 			!invitingUser.channelSocketId
 		)
-			throw new BadRequestException(
+			throw BadRequestException(
 				`초대한 유저 ${invitingUser.id} 는 OFFLINE 상태이거나 게임중입니다`,
 			);
 
@@ -209,7 +210,7 @@ export class GameService {
 		const user = await this.checkUserExist(userId);
 
 		if (user.status !== UserStatus.ONLINE || !user.channelSocketId)
-			throw new BadRequestException(
+			throw BadRequestException(
 				`유저 ${user.id} 는 OFFLINE 상태이거나 게임중입니다`,
 			);
 		if (
@@ -217,12 +218,12 @@ export class GameService {
 			gameType !== GameType.NORMAL_MATCHING &&
 			gameType !== GameType.SPECIAL_MATCHING
 		) {
-			throw new BadRequestException(`지원하지 않는 게임 타입입니다`);
+			throw BadRequestException(`지원하지 않는 게임 타입입니다`);
 		}
 
 		// 이미 큐에 존재하는지
 		if (gameQueue.find((u) => u.id === user.id))
-			throw new BadRequestException(
+			throw BadRequestException(
 				`user ${user.id} is already in the game queue`,
 			);
 
@@ -248,7 +249,7 @@ export class GameService {
 				player1.channelSocketId === null ||
 				player2.channelSocketId === null
 			)
-				throw new BadRequestException(
+				throw BadRequestException(
 					`게임 매칭 큐에 유저가 2명 이상이어야 합니다`,
 				);
 
@@ -286,7 +287,7 @@ export class GameService {
 		const user = await this.checkUserExist(userId);
 
 		if (user.status !== UserStatus.ONLINE || !user.channelSocketId)
-			throw new BadRequestException(
+			throw BadRequestException(
 				`유저 ${user.id} 는 OFFLINE 상태이거나 게임중입니다`,
 			);
 
@@ -295,7 +296,7 @@ export class GameService {
 			gameType !== GameType.NORMAL_MATCHING &&
 			gameType !== GameType.SPECIAL_MATCHING
 		) {
-			throw new BadRequestException(`지원하지 않는 게임 타입입니다`);
+			throw BadRequestException(`지원하지 않는 게임 타입입니다`);
 		}
 
 		const index = gameQueue.findIndex(
@@ -307,7 +308,7 @@ export class GameService {
 				return;
 			}
 		} else if (index === -1)
-			throw new BadRequestException(
+			throw BadRequestException(
 				`유저 ${user.id} 는 매칭 큐에 존재하지 않습니다`,
 			);
 	}
@@ -325,7 +326,7 @@ export class GameService {
 			},
 		});
 		if (!invitation)
-			throw new BadRequestException(
+			throw BadRequestException(
 				`해당하는 invitation id ${invitationId} 가 없습니다`,
 			);
 
@@ -334,7 +335,7 @@ export class GameService {
 		const diff = currentTime.diff(invitation.createdAt, 'seconds');
 
 		if (diff >= 10) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				`시간초과로 유효하지 않은 요청입니다`,
 			);
 		}
@@ -354,7 +355,7 @@ export class GameService {
 			},
 		});
 		if (!invitation)
-			throw new BadRequestException(
+			throw BadRequestException(
 				`해당하는 invitation id ${invitationId} 가 없습니다`,
 			);
 		// 10초 지나면 유효하지 않은 취소 (악의 취소)
@@ -362,7 +363,7 @@ export class GameService {
 		const diff = currentTime.diff(invitation.createdAt, 'seconds');
 
 		if (diff >= 10) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				`시간초과로 유효하지 않은 요청입니다`,
 			);
 		}
@@ -378,7 +379,7 @@ export class GameService {
 			invitingUser.status === UserStatus.OFFLINE ||
 			!invitingUser.channelSocketId
 		)
-			throw new BadRequestException(
+			throw BadRequestException(
 				`초대한 유저 ${invitingUser.id} 는 OFFLINE 상태입니다`,
 			);
 
@@ -397,7 +398,7 @@ export class GameService {
 		});
 
 		if (!user) {
-			throw new BadRequestException(`user ${userId} does not exist`);
+			throw BadRequestException(`user ${userId} does not exist`);
 		}
 		return user as User;
 	}

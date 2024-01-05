@@ -1,8 +1,9 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { BlocksRepository } from './blocks.repository';
 import { FriendUserResponseDto } from './dto/friend-user-response.dto';
 import { FriendsRepository } from './friends.repository';
 import { UsersRepository } from './users.repository';
+import { BadRequestException } from '../common/exception/custom-exception';
 
 @Injectable()
 export class FriendsService {
@@ -63,13 +64,13 @@ export class FriendsService {
 			toUserId,
 		);
 		if (!friend) {
-			throw new BadRequestException(`Not friend with ${toUserId}`);
+			throw BadRequestException(`Not friend with ${toUserId}`);
 		}
 
 		// 친구 삭제
 		const result = await this.friendsRepository.softDelete(friend.id);
 		if (result.affected !== 1) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				`Failed to delete friend with ${toUserId}`,
 			);
 		}
@@ -115,7 +116,7 @@ export class FriendsService {
 		});
 
 		if (!user) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				`User with id ${userId} doesn't exist`,
 			);
 		}
@@ -126,7 +127,7 @@ export class FriendsService {
 	 */
 	private checkSelfFriendship(fromUserId: number, toUserId: number) {
 		if (fromUserId === toUserId) {
-			throw new BadRequestException(`Can't be friend with yourself`);
+			throw BadRequestException(`Can't be friend with yourself`);
 		}
 	}
 
@@ -139,7 +140,7 @@ export class FriendsService {
 			toUserId,
 		);
 		if (isExistFriend) {
-			throw new BadRequestException(`Already friends`);
+			throw BadRequestException(`Already friends`);
 		}
 	}
 }

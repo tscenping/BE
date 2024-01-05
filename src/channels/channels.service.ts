@@ -1,5 +1,5 @@
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import * as bycrypt from 'bcrypt';
 import { Redis } from 'ioredis';
 import { MUTE_TIME } from 'src/common/constants';
@@ -7,7 +7,7 @@ import { ChannelType, ChannelUserType } from 'src/common/enum';
 import { GatewayCreateChannelInvitationParamDto } from 'src/game/dto/gateway-create-channelInvitation-param-dto';
 import { User } from 'src/users/entities/user.entity';
 import { UsersRepository } from 'src/users/users.repository';
-import { DBUpdateFailureException } from '../common/exception/custom-exception';
+import { BadRequestException, DBUpdateFailureException } from '../common/exception/custom-exception';
 import { ChannelInvitationRepository } from './channel-invitation.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
 import { ChannelsGateway } from './channels.gateway';
@@ -26,8 +26,6 @@ import { DeleteChannelInvitationParamDto } from './dto/delete-invitation-param.d
 import { DmChannelListResponseDto } from './dto/dmchannel-list-response.dto';
 import { DmChannelListReturnDto } from './dto/dmchannel-list-return.dto';
 import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
-import moment from 'moment';
-import { channel } from 'diagnostics_channel';
 import { In } from 'typeorm';
 
 @Injectable()
@@ -124,7 +122,7 @@ export class ChannelsService {
 			id: channelId,
 		});
 		if (!channel) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				`channel ${channelId} does not exist`,
 			);
 		}
@@ -135,7 +133,7 @@ export class ChannelsService {
 			userId,
 		});
 		if (!myChannelUserInfo) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				`user ${userId} is not in channel ${channelId}`,
 			);
 		}
@@ -167,7 +165,7 @@ export class ChannelsService {
 		);
 
 		if (channelUser.channelUserType !== ChannelUserType.OWNER)
-			throw new BadRequestException(
+			throw BadRequestException(
 				`user ${userId} does not have authority`,
 			);
 
@@ -182,7 +180,7 @@ export class ChannelsService {
 			if (channelPassword) {
 				// input password !== null && origin password !== null
 				if (bycrypt.compareSync(newPassword, channelPassword)) {
-					throw new BadRequestException(
+					throw BadRequestException(
 						'new password is same as the older one',
 					);
 				}
@@ -215,7 +213,7 @@ export class ChannelsService {
 			((channelUser.deletedAt !== null && channelUser.isBanned) ||
 				channelUser.deletedAt === null)
 		) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				`유저는 채널에 이미 참여중이거나, 밴 당한 이력이 있습니다.`,
 			);
 		}
@@ -223,7 +221,7 @@ export class ChannelsService {
 		// channel이 프로텍티드라면 비밀번호가 맞는지 확인
 		if (channel.channelType === ChannelType.PROTECTED) {
 			if (!password) {
-				throw new BadRequestException('비밀번호를 입력해주세요.');
+				throw BadRequestException('비밀번호를 입력해주세요.');
 			}
 
 			const isPasswordMatching = await bycrypt.compare(
@@ -231,7 +229,7 @@ export class ChannelsService {
 				channel.password!,
 			);
 			if (!isPasswordMatching) {
-				throw new BadRequestException('비밀번호가 일치하지 않습니다.');
+				throw BadRequestException('비밀번호가 일치하지 않습니다.');
 			}
 		}
 
@@ -246,7 +244,7 @@ export class ChannelsService {
 				});
 
 			if (!channelInvitation) {
-				throw new BadRequestException(
+				throw BadRequestException(
 					'user cannot join this private channel. not invited',
 				);
 			}
@@ -274,7 +272,7 @@ export class ChannelsService {
 		await this.checkChannelExist(channelId);
 
 		if (invitingUserId === invitedUserId)
-			throw new BadRequestException('cannot invite yourself');
+			throw BadRequestException('cannot invite yourself');
 
 		// 초대받은 user가 존재하는지 확인
 		await this.checkUserExist(invitedUserId);
@@ -288,7 +286,7 @@ export class ChannelsService {
 		});
 
 		if (channelUser) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				`user already in this channel ${channelId}`,
 			);
 		}
@@ -364,7 +362,7 @@ export class ChannelsService {
 			channelId,
 		);
 		if (giverChannelUser.channelUserType !== ChannelUserType.OWNER) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				`giver ${giverUserId} does not have authority`,
 			);
 		}
@@ -405,7 +403,7 @@ export class ChannelsService {
 		);
 
 		if (giverChannelUser.channelUserType === ChannelUserType.MEMBER)
-			throw new BadRequestException(
+			throw BadRequestException(
 				`kicker ${giverUserId} does not have authority`,
 			);
 
@@ -419,7 +417,7 @@ export class ChannelsService {
 				receiverChannelUser.channelUserType === ChannelUserType.OWNER ||
 				receiverChannelUser.channelUserType === ChannelUserType.ADMIN
 			)
-				throw new BadRequestException(
+				throw BadRequestException(
 					`admin user ${giverUserId} cannot kick the owner/admin user ${receiverUserId}`,
 				);
 		}
@@ -452,7 +450,7 @@ export class ChannelsService {
 		);
 
 		if (giverChannelUser.channelUserType === ChannelUserType.MEMBER)
-			throw new BadRequestException(
+			throw BadRequestException(
 				`banding user ${giverUserId} does not have authority`,
 			);
 
@@ -466,7 +464,7 @@ export class ChannelsService {
 				receiverChannelUser.channelUserType === ChannelUserType.OWNER ||
 				receiverChannelUser.channelUserType === ChannelUserType.ADMIN
 			) {
-				throw new BadRequestException(
+				throw BadRequestException(
 					`admin user ${giverUserId} cannot ban the owner/admin user ${receiverUserId}`,
 				);
 			}
@@ -509,7 +507,7 @@ export class ChannelsService {
 		);
 
 		if (giverChannelUser.channelUserType === ChannelUserType.MEMBER)
-			throw new BadRequestException(
+			throw BadRequestException(
 				`muting user ${giverUser.id} does not have authority`,
 			);
 
@@ -523,7 +521,7 @@ export class ChannelsService {
 				receiverChannelUser.channelUserType === ChannelUserType.OWNER ||
 				receiverChannelUser.channelUserType === ChannelUserType.ADMIN
 			) {
-				throw new BadRequestException(
+				throw BadRequestException(
 					`admin user ${giverUser.id} cannot mute the owner/admin user ${receiverUserId}`,
 				);
 			}
@@ -555,7 +553,7 @@ export class ChannelsService {
 			},
 		});
 		if (!channels) {
-			throw new BadRequestException(`There is no channel`);
+			throw BadRequestException(`There is no channel`);
 		}
 		return { channels, totalDataSize };
 	}
@@ -569,7 +567,7 @@ export class ChannelsService {
 		const totalDataSize: number =
 			await this.channelsRepository.countInvolved(userId);
 		if (!channels) {
-			throw new BadRequestException(`There is no 'my channel'`);
+			throw BadRequestException(`There is no 'my channel'`);
 		}
 
 		return { channels, totalDataSize };
@@ -587,7 +585,7 @@ export class ChannelsService {
 			},
 		});
 		if (!dmChannels) {
-			throw new BadRequestException(`There is no 'dm channel'`);
+			throw BadRequestException(`There is no 'dm channel'`);
 		}
 		return { dmChannels, totalItemCount };
 	}
@@ -602,7 +600,7 @@ export class ChannelsService {
 				},
 			});
 		if (!channelInvitationInfo?.channelId || !channelInvitationInfo.id)
-			throw new BadRequestException(
+			throw BadRequestException(
 				`channel ${channelInvitationInfo?.id} does not exist`,
 			);
 		const channelInfo = await this.channelsRepository.findOne({
@@ -611,7 +609,7 @@ export class ChannelsService {
 			},
 		});
 		if (!channelInfo?.id || !channelInfo.name)
-			throw new BadRequestException(
+			throw BadRequestException(
 				`channel ${channelInfo?.id} does not exist`,
 			);
 
@@ -649,7 +647,7 @@ export class ChannelsService {
 			},
 		});
 		if (!invitation)
-			throw new BadRequestException(
+			throw BadRequestException(
 				`해당하는 invitation id ${deleteInvitationParamDto.invitationId} 가 없습니다`,
 			);
 
@@ -670,7 +668,7 @@ export class ChannelsService {
 	): Promise<number | void> {
 		// 자기 자신에게 DM 채널을 생성할 수 없음
 		if (userId === targetUserId) {
-			throw new BadRequestException(`cannot create DM channel to myself`);
+			throw BadRequestException(`cannot create DM channel to myself`);
 		}
 
 		// target user가 존재하는지 확인
@@ -680,7 +678,7 @@ export class ChannelsService {
 			},
 		});
 		if (!targetUser) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				`user ${targetUserId} does not exist`,
 			);
 		}
@@ -702,7 +700,7 @@ export class ChannelsService {
 		});
 
 		if (!user) {
-			throw new BadRequestException(`user ${userId} does not exist`);
+			throw BadRequestException(`user ${userId} does not exist`);
 		}
 		return user as User;
 	}
@@ -712,7 +710,7 @@ export class ChannelsService {
 			where: { id: channelId },
 		});
 		if (!channel)
-			throw new BadRequestException(
+			throw BadRequestException(
 				`channel ${channelId} does not exist`,
 			);
 		return channel;
@@ -723,14 +721,14 @@ export class ChannelsService {
 			where: { id: channelUserId },
 		});
 		if (!channelUser) {
-			throw new BadRequestException(`this ${channelUserId} is invalid`);
+			throw BadRequestException(`this ${channelUserId} is invalid`);
 		}
 
 		const user = await this.usersRepository.findOne({
 			where: { id: channelUser.userId },
 		});
 		if (!user) {
-			throw new BadRequestException(`user does not exist`);
+			throw BadRequestException(`user does not exist`);
 		}
 
 		return channelUser;
@@ -742,7 +740,7 @@ export class ChannelsService {
 		});
 
 		if (!channelUser) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				`user does not in this channel ${channelId}`,
 			);
 		}
@@ -765,7 +763,7 @@ export class ChannelsService {
 			where: { id: channelId },
 		});
 		if (!channel) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				`channel ${channelId} does not exist`,
 			);
 		}
@@ -780,7 +778,7 @@ export class ChannelsService {
 			where: { id: channelUserId },
 		});
 		if (!channelUser) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				`channelUser ${channelUserId} does not exist`,
 			);
 		}
@@ -792,7 +790,7 @@ export class ChannelsService {
 			where: { userId },
 		});
 		if (!channelUser) {
-			throw new BadRequestException(`user ${userId} does not exist`);
+			throw BadRequestException(`user ${userId} does not exist`);
 		}
 		return channelUser.channelId;
 	}
@@ -803,7 +801,7 @@ export class ChannelsService {
 				where: { id: invitationId },
 			});
 		if (!channelInvitation) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				`channelInvitation ${invitationId} does not exist`,
 			);
 		}

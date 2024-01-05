@@ -1,7 +1,8 @@
-import { BadRequestException, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import {
+	BadRequestException,
 	DBQueryErrorException,
 	DBUpdateFailureException,
 } from '../common/exception/custom-exception';
@@ -28,7 +29,7 @@ export class ChannelUsersRepository extends Repository<ChannelUser> {
 			},
 		});
 		if (isAlreadyJoined)
-			throw new BadRequestException('이미 채널에 참여한 유저입니다');
+			throw BadRequestException('이미 채널에 참여한 유저입니다');
 
 		const res = await this.save(newChannelUser);
 

@@ -1,5 +1,5 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
-import { DBUpdateFailureException } from '../common/exception/custom-exception';
+import { Injectable } from '@nestjs/common';
+import { BadRequestException, DBUpdateFailureException } from '../common/exception/custom-exception';
 import { BlocksRepository } from './blocks.repository';
 import { BlockUserResponseDto } from './dto/block-user-response.dto';
 import { BlockUserReturnDto } from './dto/block-user-return.dto';
@@ -22,7 +22,7 @@ export class BlocksService {
 
 	async applyBlock(fromUserId: number, toUserId: number) {
 		if (fromUserId === toUserId) {
-			throw new BadRequestException(`Could not blocking yourself`);
+			throw BadRequestException(`Could not blocking yourself`);
 		}
 		// toUser이 가입한 유저인지
 		await this.validateUserExists(toUserId);
@@ -35,7 +35,7 @@ export class BlocksService {
 			},
 		});
 		if (block)
-			throw new BadRequestException(`${toUserId} is already blocked`);
+			throw BadRequestException(`${toUserId} is already blocked`);
 
 		// 친구라면, 친구 삭제하기
 		await this.friendsRepository.softDelete({
@@ -54,7 +54,7 @@ export class BlocksService {
 
 	async cancelBlock(fromUserId: number, toUserId: number) {
 		if (fromUserId === toUserId) {
-			throw new BadRequestException(`Could not non-blocking yourself`);
+			throw BadRequestException(`Could not non-blocking yourself`);
 		}
 		// toUser이 가입한 유저인지
 		await this.validateUserExists(toUserId);
@@ -67,7 +67,7 @@ export class BlocksService {
 			},
 		});
 		if (!block)
-			throw new BadRequestException(`${toUserId}} is now non-blocked`);
+			throw BadRequestException(`${toUserId}} is now non-blocked`);
 		// block 취소하기
 		const result = await this.blocksRepository.softDelete(block.id);
 		if (result.affected !== 1) {
@@ -99,7 +99,7 @@ export class BlocksService {
 		});
 
 		if (!user) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				`User with id ${userId} doesn't exist`,
 			);
 		}

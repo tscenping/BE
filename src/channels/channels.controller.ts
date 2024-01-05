@@ -1,5 +1,4 @@
 import {
-	BadRequestException,
 	Body,
 	Controller,
 	Delete,
@@ -17,6 +16,7 @@ import { GetUser } from 'src/auth/get-user.decorator';
 import { ChannelEventType, ChannelType } from 'src/common/enum';
 import { User } from 'src/users/entities/user.entity';
 import { PositiveIntPipe } from '../common/pipes/positiveInt.pipe';
+import { BadRequestException } from '../common/exception/custom-exception';
 import { ChannelsGateway } from './channels.gateway';
 import { ChannelsService } from './channels.service';
 import { ChannelInvitationParamDto } from './dto/channel-Invitation.dto';
@@ -58,7 +58,7 @@ export class ChannelsController {
 
 		// DM 채널인 경우 userId가 필수
 		if (channelInfo.channelType === ChannelType.DM && !channelInfo.userId) {
-			throw new BadRequestException(`DM을 위한 userId를 입력해주세요.`);
+			throw BadRequestException(`DM을 위한 userId를 입력해주세요.`);
 		}
 
 		// DM 채널이 아닌데 channel name이 NULL인 경우 예외 처리
@@ -66,7 +66,7 @@ export class ChannelsController {
 			channelInfo.channelType !== ChannelType.DM &&
 			channelInfo.name === null
 		) {
-			throw new BadRequestException(`채널 이름을 입력해주세요.`);
+			throw BadRequestException(`채널 이름을 입력해주세요.`);
 		}
 
 		const createChannelResponseDto =
@@ -74,7 +74,7 @@ export class ChannelsController {
 
 		if (user.channelSocketId) {
 			// 채널 룸에 join
-			this.channelsGateway.joinChannelRoom(
+			await this.channelsGateway.joinChannelRoom(
 				createChannelResponseDto.channelId.toString(),
 				user.channelSocketId,
 			);
@@ -94,7 +94,7 @@ export class ChannelsController {
 		@Param('channelId', ParseIntPipe, PositiveIntPipe) channelId: number,
 	) {
 		if (user.channelSocketId) {
-			this.channelsGateway.joinChannelRoom(
+			await this.channelsGateway.joinChannelRoom(
 				channelId.toString(),
 				user.channelSocketId,
 			);
@@ -151,7 +151,7 @@ export class ChannelsController {
 
 		if (user.channelSocketId) {
 			// 채널 룸에 join
-			this.channelsGateway.joinChannelRoom(
+			await this.channelsGateway.joinChannelRoom(
 				channelId.toString(),
 				user.channelSocketId,
 			);
@@ -182,7 +182,7 @@ export class ChannelsController {
 
 		if (user.channelSocketId) {
 			// 채널 룸에서 leave
-			this.channelsGateway.leaveChannelRoom(
+			await this.channelsGateway.leaveChannelRoom(
 				channelId.toString(),
 				user.channelSocketId,
 			);
@@ -392,30 +392,23 @@ export class ChannelsController {
 		@Body('invitationId', ParseIntPipe, PositiveIntPipe)
 		invitationId: number,
 	) {
-		try {
-			const createChannelUserParamDto: ChannelInvitationParamDto = {
-				invitedUserId: user.id,
-				invitationId: invitationId,
-			};
-			const channelId =
-				await this.channelsService.findChannelIdByInvitationId(
-					invitationId,
-				);
-			const channelsReturnDto =
-				await this.channelsService.acceptInvitation(
-					createChannelUserParamDto,
-				);
-			this.channelsGateway.channelNoticeMessage(channelId, {
-				channelId,
-				nickname: user.nickname,
-				eventType: ChannelEventType.JOIN,
-			});
-			return channelsReturnDto;
-		} catch (error) {
-			throw new BadRequestException(
-				"I'm just a little bit caught in the middle. Life is a maze and love is a riddle.",
+		const createChannelUserParamDto: ChannelInvitationParamDto = {
+			invitedUserId: user.id,
+			invitationId: invitationId,
+		};
+		const channelId =
+			await this.channelsService.findChannelIdByInvitationId(
+				invitationId,
 			);
-		}
+		const channelsReturnDto = await this.channelsService.acceptInvitation(
+			createChannelUserParamDto,
+		);
+		this.channelsGateway.channelNoticeMessage(channelId, {
+			channelId,
+			nickname: user.nickname,
+			eventType: ChannelEventType.JOIN,
+		});
+		return channelsReturnDto;
 	}
 
 	@Delete('/refuse/:channelInvitationId')

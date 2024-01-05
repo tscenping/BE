@@ -1,4 +1,4 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable} from '@nestjs/common';
 import { ConfigType } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -7,6 +7,7 @@ import jwtConfig from 'src/config/jwt.config';
 import { User } from 'src/users/entities/user.entity';
 import { UsersRepository } from 'src/users/users.repository';
 import { JwtAccessPayloadDto } from './dto/jwt-access-payload.dto';
+import { UnauthorizedException } from '../common/exception/custom-exception';
 
 @Injectable()
 export class JwtAccessStrategy extends PassportStrategy(Strategy, 'access') {
@@ -31,7 +32,7 @@ export class JwtAccessStrategy extends PassportStrategy(Strategy, 'access') {
 		});
 
 		if (!user) {
-			throw new UnauthorizedException();
+			throw UnauthorizedException();
 		}
 
 		return user;

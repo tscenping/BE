@@ -11,8 +11,7 @@ import { UsersRepository } from '../users/users.repository';
 import { FriendsRepository } from '../users/friends.repository';
 import { Server, Socket } from 'socket.io';
 import { AuthService } from '../auth/auth.service';
-import { UseFilters, UsePipes, ValidationPipe } from '@nestjs/common';
-import { WsExceptionFilter } from '../common/exception/custom-ws-exception.filter';
+import { UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { GatewayCreateGameInvitationParamDto } from './dto/gateway-create-invitation-param.dto';
 import {
 	EVENT_ERROR,
@@ -48,9 +47,12 @@ import { K } from '../common/constants';
 import { UpdateDto } from './dto/view-map.dto';
 import { User } from '../users/entities/user.entity';
 import { EmitEventMatchEndParamDto } from './dto/emit-event-match-end-param.dto';
+import { WsAuthGuard } from '../auth/guards/ws-auth.guard';
+import { SocketWithAuth } from '../socket-adapter/socket-io.adapter';
+import { WSBadRequestException } from '../common/exception/custom-exception';
 
 @WebSocketGateway({ namespace: 'game' })
-@UseFilters(WsExceptionFilter)
+@UseGuards(WsAuthGuard)
 @UsePipes(ValidationPipe)
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	private userIdToClient: Map<number, Socket>;
@@ -73,11 +75,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	@WebSocketServer()
 	server: Server;
 
-	async handleConnection(@ConnectedSocket() client: Socket) {
-		const user = await this.authService.getUserFromSocket(client);
+	async handleConnection(@ConnectedSocket() client: SocketWithAuth) {
+		const user = client.user;
 		if (!user || !client.id) return client.disconnect();
 		else if (user.gameSocketId) {
-			console.log('game socket 갈아끼운다 ~?!');
 			const socket = this.userIdToClient.get(user.id);
 			if (socket) {
 				const result = await this.isSocketConnected(socket);
@@ -102,9 +103,8 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		this.userIdToClient.set(user.id, client);
 	}
 
-	async handleDisconnect(@ConnectedSocket() client: Socket) {
-		// 끊기고 실행되는 로직. .
-		const user = await this.authService.getUserFromSocket(client);
+	async handleDisconnect(@ConnectedSocket() client: SocketWithAuth) {
+		const user = client.user;
 		if (!user || client.id !== user.gameSocketId) return;
 
 		console.log(
@@ -151,6 +151,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 						where: { id: gameDto.playerRightId },
 					});
 					if (!left || !right) {
+						// throw WSBadRequestException(
+						// 	`player 의 데이터를 찾지 못했습니다`,
+						// );
 						return this.sendErrorAll(
 							playerSockets,
 							400,
@@ -214,7 +217,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 	@SubscribeMessage('gameRequest')
 	async prepareGame(
-		@ConnectedSocket() client: Socket,
+		@ConnectedSocket() client: SocketWithAuth,
 		@MessageBody() data: { gameId: number },
 	) {
 		console.log('gameRequest 이벤트 받았다 !!!');
@@ -225,8 +228,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		 * 	3. game room join하기 ❎
 		 * 	4. INGAME으로 상태 바꾸기 ✅
 		 * 	5. game start event emit ✅*/
-		const user = await this.authService.getUserFromSocket(client);
-		if (!user) return client.disconnect();
+		const user = client.user; // 아니면 client에서 userId 받기
 		console.log(`user ${user.id} 가 게임 준비를 요청했습니다`);
 
 		const game = await this.gameRepository.findOne({
@@ -284,11 +286,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			where: { id: rivalId },
 		});
 		if (!rival) {
-			return this.sendError(
-				client,
-				400,
+			throw WSBadRequestException(
 				`상대 player ${rivalId} 의 데이터를 찾지 못했습니다`,
 			);
+			// return this.sendError(
+			// 	client,
+			// 	400,
+			// 	`상대 player ${rivalId} 의 데이터를 찾지 못했습니다`,
+			// );
 		}
 
 		this.sendServerGameReady(client, gameDto, rival);
@@ -296,7 +301,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 	@SubscribeMessage('matchKeyDown')
 	async updateBallAndRacket(
-		@ConnectedSocket() client: Socket,
+		@ConnectedSocket() client: SocketWithAuth,
 		@MessageBody()
 		data: {
 			gameId: number;
@@ -304,12 +309,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			keyName: KEYNAME;
 		},
 	) {
-		const user = await this.authService.getUserFromSocket(client);
-		if (!user) return client.disconnect();
+		const user = client.user;
 
 		const gameDto = await this.checkGameDto(user.id, data.gameId);
 		if (!gameDto) {
-			return this.sendError(client, 400, `유효하지 않은 게임입니다`);
+			throw WSBadRequestException('유효하지 않은 게임입니다');
+			// return this.sendError(client, 400, `유효하지 않은 게임입니다`);
 		}
 
 		// console.log('----When matchKeyDown event coming, racket status----');
@@ -327,7 +332,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 	@SubscribeMessage('clientGameReady')
 	async gaming(
-		@ConnectedSocket() client: Socket,
+		@ConnectedSocket() client: SocketWithAuth,
 		@MessageBody() data: { gameId: number },
 	) {
 		console.log('clientGameReady 이벤트 받았다 !!!');
@@ -339,22 +344,25 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		 * 		5. init하기
 		 * */
 		// auth guard
-		const user = await this.authService.getUserFromSocket(client);
-		if (!user) return client.disconnect;
+		const user = client.user;
 
 		console.log(`--------${client.id} is ready--------`);
 
 		const gameDto = await this.checkGameDto(user.id, data.gameId);
 		if (!gameDto) {
-			return this.sendError(client, 400, `유효하지 않은 게임입니다`);
+			throw WSBadRequestException('유효하지 않은 게임입니다');
+			// return this.sendError(client, 400, `유효하지 않은 게임입니다`);
 		}
 		const playerSockets = await this.getPlayerSockets(gameDto);
 		if (!playerSockets.left || !playerSockets.right) {
-			return this.sendError(
-				client,
-				400,
+			throw WSBadRequestException(
 				`두 플레이어의 게임 소켓이 모두 필요합니다. 게임 불가`,
 			);
+			// return this.sendError(
+			// 	client,
+			// 	400,
+			// 	`두 플레이어의 게임 소켓이 모두 필요합니다. 게임 불가`,
+			// );
 		}
 
 		gameDto.readyCnt++;
@@ -375,28 +383,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 		// TODO: game restart 될 때도 3초 지연 ? how
 		await this.gameLoop(gameDto);
-	}
-
-	// 테스트에만 쓰임
-	@SubscribeMessage('testSetScore')
-	async testSetScore(
-		@ConnectedSocket() client: Socket,
-		@MessageBody()
-		data: {
-			gameId: number;
-			scoreLeft: number;
-			scoreRight: number;
-		},
-	) {
-		const user = await this.authService.getUserFromSocket(client);
-		if (!user) return client.disconnect;
-
-		const gameDto = await this.checkGameDto(user.id, data.gameId);
-		if (!gameDto) {
-			return this.sendError(client, 400, `유효하지 않은 게임입니다`);
-		}
-
-		await gameDto.testSetScore(data.scoreLeft, data.scoreRight);
 	}
 
 	async gameLoop(gameDto: GameDto) {
@@ -964,7 +950,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 				message: message,
 			});
 			console.log(
-				`${clients.right.id}가 가 ${message} 이유로 disconnect 된다`,
+				`${clients.right.id}가 ${message} 이유로 disconnect 된다`,
 			);
 			clients.right.disconnect();
 		}

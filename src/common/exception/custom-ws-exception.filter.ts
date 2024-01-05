@@ -1,16 +1,17 @@
 import { ArgumentsHost, Catch } from '@nestjs/common';
 import { BaseWsExceptionFilter } from '@nestjs/websockets';
-import { PacketType } from 'socket.io-parser';
+import { customWsException } from './custom-exception';
 
-@Catch()
+@Catch(customWsException)
 export class WsExceptionFilter extends BaseWsExceptionFilter {
-	catch(exception: any, host: ArgumentsHost) {
+	catch(exception: customWsException, host: ArgumentsHost) {
 		const client = host.switchToWs().getClient();
-		client.packet({
-			type: PacketType.ACK,
-			namespace: ['channels', 'game'],
-			data: [{ sucess: false, error: exception?.message }],
-			id: client.nsp._ids++,
+		const errorCode = exception.getErrorCode();
+		const message = exception.message;
+		client.emit('error', {
+			statusCode: errorCode,
+			message: message,
 		});
+		client.disconnect();
 	}
 }

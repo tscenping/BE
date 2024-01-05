@@ -1,5 +1,4 @@
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import Redis from 'ioredis';
 import { UserStatus } from 'src/common/enum';
@@ -7,6 +6,10 @@ import { DataSource, Repository } from 'typeorm';
 import { MyProfileResponseDto } from './dto/my-profile-response.dto';
 import { UserProfileReturnDto } from './dto/user-profile.dto';
 import { User } from './entities/user.entity';
+import {
+	BadRequestException,
+	ForbiddenException,
+} from '../common/exception/custom-exception';
 
 export class UsersRepository extends Repository<User> {
 	constructor(
@@ -36,7 +39,7 @@ export class UsersRepository extends Repository<User> {
 		});
 
 		if (!myProfile) {
-			throw new ForbiddenException('invalid user');
+			throw ForbiddenException('invalid user');
 		}
 
 		// redis에서 ladderRank 조회하기
@@ -73,7 +76,7 @@ export class UsersRepository extends Repository<User> {
 		});
 
 		if (!userProfile) {
-			throw new BadRequestException(
+			throw BadRequestException(
 				`there is no user with nickname ${nickname}`,
 			);
 		}
@@ -103,7 +106,7 @@ export class UsersRepository extends Repository<User> {
 				where: { id: parseInt(userid) },
 			});
 			if (!user) {
-				throw new BadRequestException(`there is no user with id`);
+				throw BadRequestException(`there is no user with id`);
 			}
 			rankUsers.push(user);
 		}
