@@ -14,7 +14,6 @@ import { AuthService } from '../auth/auth.service';
 import { UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { GatewayCreateGameInvitationParamDto } from './dto/gateway-create-invitation-param.dto';
 import {
-	EVENT_ERROR,
 	EVENT_GAME_INVITATION,
 	EVENT_GAME_INVITATION_REPLY,
 	EVENT_GAME_MATCHED,
@@ -49,7 +48,10 @@ import { User } from '../users/entities/user.entity';
 import { EmitEventMatchEndParamDto } from './dto/emit-event-match-end-param.dto';
 import { WsAuthGuard } from '../auth/guards/ws-auth.guard';
 import { SocketWithAuth } from '../socket-adapter/socket-io.adapter';
-import { WSBadRequestException } from '../common/exception/custom-exception';
+import {
+	NotFoundException,
+	WSBadRequestException,
+} from '../common/exception/custom-exception';
 
 @WebSocketGateway({ namespace: 'game' })
 @UseGuards(WsAuthGuard)
@@ -150,18 +152,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 					const right = await this.usersRepository.findOne({
 						where: { id: gameDto.playerRightId },
 					});
-					if (!left || !right) {
-						// throw WSBadRequestException(
-						// 	`player 의 데이터를 찾지 못했습니다`,
-						// );
-						return this.sendErrorAll(
+					if (left && right) {
+						/* emit */
+						await this.sendMatchEnd(
 							playerSockets,
-							400,
-							`player 의 데이터를 찾지 못했습니다`,
+							gameDto,
+							left,
+							right,
 						);
 					}
-					/* emit */
-					this.sendMatchEnd(playerSockets, gameDto, left, right);
 					/* game 지우기 */
 					await this.gameRepository.softDelete(gameDto.getGameId());
 					/* disconnect */
@@ -186,7 +185,6 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 						);
 						playerSockets.left.disconnect();
 					} else console.log(`playerSockets.left가 없음`);
-					playerSockets.right?.disconnect();
 					if (playerSockets.right) {
 						console.log(
 							`${playerSockets.right} 를 gameId-gameDto 맵에서 지웁니다 ?!!`,
@@ -235,14 +233,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			where: { id: data.gameId },
 		});
 		if (!game) {
-			console.log(`해당 game ${data.gameId} 이 없어서 disconnect 된다`);
-			return client.disconnect();
+			throw WSBadRequestException(`해당 game ${data.gameId} 이 없습니다`);
 		}
 		if (game.gameStatus !== GameStatus.WAITING) {
-			console.log(
-				`해당 game ${data.gameId} 이 WAITING 상태가 아니어서 disconnect 된다`,
+			throw WSBadRequestException(
+				`해당 game ${data.gameId} 이 이미 진행 중이거나 끝났습니다`,
 			);
-			return client.disconnect();
 		}
 
 		let gameDto = this.gameIdToGameDto.get(data.gameId);
@@ -478,20 +474,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			const right = await this.usersRepository.findOne({
 				where: { id: gameDto.playerRightId },
 			});
-			if (!left || !right) {
-				return this.sendErrorAll(
-					playerSockets,
-					400,
-					`player 의 데이터를 찾지 못했습니다`,
-				);
+			if (left && right) {
+				if (gameDto.gameType === GameType.LADDER) {
+					const winner = gameDto.winnerId === left.id ? left : right;
+					const loser = gameDto.loserId === left.id ? left : right;
+					await this.updateLadderData(winner, loser);
+				}
+				/* emit */
+				await this.sendMatchEnd(playerSockets, gameDto, left, right);
 			}
-			if (gameDto.gameType === GameType.LADDER) {
-				const winner = gameDto.winnerId === left.id ? left : right;
-				const loser = gameDto.loserId === left.id ? left : right;
-				await this.updateLadderData(winner, loser);
-			}
-			/* emit */
-			this.sendMatchEnd(playerSockets, gameDto, left, right);
 			/* disconnect */
 			// gameDto 유저들 지워주기
 			this.userIdToGameId.delete(gameDto.playerLeftId);
@@ -550,22 +541,15 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		const right = await this.usersRepository.findOne({
 			where: { id: gameDto.playerRightId },
 		});
-		if (!left || !right) {
-			return this.sendErrorAll(
-				playerSockets,
-				400,
-				`player 의 데이터를 찾지 못했습니다`,
-			);
-		}
+		if (left && right) {
+			if (gameDto.gameType === GameType.LADDER) {
+				const winner = gameDto.winnerId === left.id ? left : right;
+				const loser = gameDto.loserId === left.id ? left : right;
+				await this.updateLadderData(winner, loser);
+			}
 
-		// ladderScore 계산, user DB 업데이트
-		if (gameDto.gameType === GameType.LADDER) {
-			const winner = gameDto.winnerId === left.id ? left : right;
-			const loser = gameDto.loserId === left.id ? left : right;
-			await this.updateLadderData(winner, loser);
+			await this.sendMatchEnd(playerSockets, gameDto, left, right);
 		}
-
-		this.sendMatchEnd(playerSockets, gameDto, left, right);
 
 		// gameDto 유저들 지워주기
 		this.userIdToGameId.delete(gameDto.playerLeftId);
@@ -865,7 +849,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		}
 	}
 
-	sendMatchEnd(
+	async sendMatchEnd(
 		playerSockets: {
 			left: Socket | null;
 			right: Socket | null;
@@ -874,6 +858,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		left: User,
 		right: User,
 	) {
+		let leftLadderScore;
+		let rightLadderScore;
+		if (gameDto.gameType === GameType.LADDER) {
+			leftLadderScore = await this.getLadderScoreById(left.id);
+			rightLadderScore = await this.getLadderScoreById(right.id);
+		}
 		const leftMatchEndParamDtos: EmitEventMatchEndParamDto = {
 			gameType: gameDto.gameType,
 			rivalName: right.nickname,
@@ -882,9 +872,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			myScore: gameDto.scoreLeft,
 			isWin: gameDto.scoreLeft > gameDto.scoreRight,
 			myLadderScore:
-				gameDto.gameType === GameType.LADDER ? left.ladderScore : null,
+				gameDto.gameType === GameType.LADDER ? leftLadderScore : null,
 			rivalLadderScore:
-				gameDto.gameType === GameType.LADDER ? right.ladderScore : null,
+				gameDto.gameType === GameType.LADDER ? rightLadderScore : null,
 		};
 		const rightMatchEndParamDtos: EmitEventMatchEndParamDto = {
 			gameType: gameDto.gameType,
@@ -894,9 +884,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			myScore: gameDto.scoreRight,
 			isWin: gameDto.scoreRight > gameDto.scoreLeft,
 			myLadderScore:
-				gameDto.gameType === GameType.LADDER ? right.ladderScore : null,
+				gameDto.gameType === GameType.LADDER ? rightLadderScore : null,
 			rivalLadderScore:
-				gameDto.gameType === GameType.LADDER ? left.ladderScore : null,
+				gameDto.gameType === GameType.LADDER ? leftLadderScore : null,
 		};
 
 		if (playerSockets.left) {
@@ -917,42 +907,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		}
 	}
 
-	sendError(client: Socket, statusCode: number, message: string) {
-		this.server.to(client.id).emit(EVENT_ERROR, {
-			statusCode: statusCode,
-			message: message,
-		});
-		console.log(`${client.id}가 ${message} 이유로 disconnect 된다`);
-		client.disconnect();
-	}
-
-	sendErrorAll(
-		clients: {
-			left: Socket | null;
-			right: Socket | null;
-		},
-		statusCode: number,
-		message: string,
-	) {
-		if (clients.left) {
-			this.server.to(clients.left.id).emit(EVENT_ERROR, {
-				statusCode: statusCode,
-				message: message,
-			});
-			console.log(
-				`${clients.left.id}가 ${message} 이유로 disconnect 된다`,
+	async getLadderScoreById(userId: number) {
+		const result = await this.usersRepository
+			.createQueryBuilder('user')
+			.select('user.ladderScore', 'ladderScore')
+			.where('user.id = :id', { id: userId })
+			.getRawOne();
+		if (!result)
+			throw NotFoundException(
+				`유저 ${userId}의 ladderScore를 가져오지 못했습니다`,
 			);
-			clients.left.disconnect();
-		}
-		if (clients.right) {
-			this.server.to(clients.right.id).emit(EVENT_ERROR, {
-				statusCode: statusCode,
-				message: message,
-			});
-			console.log(
-				`${clients.right.id}가 ${message} 이유로 disconnect 된다`,
-			);
-			clients.right.disconnect();
-		}
+		return result.ladderScore;
 	}
 }

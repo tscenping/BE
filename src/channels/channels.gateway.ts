@@ -17,10 +17,10 @@ import {
 	WebSocketServer,
 } from '@nestjs/websockets';
 import Redis from 'ioredis';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import { AuthService } from 'src/auth/auth.service';
 import { UserStatus } from 'src/common/enum';
-import { EVENT_ERROR, EVENT_USER_STATUS } from 'src/common/events';
+import { EVENT_USER_STATUS } from 'src/common/events';
 import {
 	BadRequestException,
 	WSBadRequestException,
@@ -209,7 +209,7 @@ export class ChannelsGateway
 		);
 		if (!socket) {
 			throw BadRequestException('socket이 존재하지 않습니다.');
-			// WsBadRequestException을 던져서 controller에서 http exception으로 바꿔 던져야할지?
+			// WsBadRequestException을 던져서 controller나 service에서 http exception으로 바꿔 던져야할지?
 		}
 		this.logger.log(`socket.id: `, socket.id);
 		socket.join(channelRoomName);
@@ -226,7 +226,7 @@ export class ChannelsGateway
 		);
 		if (!socket) {
 			throw BadRequestException('socket이 존재하지 않습니다.');
-			// WsBadRequestException을 던져서 controller에서 http exception으로 바꿔 던져야할지?
+			// WsBadRequestException을 던져서 controller나 service에서 http exception으로 바꿔 던져야할지?
 		}
 		this.logger.log(`socket.id: `, socket.id);
 		socket.leave(channelRoomName);
@@ -245,7 +245,7 @@ export class ChannelsGateway
 		});
 		if (!invitingUser) {
 			throw BadRequestException('유저가 유효하지 않습니다.');
-			// WsBadRequestException을 던져서 controller에서 http exception으로 바꿔 던져야할지?
+			// WsBadRequestException을 던져서 controller나 service에서 http exception으로 바꿔 던져야할지?
 		}
 
 		const invitationEmitDto = {
@@ -261,7 +261,7 @@ export class ChannelsGateway
 			!invitedUser.channelSocketId
 		) {
 			throw BadRequestException('유저가 유효하지 않습니다.');
-			// WsBadRequestException을 던져서 controller에서 http exception으로 바꿔 던져야할지?
+			// WsBadRequestException을 던져서 controller나 service에서 http exception으로 바꿔 던져야할지?
 		}
 		const isBlocked = await this.BlocksRepository.findOne({
 			where: { fromUserId: invitedUser.id, toUserId: invitingUser.id },
@@ -281,12 +281,5 @@ export class ChannelsGateway
 		this.server
 			.to(channelId.toString())
 			.emit('notice', channelNoticeResponseDto);
-	}
-
-	sendError(client: Socket, statusCode: number, message: string) {
-		this.server.to(client.id).emit(EVENT_ERROR, {
-			statusCode: statusCode,
-			message: message,
-		});
 	}
 }

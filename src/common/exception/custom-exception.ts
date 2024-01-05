@@ -6,7 +6,7 @@ import {
 	DB_UPDATE_FAILURE,
 	WS_BAD_REQUEST_ERROR,
 	WS_DB_UPDATE_FAILURE,
-	WS_UNAUTHORIZED_ERROR, CONFLICT_ERROR, FORBIDDEN_ERROR,
+	WS_UNAUTHORIZED_ERROR, CONFLICT_ERROR, FORBIDDEN_ERROR, NOT_FOUND_ERROR,
 } from './error-code';
 import { WsException } from '@nestjs/websockets';
 export class customHttpException extends Error {
@@ -57,6 +57,10 @@ export const ConflictException = (message?: string): customHttpException => {
 
 export const ForbiddenException = (message?: string): customHttpException => {
 	return new customHttpException(FORBIDDEN_ERROR, message);
+};
+
+export const NotFoundException = (message?: string): customHttpException => {
+	return new customHttpException(NOT_FOUND_ERROR, message);
 };
 
 export const DBUpdateFailureException = (

@@ -32,6 +32,11 @@ export const FORBIDDEN_ERROR = new ErrorCodeValueObject(
 	'Forbidden',
 );
 
+export const NOT_FOUND_ERROR = new ErrorCodeValueObject(
+	HttpStatus.NOT_FOUND,
+	'Not found',
+);
+
 export const DB_UPDATE_FAILURE = new ErrorCodeValueObject(
 	HttpStatus.INTERNAL_SERVER_ERROR,
 	'DataBase task could not be done',
