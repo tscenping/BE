@@ -11,7 +11,6 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
 import { User } from 'src/users/entities/user.entity';
-import { AppService } from '../app.service';
 import { SignupRequestDto } from '../users/dto/signup-request.dto';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
@@ -27,7 +26,6 @@ export class AuthController {
 		private readonly authService: AuthService,
 		private readonly ftAuthService: FtAuthService,
 		private readonly usersService: UsersService,
-		private readonly AppService: AppService,
 	) {}
 
 	@Post('/signin')
