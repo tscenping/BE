@@ -34,16 +34,9 @@ jobs:
         run: |
           docker build -t be:latest .
 
-  deploy:
-    needs: build
-    name: CD
-    runs-on: self-hosted
-    # if: github.ref == 'refs/heads/deploy'
-
-    steps:
       - name: Stop and remove previous container
         run: |
-          docker rm -f backend || true
+          docker rm -f be || true
 
       # - name: Login to Amazon ECR
       #   id: login-ecr
@@ -58,4 +51,13 @@ jobs:
 
       - name: Pull image from Amazon ECR and run container
         run: |
-          docker run -d --name backend backend:latest
+          docker run -d --name be be:latest
+
+  # deploy:
+  #   needs: build
+  #   name: CD
+  #   runs-on: self-hosted
+  #   if: github.ref == 'refs/heads/deploy'
+
+  #   steps:
+      
