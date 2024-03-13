@@ -36,7 +36,7 @@ jobs:
 
       - name: Stop and remove previous container
         run: |
-          docker rm -f backend || true
+          docker rmi -f backend || true
 
       # - name: Login to Amazon ECR
       #   id: login-ecr
