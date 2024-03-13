@@ -36,7 +36,7 @@ jobs:
 
       - name: Stop and remove previous container
         run: |
-          docker rm -f be || true
+          docker rm -f backend || true
 
       # - name: Login to Amazon ECR
       #   id: login-ecr
@@ -51,7 +51,7 @@ jobs:
 
       - name: Pull image from Amazon ECR and run container
         run: |
-          docker run -d --name be be:latest
+          docker run -d --name backend backend:latest
 
   # deploy:
   #   needs: build
