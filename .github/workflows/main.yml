@@ -32,11 +32,11 @@ jobs:
       - name: Build image in EC2
         id: build-image
         run: |
-          docker build -t be:latest .
+          docker build -t backend:latest .
 
       - name: Stop and remove previous container
         run: |
-          docker rmi -f backend || true
+          docker rm -f backend || true
 
       # - name: Login to Amazon ECR
       #   id: login-ecr
