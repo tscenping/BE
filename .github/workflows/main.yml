@@ -51,6 +51,7 @@ jobs:
 
       - name: Pull image from Amazon ECR and run container
         run: |
+          cd ~/BE
           docker image tag backend:latest backend:service
           docker-compose up -d
 
