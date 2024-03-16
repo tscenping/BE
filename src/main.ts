@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import { AppModule } from './app.module';
 import { ToHttpFilter } from './common/exception/custom-exception.filter';
 import { setupSwagger } from './config/swagger.config';
-import { SocketIoAdapter } from './socket-adapter/socket-io.adapter';
+import { SocketIoAdapter } from './common/adapter/socket-io.adapter';
 
 async function bootstrap() {
 	const httpsOptions = {

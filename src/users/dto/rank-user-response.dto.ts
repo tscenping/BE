@@ -1,7 +1,7 @@
-import { RankUserReturnDto } from "./rank-user-return.dto";
+import { RankUserReturnDto } from './rank-user-return.dto';
 
 export type RankUserResponseDto = {
-    rankUsers: RankUserReturnDto[];
+	rankUsers: RankUserReturnDto[];
 
-    totalItemCount: number;
+	totalItemCount: number;
 };

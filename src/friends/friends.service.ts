@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { BlocksRepository } from './blocks.repository';
 import { FriendUserResponseDto } from './dto/friend-user-response.dto';
 import { FriendsRepository } from './friends.repository';
-import { UsersRepository } from './users.repository';
+import { UsersRepository } from '../user-repository/users.repository';
 
 @Injectable()
 export class FriendsService {
@@ -41,7 +41,7 @@ export class FriendsService {
 			fromUserId,
 			toUserId,
 		});
-		// this.logger.log('friend: ', friend);
+		// this.logger.log('friends: ', friends);
 		await this.friendsRepository.save(friend);
 	}
 

@@ -8,14 +8,23 @@ import { GameInvitationRepository } from './game-invitation.repository';
 import { GameInvitation } from './entities/game-invitation.entity';
 import { GameGateway } from './game.gateway';
 import { ChannelsModule } from '../channels/channels.module';
-import { UsersModule } from '../users/users.module';
-import { AuthModule } from '../auth/auth.module';
+import { JwtModule } from '@nestjs/jwt';
+import jwtConfig from '../config/jwt.config';
+import { ConfigType } from '@nestjs/config';
+import { UserRepositoryModule } from '../user-repository/user-repository.module';
+import { FriendsModule } from '../friends/friends.module';
 
 @Module({
 	imports: [
+		JwtModule.registerAsync({
+			inject: [jwtConfig.KEY],
+			useFactory: (jwtConfigure: ConfigType<typeof jwtConfig>) =>
+				jwtConfigure,
+		}),
 		TypeOrmModule.forFeature([Game, GameInvitation]),
-		AuthModule,
-		UsersModule,
+		// AuthModule,
+		UserRepositoryModule,
+		FriendsModule,
 		ChannelsModule,
 	],
 	controllers: [GameController],

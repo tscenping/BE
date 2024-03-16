@@ -8,7 +8,7 @@ import { AuthService } from './auth.service';
 import { FtAuthService } from './ft-auth.service';
 import { JwtAccessStrategy } from './jwt-access.strategy';
 import { JwtRefreshStrategy } from './jwt-refresh.strategy';
-import { UsersModule } from '../users/users.module';
+import { UserRepositoryModule } from '../user-repository/user-repository.module';
 
 @Module({
 	imports: [
@@ -18,7 +18,7 @@ import { UsersModule } from '../users/users.module';
 			useFactory: (jwtConfigure: ConfigType<typeof jwtConfig>) =>
 				jwtConfigure,
 		}),
-		UsersModule,
+		UserRepositoryModule,
 	],
 	controllers: [AuthController],
 	providers: [
@@ -27,6 +27,6 @@ import { UsersModule } from '../users/users.module';
 		JwtAccessStrategy,
 		JwtRefreshStrategy,
 	],
-	exports: [AuthService, JwtAccessStrategy, JwtRefreshStrategy],
+	exports: [JwtAccessStrategy, JwtRefreshStrategy],
 })
 export class AuthModule {}

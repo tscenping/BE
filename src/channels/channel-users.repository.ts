@@ -47,7 +47,7 @@ export class ChannelUsersRepository extends Repository<ChannelUser> {
 		// 	.addSelect('u.nickname', 'nickname')
 		// 	.addSelect('u.avatar', 'avatar')
 		// 	.addSelect(
-		// 		`(SELECT 1 FROM friend f WHERE f."fromUserId" = :userId AND f."toUserId" = u.id AND f."deletedAt" IS NULL)`,
+		// 		`(SELECT 1 FROM friends f WHERE f."fromUserId" = :userId AND f."toUserId" = u.id AND f."deletedAt" IS NULL)`,
 		// 		'isFriend',
 		// 	)
 		// 	.addSelect(
