@@ -17,11 +17,11 @@ import {
 	WebSocketServer,
 } from '@nestjs/websockets';
 import Redis from 'ioredis';
-import { Server, Socket } from 'socket.io';
+import { Server } from 'socket.io';
 import { UserStatus } from 'src/common/enum';
-import { EVENT_ERROR, EVENT_USER_STATUS } from 'src/common/events';
+import { EVENT_USER_STATUS } from 'src/common/events';
 import { WSBadRequestException } from 'src/common/exception/custom-exception';
-import { WsExceptionFilter } from 'src/common/exception/custom-ws-exception.filter';
+import { WsFilter } from 'src/common/exception/custom-ws-exception.filter';
 import { GatewayCreateChannelInvitationParamDto } from 'src/game/dto/gateway-create-channelInvitation-param-dto';
 import { FriendsRepository } from 'src/friends/friends.repository';
 import { UsersRepository } from 'src/user-repository/users.repository';
@@ -35,7 +35,7 @@ import { SocketWithAuth } from '../common/adapter/socket-io.adapter';
 
 @WebSocketGateway({ namespace: 'channels' })
 @UseGuards(WsAuthGuard)
-@UseFilters(WsExceptionFilter)
+@UseFilters(WsFilter)
 @UsePipes(ValidationPipe)
 export class ChannelsGateway
 	implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
@@ -70,9 +70,17 @@ export class ChannelsGateway
 
 		const user = client.user;
 		if (!user || !client.id) return client.disconnect();
-		if (user.channelSocketId) {
-			this.sendError(client, 400, `중복 연결입니다`);
-			return client.disconnect();
+		else if (user.channelSocketId) {
+			console.log('channel socket 갈아끼운다 ~?!');
+			const socket = await this.isSocketConnected(user.channelSocketId);
+			if (socket) {
+				socket.disconnect();
+			} else {
+				await this.usersRepository.update(user.id, {
+					channelSocketId: null,
+					status: UserStatus.OFFLINE,
+				});
+			}
 		}
 		this.logger.log(`Client connected: ${client.id}, userId: ${user.id}`);
 
@@ -171,7 +179,7 @@ export class ChannelsGateway
 			where: { userId: user.id, channelId, isBanned: false },
 		});
 		if (!channelUser) {
-			throw WSBadRequestException('채널에 속해있지 않습니다.');
+			return;
 		}
 
 		const eventMessageEmitDto = {
@@ -185,7 +193,8 @@ export class ChannelsGateway
 		const isMutedChannelUser = await this.redis.exists(muteRedisKey);
 
 		if (isMutedChannelUser) {
-			throw WSBadRequestException('채널에서 음소거 되었습니다.');
+			// TODO: 뮤트 상태에서 메세지 보내면 어떻게 핸들링?
+			return;
 		}
 
 		// 어떤 user가 보내는지 찾아주기 위해 emit한다. (nickname, message, channelId, notice)
@@ -200,11 +209,9 @@ export class ChannelsGateway
 			`joinChannelRoom: ${channelRoomName}, ${channelSocketId}`,
 		);
 
-		const socket = (await this.server.fetchSockets()).find(
-			(s) => s.id === channelSocketId,
-		);
+		const socket = await this.isSocketConnected(channelSocketId);
 		if (!socket) {
-			return WSBadRequestException('socket이 존재하지 않습니다.');
+			throw WSBadRequestException('socket이 존재하지 않습니다.');
 		}
 		this.logger.log(`socket.id: `, socket.id);
 		socket.join(channelRoomName);
@@ -220,7 +227,7 @@ export class ChannelsGateway
 			(s) => s.id === channelSocketId,
 		);
 		if (!socket) {
-			return WSBadRequestException('socket이 존재하지 않습니다.');
+			throw WSBadRequestException('socket이 존재하지 않습니다.');
 		}
 		this.logger.log(`socket.id: `, socket.id);
 		socket.leave(channelRoomName);
@@ -275,10 +282,13 @@ export class ChannelsGateway
 			.emit('notice', channelNoticeResponseDto);
 	}
 
-	sendError(client: Socket, statusCode: number, message: string) {
-		this.server.to(client.id).emit(EVENT_ERROR, {
-			statusCode: statusCode,
-			message: message,
-		});
+	private async isSocketConnected(ChannelSocketId: string) {
+		const socket = (await this.server.fetchSockets()).find(
+			(s) => s.id === ChannelSocketId,
+		);
+		if (!socket) {
+			return null;
+		}
+		return socket;
 	}
 }

@@ -3,9 +3,10 @@ import { NestFactory } from '@nestjs/core';
 import * as cookieParser from 'cookie-parser';
 import * as fs from 'fs';
 import { AppModule } from './app.module';
-import { ToHttpFilter } from './common/exception/custom-exception.filter';
+import { HttpFilter } from './common/exception/custom-exception.filter';
 import { setupSwagger } from './config/swagger.config';
 import { SocketIoAdapter } from './common/adapter/socket-io.adapter';
+import { WsFilter } from './common/exception/custom-ws-exception.filter';
 
 async function bootstrap() {
 	const httpsOptions = {
@@ -24,7 +25,7 @@ async function bootstrap() {
 	app.use(cookieParser());
 
 	// app.useGlobalInterceptors(new LoggingInterceptor());
-	app.useGlobalFilters(new ToHttpFilter());
+	app.useGlobalFilters(new HttpFilter(), new WsFilter());
 	app.useGlobalPipes(new ValidationPipe());
 
 	app.useWebSocketAdapter(new SocketIoAdapter(app));

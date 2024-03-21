@@ -12,6 +12,17 @@ class ErrorCodeValueObject {
 
 export type ErrorCode = ErrorCodeValueObject;
 
+class WsErrorCodeValueObject {
+	readonly message: string;
+	readonly disconnect: boolean;
+
+	constructor(message: string) {
+		this.message = message;
+	}
+}
+
+export type WsErrorCode = WsErrorCodeValueObject;
+
 export const DB_UPDATE_FAILURE = new ErrorCodeValueObject(
 	HttpStatus.INTERNAL_SERVER_ERROR,
 	'DataBase task could not be done',
@@ -22,17 +33,14 @@ export const DB_QUERY_ERROR = new ErrorCodeValueObject(
 	'Query task could not be done',
 );
 
-export const WS_UNAUTHORIZED_ERROR = new ErrorCodeValueObject(
-	HttpStatus.UNAUTHORIZED,
+export const WS_UNAUTHORIZED_ERROR = new WsErrorCodeValueObject(
 	'WebSocket: unauthorized user detected',
 );
 
-export const WS_BAD_REQUEST_ERROR = new ErrorCodeValueObject(
-	HttpStatus.BAD_REQUEST,
+export const WS_BAD_REQUEST_ERROR = new WsErrorCodeValueObject(
 	'WebSocket: bad request',
 );
 
-export const WS_DB_UPDATE_FAILURE = new ErrorCodeValueObject(
-	HttpStatus.INTERNAL_SERVER_ERROR,
+export const WS_DB_UPDATE_FAILURE = new WsErrorCodeValueObject(
 	'WebSocket: DataBase task could not be done',
 );

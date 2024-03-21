@@ -74,7 +74,7 @@ export class ChannelsController {
 
 		if (user.channelSocketId) {
 			// 채널 룸에 join
-			this.channelsGateway.joinChannelRoom(
+			await this.channelsGateway.joinChannelRoom(
 				createChannelResponseDto.channelId.toString(),
 				user.channelSocketId,
 			);
@@ -94,7 +94,7 @@ export class ChannelsController {
 		@Param('channelId', ParseIntPipe, PositiveIntPipe) channelId: number,
 	) {
 		if (user.channelSocketId) {
-			this.channelsGateway.joinChannelRoom(
+			await this.channelsGateway.joinChannelRoom(
 				channelId.toString(),
 				user.channelSocketId,
 			);
@@ -151,7 +151,7 @@ export class ChannelsController {
 
 		if (user.channelSocketId) {
 			// 채널 룸에 join
-			this.channelsGateway.joinChannelRoom(
+			await this.channelsGateway.joinChannelRoom(
 				channelId.toString(),
 				user.channelSocketId,
 			);
@@ -182,7 +182,7 @@ export class ChannelsController {
 
 		if (user.channelSocketId) {
 			// 채널 룸에서 leave
-			this.channelsGateway.leaveChannelRoom(
+			await this.channelsGateway.leaveChannelRoom(
 				channelId.toString(),
 				user.channelSocketId,
 			);

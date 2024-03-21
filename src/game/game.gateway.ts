@@ -16,7 +16,7 @@ import {
 	UsePipes,
 	ValidationPipe,
 } from '@nestjs/common';
-import { WsExceptionFilter } from '../common/exception/custom-ws-exception.filter';
+import { WsFilter } from '../common/exception/custom-ws-exception.filter';
 import { GatewayCreateGameInvitationParamDto } from './dto/gateway-create-invitation-param.dto';
 import {
 	EVENT_ERROR,
@@ -54,10 +54,11 @@ import { User } from '../user-repository/entities/user.entity';
 import { EmitEventMatchEndParamDto } from './dto/emit-event-match-end-param.dto';
 import { WsAuthGuard } from '../common/guards/ws-auth.guard';
 import { SocketWithAuth } from '../common/adapter/socket-io.adapter';
+import { WSBadRequestException } from '../common/exception/custom-exception';
 
 @WebSocketGateway({ namespace: 'game' })
 @UseGuards(WsAuthGuard)
-@UseFilters(WsExceptionFilter)
+@UseFilters(WsFilter)
 @UsePipes(ValidationPipe)
 export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	private userIdToClient: Map<number, Socket>;
@@ -136,7 +137,14 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 					await gameDto.setNone();
 					const playerSockets = await this.getPlayerSockets(gameDto);
 					/* game update */
+					// 지우기 전에 예쁜 데이터 만들기.. 필요할까?
 					await this.gameRepositoryUpdate(gameDto);
+
+					/* game 지우기 */
+					await this.gameRepository.softDelete(gameDto.getGameId());
+
+					/* unmapping */
+					await this.deleteMapData(gameDto);
 
 					const left = await this.usersRepository.findOne({
 						where: { id: gameDto.playerLeftId },
@@ -145,18 +153,20 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 						where: { id: gameDto.playerRightId },
 					});
 					if (!left || !right) {
-						return this.sendErrorAll(
-							playerSockets,
-							400,
+						// return this.sendErrorAll(
+						// 	playerSockets,
+						// 	`player 의 데이터를 찾지 못했습니다`,
+						// );
+						throw WSBadRequestException(
 							`player 의 데이터를 찾지 못했습니다`,
 						);
 					}
+
 					/* emit */
 					this.sendMatchEnd(playerSockets, gameDto, left, right);
-					/* game 지우기 */
-					await this.gameRepository.softDelete(gameDto.getGameId());
-					/* unmapping & disconnect */
-					await this.deleteMapData(gameDto, playerSockets);
+
+					/* disconnect */
+					await this.disconnectSockets(playerSockets);
 				}
 			}
 		}
@@ -250,13 +260,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		const rival = await this.usersRepository.findOne({
 			where: { id: rivalId },
 		});
-		if (!rival) {
-			return this.sendError(
-				client,
-				400,
+		if (!rival)
+			throw WSBadRequestException(
 				`상대 player ${rivalId} 의 데이터를 찾지 못했습니다`,
 			);
-		}
 
 		this.sendServerGameReady(client, gameDto, rival);
 	}
@@ -276,7 +283,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
 		const gameDto = await this.checkGameDto(user.id, data.gameId);
 		if (!gameDto) {
-			return this.sendError(client, 400, `유효하지 않은 게임입니다`);
+			throw WSBadRequestException(`유효하지 않은 게임입니다`);
 		}
 
 		// console.log('----When matchKeyDown event coming, racket status----');
@@ -312,17 +319,13 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		console.log(`--------${client.id} is ready--------`);
 
 		const gameDto = await this.checkGameDto(user.id, data.gameId);
-		if (!gameDto) {
-			return this.sendError(client, 400, `유효하지 않은 게임입니다`);
-		}
+		if (!gameDto) throw WSBadRequestException(`유효하지 않은 게임입니다`);
+
 		const playerSockets = await this.getPlayerSockets(gameDto);
-		if (!playerSockets.left || !playerSockets.right) {
-			return this.sendError(
-				client,
-				400,
+		if (!playerSockets.left || !playerSockets.right)
+			throw WSBadRequestException(
 				`두 플레이어의 게임 소켓이 모두 필요합니다. 게임 불가`,
 			);
-		}
 
 		gameDto.readyCnt++;
 		console.log(`ready count: ${gameDto.readyCnt}`);
@@ -410,6 +413,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		/* game update */
 		await this.gameRepositoryUpdate(gameDto);
 
+		/* unmapping */
+		await this.deleteMapData(gameDto);
+
 		const left = await this.usersRepository.findOne({
 			where: { id: gameDto.playerLeftId },
 		});
@@ -417,11 +423,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			where: { id: gameDto.playerRightId },
 		});
 		if (!left || !right) {
-			return this.sendErrorAll(
-				playerSockets,
-				400,
-				`player 의 데이터를 찾지 못했습니다`,
-			);
+			// return this.sendErrorAll(
+			// 	playerSockets,
+			// 	`player 의 데이터를 찾지 못했습니다`,
+			// );
+			throw WSBadRequestException(`player 의 데이터를 찾지 못했습니다`);
 		}
 
 		/* user update */
@@ -432,8 +438,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		}
 		/* emit */
 		this.sendMatchEnd(playerSockets, gameDto, left, right);
-		/* unmapping & disconnect */
-		await this.deleteMapData(gameDto, playerSockets);
+
+		/* disconnect */
+		await this.disconnectSockets(playerSockets);
 	}
 
 	async gameEnd(gameDto: GameDto) {
@@ -444,6 +451,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		/* game update */
 		await this.gameRepositoryUpdate(gameDto);
 
+		/* unmapping */
+		await this.deleteMapData(gameDto);
+
 		const left = await this.usersRepository.findOne({
 			where: { id: gameDto.playerLeftId },
 		});
@@ -451,11 +461,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			where: { id: gameDto.playerRightId },
 		});
 		if (!left || !right) {
-			return this.sendErrorAll(
-				playerSockets,
-				400,
-				`player 의 데이터를 찾지 못했습니다`,
-			);
+			// return this.sendErrorAll(
+			// 	playerSockets,
+			// 	`player 의 데이터를 찾지 못했습니다`,
+			// );
+			throw WSBadRequestException(`player 의 데이터를 찾지 못했습니다`);
 		}
 
 		/* user update */
@@ -466,8 +476,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		}
 		/* emit */
 		this.sendMatchEnd(playerSockets, gameDto, left, right);
-		/* unmapping & disconnect */
-		await this.deleteMapData(gameDto, playerSockets);
+
+		/* disconnect */
+		await this.disconnectSockets(playerSockets);
 	}
 
 	private async gameRepositoryUpdate(gameDto: GameDto) {
@@ -486,13 +497,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		);
 	}
 
-	private async deleteMapData(
-		gameDto: GameDto,
-		playerSockets: {
-			left: Socket | null;
-			right: Socket | null;
-		},
-	) {
+	private async deleteMapData(gameDto: GameDto) {
 		// gameDto 유저들 지워주기
 		this.userIdToGameId.delete(gameDto.playerLeftId);
 		// console.log(
@@ -508,7 +513,12 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		// console.log(
 		// 	`${gameDto.getGameId()} 를 gameId-gameDto 맵에서 지웁니다 ?!!`,
 		// );
+	}
 
+	private async disconnectSockets(playerSockets: {
+		left: Socket | null;
+		right: Socket | null;
+	}) {
 		playerSockets.left?.disconnect();
 		// if (playerSockets.left)
 		// 	console.log(
@@ -844,38 +854,26 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		}
 	}
 
-	sendError(client: Socket, statusCode: number, message: string) {
-		this.server.to(client.id).emit(EVENT_ERROR, {
-			statusCode: statusCode,
-			message: message,
-		});
-		console.log(`${client.id}가 ${message} 이유로 disconnect 된다`);
-		client.disconnect();
-	}
-
 	sendErrorAll(
 		clients: {
 			left: Socket | null;
 			right: Socket | null;
 		},
-		statusCode: number,
 		message: string,
 	) {
 		if (clients.left) {
-			this.server.to(clients.left.id).emit(EVENT_ERROR, {
-				statusCode: statusCode,
-				message: message,
-			});
+			this.server
+				.to(clients.left.id)
+				.emit(EVENT_ERROR, { message: message });
 			console.log(
 				`${clients.left.id}가 ${message} 이유로 disconnect 된다`,
 			);
 			clients.left.disconnect();
 		}
 		if (clients.right) {
-			this.server.to(clients.right.id).emit(EVENT_ERROR, {
-				statusCode: statusCode,
-				message: message,
-			});
+			this.server
+				.to(clients.right.id)
+				.emit(EVENT_ERROR, { message: message });
 			console.log(
 				`${clients.right.id}가 가 ${message} 이유로 disconnect 된다`,
 			);
