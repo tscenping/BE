@@ -120,25 +120,4 @@ export class UsersService {
 
 		return user;
 	}
-
-	// TODO: test용 메서드. 추후 삭제
-	async findUserByNickname(nickname: string) {
-		const user = await this.userRepository.findOne({
-			where: { nickname },
-		});
-
-		return user;
-	}
-
-	// TODO: test용 메서드. 추후 삭제
-	async createUser(nickname: string, email: string) {
-		const user = this.userRepository.create({
-			nickname,
-			email,
-		});
-
-		await this.userRepository.save(user);
-
-		return user;
-	}
 }
