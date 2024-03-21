@@ -15,7 +15,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { ChannelEventType, ChannelType } from 'src/common/enum';
-import { User } from 'src/users/entities/user.entity';
+import { User } from 'src/user-repository/entities/user.entity';
 import { PositiveIntPipe } from '../common/pipes/positiveInt.pipe';
 import { ChannelsGateway } from './channels.gateway';
 import { ChannelsService } from './channels.service';

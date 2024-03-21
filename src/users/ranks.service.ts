@@ -1,9 +1,9 @@
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Redis } from 'ioredis';
 import { AppService } from 'src/app.service';
-import { UsersRepository } from 'src/users/users.repository';
+import { UsersRepository } from 'src/user-repository/users.repository';
 import { RankUserResponseDto } from './dto/rank-user-response.dto';
 import { RankUserReturnDto } from './dto/rank-user-return.dto';
 import { IsNull, Not } from 'typeorm';

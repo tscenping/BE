@@ -1,5 +1,11 @@
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
-import { Logger, UseFilters, UsePipes, ValidationPipe } from '@nestjs/common';
+import {
+	Logger,
+	UseFilters,
+	UseGuards,
+	UsePipes,
+	ValidationPipe,
+} from '@nestjs/common';
 import {
 	ConnectedSocket,
 	MessageBody,
@@ -12,21 +18,23 @@ import {
 } from '@nestjs/websockets';
 import Redis from 'ioredis';
 import { Server, Socket } from 'socket.io';
-import { AuthService } from 'src/auth/auth.service';
 import { UserStatus } from 'src/common/enum';
 import { EVENT_ERROR, EVENT_USER_STATUS } from 'src/common/events';
 import { WSBadRequestException } from 'src/common/exception/custom-exception';
 import { WsExceptionFilter } from 'src/common/exception/custom-ws-exception.filter';
 import { GatewayCreateChannelInvitationParamDto } from 'src/game/dto/gateway-create-channelInvitation-param-dto';
-import { FriendsRepository } from 'src/users/friends.repository';
-import { UsersRepository } from 'src/users/users.repository';
-import { BlocksRepository } from '../users/blocks.repository';
+import { FriendsRepository } from 'src/friends/friends.repository';
+import { UsersRepository } from 'src/user-repository/users.repository';
+import { BlocksRepository } from '../friends/blocks.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
 import { ChannelNoticeResponseDto } from './dto/channel-notice.response.dto';
 import { EventMessageOnDto } from './dto/event-message-on.dto';
-import { User } from 'src/users/entities/user.entity';
+import { User } from 'src/user-repository/entities/user.entity';
+import { WsAuthGuard } from '../common/guards/ws-auth.guard';
+import { SocketWithAuth } from '../common/adapter/socket-io.adapter';
 
 @WebSocketGateway({ namespace: 'channels' })
+@UseGuards(WsAuthGuard)
 @UseFilters(WsExceptionFilter)
 @UsePipes(ValidationPipe)
 export class ChannelsGateway
@@ -38,11 +46,10 @@ export class ChannelsGateway
 		SPECIAL_MATCHING: [],
 	};
 	constructor(
-		private readonly authService: AuthService,
 		private readonly usersRepository: UsersRepository,
 		private readonly channelUsersRepository: ChannelUsersRepository,
 		private readonly friendsRepository: FriendsRepository,
-		private readonly BlocksRepository: BlocksRepository,
+		private readonly blocksRepository: BlocksRepository,
 		@InjectRedis() private readonly redis: Redis,
 	) {}
 
@@ -58,10 +65,10 @@ export class ChannelsGateway
 		this.usersRepository.initAllSocketIdAndUserStatus();
 	}
 
-	async handleConnection(@ConnectedSocket() client: Socket) {
+	async handleConnection(@ConnectedSocket() client: SocketWithAuth) {
 		// Socket으로부터 user 정보를 가져온다.
 
-		const user = await this.authService.getUserFromSocket(client);
+		const user = client.user;
 		if (!user || !client.id) return client.disconnect();
 		if (user.channelSocketId) {
 			this.sendError(client, 400, `중복 연결입니다`);
@@ -101,10 +108,10 @@ export class ChannelsGateway
 		}
 	}
 
-	async handleDisconnect(@ConnectedSocket() client: Socket) {
+	async handleDisconnect(@ConnectedSocket() client: SocketWithAuth) {
 		this.logger.log(`Client disconnected: ${client.id}`);
 		const gameQueue = this.gameQueue;
-		const user = await this.authService.getUserFromSocket(client);
+		const user = client.user;
 		if (!user || client.id !== user.channelSocketId) {
 			return;
 		}
@@ -147,11 +154,11 @@ export class ChannelsGateway
 
 	@SubscribeMessage('message')
 	async handleMessage(
-		@ConnectedSocket() client: Socket,
+		@ConnectedSocket() client: SocketWithAuth,
 		@MessageBody() data: EventMessageOnDto,
 	) {
 		// Socket으로부터 user 정보를 가져온다.
-		const user = await this.authService.getUserFromSocket(client);
+		const user = client.user;
 
 		if (!user || user.channelSocketId !== client.id) {
 			throw WSBadRequestException('유저 정보가 일치하지 않습니다.'); // TODO: exception 발생해도 서버 죽지 않는지 확인
@@ -248,7 +255,7 @@ export class ChannelsGateway
 		) {
 			throw WSBadRequestException('유저가 유효하지 않습니다.');
 		}
-		const isBlocked = await this.BlocksRepository.findOne({
+		const isBlocked = await this.blocksRepository.findOne({
 			where: { fromUserId: invitedUser.id, toUserId: invitingUser.id },
 		});
 		if (isBlocked) return;

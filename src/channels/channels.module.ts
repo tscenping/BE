@@ -11,12 +11,22 @@ import { ChannelUser } from './entities/channel-user.entity';
 import { Channel } from './entities/channel.entity';
 import { UsersModule } from '../users/users.module';
 import { AuthModule } from '../auth/auth.module';
+import { UserRepositoryModule } from '../user-repository/user-repository.module';
+import { FriendsModule } from '../friends/friends.module';
+import { JwtModule } from '@nestjs/jwt';
+import jwtConfig from '../config/jwt.config';
+import { ConfigType } from '@nestjs/config';
 
 @Module({
 	imports: [
+		JwtModule.registerAsync({
+			inject: [jwtConfig.KEY],
+			useFactory: (jwtConfigure: ConfigType<typeof jwtConfig>) =>
+				jwtConfigure,
+		}),
 		TypeOrmModule.forFeature([Channel, ChannelUser, ChannelInvitation]),
-		AuthModule,
-		UsersModule,
+		UserRepositoryModule,
+		FriendsModule,
 	],
 	controllers: [ChannelsController],
 	providers: [

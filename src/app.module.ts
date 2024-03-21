@@ -15,6 +15,8 @@ import typeOrmConfig from './config/typeorm.config';
 import { GameModule } from './game/game.module';
 import { UsersModule } from './users/users.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { UserRepositoryModule } from './user-repository/user-repository.module';
+import { FriendsModule } from './friends/friends.module';
 import userConfig from './config/user.config';
 
 @Module({
@@ -31,7 +33,6 @@ import userConfig from './config/user.config';
 				pgadminConfig,
 				jwtConfig,
 				typeOrmConfig,
-				redisConfig,
 				userConfig,
 			],
 		}),
@@ -42,15 +43,17 @@ import userConfig from './config/user.config';
 		}),
 		RedisModule.forRootAsync({
 			inject: [redisConfig.KEY],
-			imports: [ConfigModule.forFeature(redisConfig)],
+			// imports: [ConfigModule.forFeature(redisConfig)],
 			useFactory: (redisConfigure: ConfigType<typeof redisConfig>) =>
 				redisConfigure,
 		}),
 		ScheduleModule.forRoot(),
+		UserRepositoryModule,
 		AuthModule,
-		UsersModule,
+		FriendsModule,
 		ChannelsModule,
 		GameModule,
+		UsersModule,
 		RedisModule,
 		SwaggerModule,
 	],

@@ -3,11 +3,11 @@ import * as bcrypt from 'bcrypt';
 import { UserStatus } from 'src/common/enum';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { GameRepository } from '../game/game.repository';
-import { BlocksRepository } from './blocks.repository';
-import { UserProfileResponseDto } from './dto/user-profile.dto';
-import { User } from './entities/user.entity';
-import { FriendsRepository } from './friends.repository';
-import { UsersRepository } from './users.repository';
+import { BlocksRepository } from '../friends/blocks.repository';
+import { UserProfileResponseDto } from './dto/user-profile-response.dto';
+import { User } from '../user-repository/entities/user.entity';
+import { FriendsRepository } from '../friends/friends.repository';
+import { UsersRepository } from '../user-repository/users.repository';
 
 @Injectable()
 export class UsersService {
@@ -78,60 +78,6 @@ export class UsersService {
 			isFriend: friend !== null,
 			isBlocked: block !== null,
 		};
-	}
-
-	async signup(userId: number, nickname: string, avatar: string) {
-		const user = await this.validateUserExist(userId);
-
-		await this.validateUserAlreadySignUp(user);
-
-		await this.validateNickname(nickname);
-
-		const updateRes = await this.userRepository.update(userId, {
-			avatar: avatar,
-			nickname: nickname,
-			status: UserStatus.ONLINE,
-		});
-
-		if (updateRes.affected !== 1) {
-			throw DBUpdateFailureException(`user ${userId} update failed`);
-		}
-	}
-
-	async validateUserExist(userId: number) {
-		const user = await this.userRepository.findOne({
-			where: {
-				id: userId,
-			},
-		});
-
-		if (!user) {
-			throw new BadRequestException(
-				`User with id ${userId} doesn't exist`,
-			);
-		}
-		return user;
-	}
-
-	async validateUserAlreadySignUp(user: User) {
-		if (user.nickname)
-			throw new BadRequestException(`${user.id} is already signed up`);
-	}
-
-	async validateNickname(nickname: string) {
-		const user = await this.userRepository.findUserByNickname(nickname);
-
-		if (user)
-			throw new BadRequestException(
-				`nickname '${nickname}' is already exist! Try again`,
-			);
-	}
-
-	async signout(userId: number) {
-		await this.userRepository.update(userId, {
-			refreshToken: null,
-			status: UserStatus.OFFLINE,
-		});
 	}
 
 	async updateMyStatusMessage(userId: number, statusMessage: string | null) {

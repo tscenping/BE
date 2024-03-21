@@ -1,7 +1,7 @@
 import { ChannelsGateway } from 'src/channels/channels.gateway';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { GameRepository } from './game.repository';
-import { UsersRepository } from '../users/users.repository';
+import { UsersRepository } from '../user-repository/users.repository';
 import { CreateGameInvitationParamDto } from './dto/create-invitation-param.dto';
 import { GatewayCreateGameInvitationParamDto } from './dto/gateway-create-invitation-param.dto';
 import { GameGateway } from './game.gateway';
@@ -11,9 +11,9 @@ import { DeleteGameInvitationParamDto } from './dto/delete-invitation-param.dto'
 import { GameStatus, GameType, UserStatus } from '../common/enum';
 import { acceptGameParamDto } from './dto/accept-game-param.dto';
 import { EmitEventInvitationReplyDto } from './dto/emit-event-invitation-reaponse.dto';
-import { User } from '../users/entities/user.entity';
+import { User } from '../user-repository/entities/user.entity';
 import * as moment from 'moment';
-import { BlocksRepository } from '../users/blocks.repository';
+import { BlocksRepository } from '../friends/blocks.repository';
 import { gameMatchStartParamDto } from './dto/match-game-param.dto';
 import { EmitEventMatchmakingReplyDto } from './dto/emit-event-matchmaking-param.dto';
 import { gameMatchDeleteParamDto } from './dto/match-game-delete-param.dto';
