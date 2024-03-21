@@ -17,8 +17,11 @@ export class RanksService {
 
 	async findRanksWithPage(): Promise<RankUserResponseDto> {
 		//userIDRanking: [userId, userId, userId, ...]
-
+		// 시간 재기
+		const startTime = new Date().getTime();
 		const userRanking = await this.redis.zrevrange('rankings', 0, -1);
+		const endTime = new Date().getTime();
+		console.log(`redis time: ${endTime - startTime}ms`);
 
 		const foundUsers = await this.userRepository.findRanksInfos(
 			userRanking,
@@ -31,17 +34,25 @@ export class RanksService {
 			}),
 		);
 		const totalItemCount = userRanking.length;
-
 		return { rankUsers, totalItemCount };
 	}
 
 	@Cron(CronExpression.EVERY_MINUTE)
 	async handleCron() {
+		// console.log(users);
+		// 모든 키 삭제
+		await this.redis.del('rankings');
+		await this.addRanking();
+	}
+
+	async addRanking() {
 		const users = await this.userRepository.find(
 			// user중 nickname이 없는 유저는 랭킹에 올라가지 않는다.
 			{ where: { nickname: Not(IsNull()) } },
 		);
-		console.log(users);
+		// // 모든 키 삭제
+		// await this.redis.del('rankings'); // TODO: 전체 키를 삭제해야 하는지 고민 필요
+
 		for (const user of users) {
 			Logger.log(`updateRanking: ${user.ladderScore}, ${user.id}`);
 			await this.AppService.updateRanking(user.ladderScore, user.id);
