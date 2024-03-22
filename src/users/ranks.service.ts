@@ -54,7 +54,7 @@ export class RanksService {
 		// await this.redis.del('rankings'); // TODO: 전체 키를 삭제해야 하는지 고민 필요
 
 		for (const user of users) {
-			Logger.log(`updateRanking: ${user.ladderScore}, ${user.id}`);
+			// Logger.log(`updateRanking: ${user.ladderScore}, ${user.id}`);
 			await this.AppService.updateRanking(user.ladderScore, user.id);
 		}
 	}

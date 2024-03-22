@@ -28,6 +28,7 @@ import { DmChannelListReturnDto } from './dto/dmchannel-list-return.dto';
 import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
 import moment from 'moment';
 import { channel } from 'diagnostics_channel';
+import { In } from 'typeorm';
 
 @Injectable()
 export class ChannelsService {
@@ -550,7 +551,7 @@ export class ChannelsService {
 			await this.channelsRepository.findAllChannels(userId, page);
 		const totalDataSize: number = await this.channelsRepository.count({
 			where: {
-				channelType: ChannelType.PUBLIC || ChannelType.PROTECTED,
+				channelType: In([ChannelType.PUBLIC, ChannelType.PROTECTED]),
 			},
 		});
 		if (!channels) {
