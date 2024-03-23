@@ -6,8 +6,8 @@ import * as bcrypt from 'bcrypt';
 import { Request } from 'express';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import jwtConfig from 'src/config/jwt.config';
-import { User } from 'src/users/entities/user.entity';
-import { UsersRepository } from 'src/users/users.repository';
+import { User } from 'src/user-repository/entities/user.entity';
+import { UsersRepository } from 'src/user-repository/users.repository';
 import { JwtRefreshPayloadDto } from './dto/jwt-refresh-payload.dto';
 
 @Injectable()

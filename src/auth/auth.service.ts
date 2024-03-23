@@ -13,11 +13,13 @@ import { Socket } from 'socket.io';
 import * as speakeasy from 'speakeasy';
 import jwtConfig from 'src/config/jwt.config';
 import userConfig from 'src/config/user.config';
-import { User } from 'src/users/entities/user.entity';
-import { UsersRepository } from '../users/users.repository';
+import { User } from 'src/user-repository/entities/user.entity';
+import { UsersRepository } from '../user-repository/users.repository';
 import { FtUserParamDto } from './dto/ft-user-param.dto';
 import { SigninMfaRequestDto } from './dto/signin-mfa-request.dto';
 import { UserFindReturnDto } from './dto/user-find-return.dto';
+import { UserStatus } from '../common/enum';
+import { DBUpdateFailureException } from '../common/exception/custom-exception';
 
 @Injectable()
 export class AuthService {
@@ -31,6 +33,51 @@ export class AuthService {
 	) {}
 
 	private readonly logger = new Logger(AuthService.name);
+
+	async signup(userId: number, nickname: string, avatar: string) {
+		const user = await this.validateUserExist(userId);
+
+		await this.validateUserAlreadySignUp(user);
+
+		await this.validateNickname(nickname);
+
+		const updateRes = await this.usersRepository.update(userId, {
+			avatar: avatar,
+			nickname: nickname,
+			status: UserStatus.ONLINE,
+		});
+
+		if (updateRes.affected !== 1) {
+			throw DBUpdateFailureException(`user ${userId} update failed`);
+		}
+	}
+
+	async validateUserExist(userId: number) {
+		const user = await this.usersRepository.findOne({
+			where: {
+				id: userId,
+			},
+		});
+
+		if (!user) {
+			throw new BadRequestException(
+				`User with id ${userId} doesn't exist`,
+			);
+		}
+		return user;
+	}
+
+	async validateUserAlreadySignUp(user: User) {
+		if (user.nickname)
+			throw new BadRequestException(`${user.id} is already signed up`);
+	}
+
+	async signout(userId: number) {
+		await this.usersRepository.update(userId, {
+			refreshToken: null,
+			status: UserStatus.OFFLINE,
+		});
+	}
 
 	private async createMfaSecret() {
 		const secret = speakeasy.generateSecret({

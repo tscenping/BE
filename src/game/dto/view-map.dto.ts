@@ -235,8 +235,8 @@ export class ViewMapDto {
 				ball.xVelocity +=
 					ball.accel *
 					2 *
-					this.deltaTime *
-					(ball.xVelocity > 0 ? 1 : -1);
+					(ball.xVelocity > 0 ? 1 : -1) *
+					this.deltaTime;
 
 				// console.log(
 				// 	'collision right -> ',
@@ -261,8 +261,8 @@ export class ViewMapDto {
 				ball.xVelocity +=
 					ball.accel *
 					2 *
-					this.deltaTime *
-					(ball.xVelocity > 0 ? 1 : -1);
+					(ball.xVelocity > 0 ? 1 : -1) *
+					this.deltaTime;
 				// console.log(
 				// 	'collision left -> ',
 				// 	ball.accel *

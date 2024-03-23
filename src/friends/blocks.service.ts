@@ -4,7 +4,7 @@ import { BlocksRepository } from './blocks.repository';
 import { BlockUserResponseDto } from './dto/block-user-response.dto';
 import { BlockUserReturnDto } from './dto/block-user-return.dto';
 import { FriendsRepository } from './friends.repository';
-import { UsersRepository } from './users.repository';
+import { UsersRepository } from '../user-repository/users.repository';
 
 class BlockDto {
 	id: number;

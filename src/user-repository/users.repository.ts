@@ -5,9 +5,9 @@ import Redis from 'ioredis';
 import { UserStatus } from 'src/common/enum';
 import { DataSource, Repository } from 'typeorm';
 import { MyProfileResponseDto } from './dto/my-profile-response.dto';
-import { UserProfileReturnDto } from './dto/user-profile.dto';
+import { UserProfileReturnDto } from './dto/user-profile-return.dto';
 import { User } from './entities/user.entity';
-import { RankUserReturnDto } from './dto/rank-user-return.dto';
+import { RankUserReturnDto } from '../users/dto/rank-user-return.dto';
 
 export class UsersRepository extends Repository<User> {
 	constructor(
@@ -120,6 +120,18 @@ export class UsersRepository extends Repository<User> {
 				status: UserStatus.OFFLINE,
 			})
 			.execute();
+	}
+
+	// TODO: test용 메서드. 추후 삭제
+	async createUser(nickname: string, email: string) {
+		const user = this.create({
+			nickname,
+			email,
+		});
+
+		await this.save(user);
+
+		return user;
 	}
 
 	async findRanksWithPage() {

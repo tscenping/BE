@@ -15,7 +15,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { GetUser } from 'src/auth/get-user.decorator';
 import { ChannelEventType, ChannelType } from 'src/common/enum';
-import { User } from 'src/users/entities/user.entity';
+import { User } from 'src/user-repository/entities/user.entity';
 import { PositiveIntPipe } from '../common/pipes/positiveInt.pipe';
 import { ChannelsGateway } from './channels.gateway';
 import { ChannelsService } from './channels.service';
@@ -74,7 +74,7 @@ export class ChannelsController {
 
 		if (user.channelSocketId) {
 			// 채널 룸에 join
-			this.channelsGateway.joinChannelRoom(
+			await this.channelsGateway.joinChannelRoom(
 				createChannelResponseDto.channelId.toString(),
 				user.channelSocketId,
 			);
@@ -94,7 +94,7 @@ export class ChannelsController {
 		@Param('channelId', ParseIntPipe, PositiveIntPipe) channelId: number,
 	) {
 		if (user.channelSocketId) {
-			this.channelsGateway.joinChannelRoom(
+			await this.channelsGateway.joinChannelRoom(
 				channelId.toString(),
 				user.channelSocketId,
 			);
@@ -151,7 +151,7 @@ export class ChannelsController {
 
 		if (user.channelSocketId) {
 			// 채널 룸에 join
-			this.channelsGateway.joinChannelRoom(
+			await this.channelsGateway.joinChannelRoom(
 				channelId.toString(),
 				user.channelSocketId,
 			);
@@ -182,7 +182,7 @@ export class ChannelsController {
 
 		if (user.channelSocketId) {
 			// 채널 룸에서 leave
-			this.channelsGateway.leaveChannelRoom(
+			await this.channelsGateway.leaveChannelRoom(
 				channelId.toString(),
 				user.channelSocketId,
 			);
