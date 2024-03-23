@@ -19,7 +19,7 @@ export class SocketIoAdapter extends IoAdapter {
 	}
 
 	createIOServer(port: number, options?: any) {
-		const clientPort = '8001';
+		const clientPort = '3003';
 
 		const cors = {
 			credentials: true,
