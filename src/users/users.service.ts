@@ -120,4 +120,8 @@ export class UsersService {
 
 		return user;
 	}
+
+	async findRanksWithPage() {
+		return await this.userRepository.findRanksWithPage();
+	}
 }

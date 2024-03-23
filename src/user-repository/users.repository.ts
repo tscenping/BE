@@ -7,6 +7,7 @@ import { DataSource, Repository } from 'typeorm';
 import { MyProfileResponseDto } from './dto/my-profile-response.dto';
 import { UserProfileReturnDto } from './dto/user-profile-return.dto';
 import { User } from './entities/user.entity';
+import { RankUserReturnDto } from '../users/dto/rank-user-return.dto';
 
 export class UsersRepository extends Repository<User> {
 	constructor(
@@ -131,5 +132,33 @@ export class UsersRepository extends Repository<User> {
 		await this.save(user);
 
 		return user;
+	}
+
+	async findRanksWithPage() {
+		const startTime = new Date().getTime();
+		const userRanking = await this.dataSource.query(
+			`
+			SELECT u.id
+			FROM public.user u
+			WHERE u."deletedAt" IS NULL AND u.nickname IS NOT NULL
+			ORDER BY u."ladderScore" DESC
+			`,
+		);
+		const endTime = new Date().getTime();
+		console.log(`Time: ${endTime - startTime} ms`);
+
+		const foundUsers = await this.findRanksInfos(
+			userRanking.map((user: { id: number }) => user.id),
+		);
+
+		const rankUsers: RankUserReturnDto[] = foundUsers.map(
+			(user, index) => ({
+				...user,
+				ranking: index + 1,
+			}),
+		);
+		const totalItemCount = userRanking.length;
+
+		return { rankUsers, totalItemCount };
 	}
 }
