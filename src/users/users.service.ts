@@ -1,11 +1,9 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { UserStatus } from 'src/common/enum';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { GameRepository } from '../game/game.repository';
 import { BlocksRepository } from '../friends/blocks.repository';
 import { UserProfileResponseDto } from './dto/user-profile-response.dto';
-import { User } from '../user-repository/entities/user.entity';
 import { FriendsRepository } from '../friends/friends.repository';
 import { UsersRepository } from '../user-repository/users.repository';
 

@@ -8,7 +8,6 @@ import { AuthService } from './auth.service';
 import { FtAuthService } from './ft-auth.service';
 import { JwtAccessStrategy } from './jwt-access.strategy';
 import { JwtRefreshStrategy } from './jwt-refresh.strategy';
-import { UsersModule } from '../users/users.module';
 import { UserRepositoryModule } from '../user-repository/user-repository.module';
 
 @Module({
