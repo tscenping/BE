@@ -18,7 +18,7 @@ import { ChannelListResponseDto } from './dto/channel-list-response.dto';
 import { ChannelListReturnDto } from './dto/channel-list-return.dto';
 import { ChannelUserInfoReturnDto } from './dto/channel-user-info-return.dto';
 import { ChannelUsersResponseDto } from './dto/channel-users-response.dto';
-import { CreateChannelRequestDto } from './dto/creat-channel-request.dto';
+import { CreateChannelRequestDto } from './dto/create-channel-request.dto';
 import { CreateChannelResponseDto } from './dto/create-channel-response.dto';
 import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
 import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
@@ -26,9 +26,8 @@ import { DeleteChannelInvitationParamDto } from './dto/delete-invitation-param.d
 import { DmChannelListResponseDto } from './dto/dmchannel-list-response.dto';
 import { DmChannelListReturnDto } from './dto/dmchannel-list-return.dto';
 import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
-import moment from 'moment';
-import { channel } from 'diagnostics_channel';
 import { In } from 'typeorm';
+import { UpdateChannelNameParamDto } from './dto/update-channel-name-param.dto';
 
 @Injectable()
 export class ChannelsService {
@@ -37,7 +36,7 @@ export class ChannelsService {
 		private readonly channelUsersRepository: ChannelUsersRepository,
 		private readonly channelInvitationRepository: ChannelInvitationRepository,
 		private readonly usersRepository: UsersRepository,
-		private readonly ChannelsGateway: ChannelsGateway,
+		private readonly channelsGateway: ChannelsGateway,
 		@InjectRedis() private readonly redis: Redis,
 	) {}
 
@@ -150,6 +149,30 @@ export class ChannelsService {
 			channelUsers: channelUserInfoList,
 			myChannelUserType: myChannelUserInfo.channelUserType,
 		};
+	}
+
+	async updateChannelName(
+		updateChannelNameParamDto: UpdateChannelNameParamDto,
+	) {
+		// channel 유효성 확인
+		const channelId = updateChannelNameParamDto.channelId;
+		await this.checkChannelExist(channelId);
+
+		// 요청한 user의 유효성 확인 (채널에 있는지, owner인지)
+		const userId = updateChannelNameParamDto.userId;
+		const channelUser = await this.checkUserExistInChannel(
+			userId,
+			channelId,
+		);
+
+		if (channelUser.channelUserType !== ChannelUserType.OWNER)
+			throw new BadRequestException(
+				`user ${userId} does not have authority`,
+			);
+
+		await this.channelsRepository.update(channelId, {
+			name: updateChannelNameParamDto.newName,
+		});
 	}
 
 	async updateChannelTypeAndPassword(
@@ -304,7 +327,7 @@ export class ChannelsService {
 				invitingUserId: invitingUserId,
 				invitedUserId: invitedUserId,
 			};
-		await this.ChannelsGateway.privateAlert(gatewayInvitationParamDto);
+		await this.channelsGateway.privateAlert(gatewayInvitationParamDto);
 	}
 
 	async updateChannelUser(userId: number, channelId: number) {
