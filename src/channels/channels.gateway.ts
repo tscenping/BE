@@ -32,6 +32,7 @@ import { EventMessageOnDto } from './dto/event-message-on.dto';
 import { User } from 'src/user-repository/entities/user.entity';
 import { WsAuthGuard } from '../common/guards/ws-auth.guard';
 import { SocketWithAuth } from '../common/adapter/socket-io.adapter';
+import { ChannelNameChangeResponseDto } from './dto/channel-name-change-response.dto';
 
 @WebSocketGateway({ namespace: 'channels' })
 @UseGuards(WsAuthGuard)
@@ -280,6 +281,15 @@ export class ChannelsGateway
 		this.server
 			.to(channelId.toString())
 			.emit('notice', channelNoticeResponseDto);
+	}
+
+	channelNameChangeMessage(
+		channelId: number,
+		channelNameChangeResponseDto: ChannelNameChangeResponseDto,
+	) {
+		this.server
+			.to(channelId.toString())
+			.emit('nameChange', channelNameChangeResponseDto);
 	}
 
 	private async isSocketConnected(ChannelSocketId: string) {

@@ -40,6 +40,7 @@ export enum ChannelEventType {
 	MUTE = 'MUTE',
 	ADMIN = 'ADMIN',
 	ADMIN_CANCEL = 'ADMIN_CANCEL',
+	NAME_CHANGE = 'NAME_CHANGE',
 }
 
 export enum KEYSTATUS {

@@ -20,7 +20,7 @@ import { PositiveIntPipe } from '../common/pipes/positiveInt.pipe';
 import { ChannelsGateway } from './channels.gateway';
 import { ChannelsService } from './channels.service';
 import { ChannelInvitationParamDto } from './dto/channel-Invitation.dto';
-import { CreateChannelRequestDto } from './dto/creat-channel-request.dto';
+import { CreateChannelRequestDto } from './dto/create-channel-request.dto';
 import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
 import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
 import { CreateInvitationRequestDto } from './dto/create-invitation-request.dto';
@@ -29,6 +29,8 @@ import { JoinChannelRequestDto } from './dto/join-channel-request.dto';
 import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
 import { UpdateChannelPwdReqeustDto } from './dto/update-channel-pwd-reqeust.dto';
 import { UpdateChannelUserRequestDto } from './dto/update-channel-user-request.dto';
+import { UpdateChannelNameRequestDto } from './dto/update-channel-name-request.dto';
+import { UpdateChannelNameParamDto } from './dto/update-channel-name-param.dto';
 
 @Controller('channels')
 @ApiTags('channels')
@@ -100,30 +102,6 @@ export class ChannelsController {
 			);
 		}
 		return await this.channelsService.enterChannel(user.id, channelId);
-	}
-
-	@Patch('/password')
-	@ApiOperation({
-		summary: '비밀번호 설정/삭제',
-		description:
-			'채널 주인은 해당 채널에 합류하기 위한 패스워드를 생성, 삭제, 변경이 가능하다.',
-	})
-	async updateChannelPassword(
-		@GetUser() user: User,
-		@Body() updateChannelPwdRequestDto: UpdateChannelPwdReqeustDto,
-	) {
-		const channelId = updateChannelPwdRequestDto.channelId;
-		const userId = user.id;
-		const password = updateChannelPwdRequestDto.password;
-
-		const updateChannelPwdParam = new UpdateChannelPwdParamDto(
-			channelId,
-			userId,
-			password,
-		);
-		await this.channelsService.updateChannelTypeAndPassword(
-			updateChannelPwdParam,
-		);
 	}
 
 	@Post('/join')
@@ -211,6 +189,52 @@ export class ChannelsController {
 			invitedUserId,
 		);
 		await this.channelsService.createChannelInvitation(invitationParamDto);
+	}
+
+	@Patch('/name')
+	async updateChannelName(
+		@GetUser() user: User,
+		@Body() updateChannelNameRequestDto: UpdateChannelNameRequestDto,
+	) {
+		const channelId = updateChannelNameRequestDto.channelId;
+		const newName = updateChannelNameRequestDto.newName;
+		const updateChannelNameParamDto = new UpdateChannelNameParamDto(
+			channelId,
+			user.id,
+			newName,
+		);
+
+		await this.channelsService.updateChannelName(updateChannelNameParamDto);
+
+		this.channelsGateway.channelNameChangeMessage(channelId, {
+			channelId: channelId,
+			newName: newName,
+			eventType: ChannelEventType.NAME_CHANGE,
+		});
+	}
+
+	@Patch('/password')
+	@ApiOperation({
+		summary: '비밀번호 설정/삭제',
+		description:
+			'채널 주인은 해당 채널에 합류하기 위한 패스워드를 생성, 삭제, 변경이 가능하다.',
+	})
+	async updateChannelPassword(
+		@GetUser() user: User,
+		@Body() updateChannelPwdRequestDto: UpdateChannelPwdReqeustDto,
+	) {
+		const channelId = updateChannelPwdRequestDto.channelId;
+		const userId = user.id;
+		const password = updateChannelPwdRequestDto.password;
+
+		const updateChannelPwdParam = new UpdateChannelPwdParamDto(
+			channelId,
+			userId,
+			password,
+		);
+		await this.channelsService.updateChannelTypeAndPassword(
+			updateChannelPwdParam,
+		);
 	}
 
 	@Patch('/admin')

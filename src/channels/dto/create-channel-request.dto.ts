@@ -22,7 +22,9 @@ export class CreateChannelRequestDto {
 	@Matches(CHANNEL_NAME_REGEXP)
 	name: string | null;
 
-	@ApiProperty({ description: '채널종류 (PUBLIC / PROTECTED / PRIVATE / DM)' })
+	@ApiProperty({
+		description: '채널종류 (PUBLIC / PROTECTED / PRIVATE / DM)',
+	})
 	@IsString()
 	@IsEnum(ChannelType)
 	channelType: ChannelType;
