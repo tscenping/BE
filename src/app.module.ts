@@ -18,6 +18,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { UserRepositoryModule } from './user-repository/user-repository.module';
 import { FriendsModule } from './friends/friends.module';
 import userConfig from './config/user.config';
+import googleConfig from './config/google.config';
 
 @Module({
 	imports: [
@@ -30,6 +31,7 @@ import userConfig from './config/user.config';
 			load: [
 				redisConfig,
 				ftConfig,
+				googleConfig,
 				pgadminConfig,
 				jwtConfig,
 				typeOrmConfig,

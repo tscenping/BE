@@ -15,7 +15,7 @@ import jwtConfig from 'src/config/jwt.config';
 import userConfig from 'src/config/user.config';
 import { User } from 'src/user-repository/entities/user.entity';
 import { UsersRepository } from '../user-repository/users.repository';
-import { FtUserParamDto } from './dto/ft-user-param.dto';
+import { OauthUserinfoParamDto } from './dto/oauth-userinfo-param.dto';
 import { SigninMfaRequestDto } from './dto/signin-mfa-request.dto';
 import { UserFindReturnDto } from './dto/user-find-return.dto';
 import { UserStatus } from '../common/enum';
@@ -87,7 +87,7 @@ export class AuthService {
 	}
 
 	async findOrCreateUser(
-		userData: FtUserParamDto,
+		userData: OauthUserinfoParamDto,
 	): Promise<UserFindReturnDto> {
 		const user = await this.usersRepository.findOne({
 			where: { email: userData.email },

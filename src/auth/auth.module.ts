@@ -9,6 +9,7 @@ import { FtAuthService } from './ft-auth.service';
 import { JwtAccessStrategy } from './jwt-access.strategy';
 import { JwtRefreshStrategy } from './jwt-refresh.strategy';
 import { UserRepositoryModule } from '../user-repository/user-repository.module';
+import { GoogleAuthService } from './google-auth.service';
 
 @Module({
 	imports: [
@@ -24,6 +25,7 @@ import { UserRepositoryModule } from '../user-repository/user-repository.module'
 	providers: [
 		AuthService,
 		FtAuthService,
+		GoogleAuthService,
 		JwtAccessStrategy,
 		JwtRefreshStrategy,
 	],

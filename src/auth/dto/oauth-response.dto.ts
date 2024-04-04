@@ -1,4 +1,4 @@
-export type FtOauthResponseDto = {
+export type OauthResponseDto = {
 	grant_type: string;
 	client_id: string;
 	client_secret: string;

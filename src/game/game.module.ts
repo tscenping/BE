@@ -8,8 +8,6 @@ import { GameInvitationRepository } from './game-invitation.repository';
 import { GameInvitation } from './entities/game-invitation.entity';
 import { GameGateway } from './game.gateway';
 import { ChannelsModule } from '../channels/channels.module';
-import { UsersModule } from '../users/users.module';
-import { AuthModule } from '../auth/auth.module';
 import { JwtModule } from '@nestjs/jwt';
 import jwtConfig from '../config/jwt.config';
 import { ConfigType } from '@nestjs/config';
