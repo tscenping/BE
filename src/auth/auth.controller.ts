@@ -108,10 +108,7 @@ export class AuthController {
 	}
 
 	@Get('/signin-google')
-	async findOrCreateUserWithGoogle(
-		@Query('code') code: any,
-		@Res() res: Response,
-	) {
+	async signinGoogle(@Query('code') code: any, @Res() res: Response) {
 		console.log('google code: ', code);
 
 		const accessToken = await this.googleAuthService.getAccessToken(code);
