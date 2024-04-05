@@ -56,8 +56,43 @@ export class AuthController {
 			// token을 쿠키에 저장한다.
 			res.cookie('accessToken', jwtAccessToken, {
 				// httpOnly: true,	// 자동로그인을 위해 httpOnly를 false로 설정
-				secure: true,
-				sameSite: 'none',
+				// secure: true,
+				// sameSite: 'none',
+				expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
+			});
+		}
+
+		const userSigninResponseDto: UserSigninResponseDto = {
+			userId: user.id,
+			isFirstLogin: user.nickname === null,
+			isMfaEnabled: user.isMfaEnabled,
+			mfaUrl,
+		};
+
+		return res.send(userSigninResponseDto);
+	}
+
+	@Get('/signin-google')
+	async findOrCreateUserWithGoogle(
+		@Query('code') code: any,
+		@Res() res: Response,
+	) {
+		console.log('google code: ', code);
+
+		const accessToken = await this.googleAuthService.getAccessToken(code);
+		const userData = await this.googleAuthService.getUserData(accessToken);
+		const { user, mfaUrl } = await this.authService.findOrCreateUser(
+			userData,
+		);
+
+		const jwtAccessToken = await this.authService.generateJwtToken(user);
+
+		if (user.isMfaEnabled == false) {
+			// token을 쿠키에 저장한다.
+			res.cookie('accessToken', jwtAccessToken, {
+				// httpOnly: true,	// 자동로그인을 위해 httpOnly를 false로 설정
+				// secure: true,
+				// sameSite: 'none',
 				expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
 			});
 		}
