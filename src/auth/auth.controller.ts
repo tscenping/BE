@@ -1,10 +1,8 @@
 import {
 	Body,
 	Controller,
-	Get,
 	Patch,
 	Post,
-	Query,
 	Res,
 	UseGuards,
 } from '@nestjs/common';
@@ -64,6 +62,7 @@ export class AuthController {
 
 		const userSigninResponseDto: UserSigninResponseDto = {
 			userId: user.id,
+			nickname: user.nickname,
 			isFirstLogin: user.nickname === null,
 			isMfaEnabled: user.isMfaEnabled,
 			mfaUrl,
@@ -72,8 +71,8 @@ export class AuthController {
 		return res.send(userSigninResponseDto);
 	}
 
-	@Get('/signin-google')
-	async signinGoogle(@Query('code') code: any, @Res() res: Response) {
+	@Post('/signin-google')
+	async signinGoogle(@Body('code') code: any, @Res() res: Response) {
 		console.log('google code: ', code);
 
 		const accessToken = await this.googleAuthService.getAccessToken(code);
@@ -96,6 +95,7 @@ export class AuthController {
 
 		const userSigninResponseDto: UserSigninResponseDto = {
 			userId: user.id,
+			nickname: user.nickname,
 			isFirstLogin: user.nickname === null,
 			isMfaEnabled: user.isMfaEnabled,
 			mfaUrl,
@@ -160,6 +160,7 @@ export class AuthController {
 
 			const userSigninResponseDto: UserSigninResponseDto = {
 				userId: existUser.id,
+				nickname: existUser.nickname,
 				isFirstLogin: false,
 				isMfaEnabled: false,
 				mfaUrl: undefined,
@@ -192,6 +193,7 @@ export class AuthController {
 
 		const userSigninResponseDto: UserSigninResponseDto = {
 			userId: user.id,
+			nickname: user.nickname,
 			isFirstLogin: false,
 			isMfaEnabled: false,
 			mfaUrl: undefined,
