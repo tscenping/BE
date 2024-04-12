@@ -15,11 +15,15 @@ export class RanksService {
 		@InjectRedis() private readonly redis: Redis,
 	) {}
 
-	async findRanksWithPage(): Promise<RankUserResponseDto> {
+	async findRanksWithPage(page: number): Promise<RankUserResponseDto> {
 		//userIDRanking: [userId, userId, userId, ...]
 		// 시간 재기
 		const startTime = new Date().getTime();
-		const userRanking = await this.redis.zrevrange('rankings', 0, -1);
+		const userRanking = await this.redis.zrevrange(
+			'rankings',
+			(page - 1) * 15,
+			page * 15 - 1,
+		);
 		const endTime = new Date().getTime();
 		console.log(`redis time: ${endTime - startTime}ms`);
 
@@ -30,7 +34,7 @@ export class RanksService {
 		const rankUsers: RankUserReturnDto[] = foundUsers.map(
 			(user, index) => ({
 				...user,
-				ranking: index + 1,
+				ranking: index + 1 + (page - 1) * 15,
 			}),
 		);
 		const totalItemCount = userRanking.length;
