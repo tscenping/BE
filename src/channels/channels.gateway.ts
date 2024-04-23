@@ -22,10 +22,8 @@ import { UserStatus } from 'src/common/enum';
 import { EVENT_USER_STATUS } from 'src/common/events';
 import { WSBadRequestException } from 'src/common/exception/custom-exception';
 import { WsFilter } from 'src/common/exception/custom-ws-exception.filter';
-import { GatewayCreateChannelInvitationParamDto } from 'src/game/dto/gateway-create-channelInvitation-param-dto';
 import { FriendsRepository } from 'src/friends/friends.repository';
 import { UsersRepository } from 'src/user-repository/users.repository';
-import { BlocksRepository } from '../friends/blocks.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
 import { ChannelNoticeResponseDto } from './dto/channel-notice.response.dto';
 import { EventMessageOnDto } from './dto/event-message-on.dto';
@@ -50,7 +48,7 @@ export class ChannelsGateway
 		private readonly usersRepository: UsersRepository,
 		private readonly channelUsersRepository: ChannelUsersRepository,
 		private readonly friendsRepository: FriendsRepository,
-		private readonly blocksRepository: BlocksRepository,
+		// private readonly blocksRepository: BlocksRepository,
 		@InjectRedis() private readonly redis: Redis,
 	) {}
 
@@ -121,7 +119,7 @@ export class ChannelsGateway
 		this.logger.log(`Client disconnected: ${client.id}`);
 		const gameQueue = this.gameQueue;
 		const user = client.user;
-		if (!user || client.id !== user.channelSocketId) {
+		if (!user || !client.id) {
 			return;
 		}
 
@@ -235,43 +233,18 @@ export class ChannelsGateway
 	}
 
 	// 알람 구현을 위한 메소드(한명에게만 알람)
-	async privateAlert(
-		gatewayInvitationDto: GatewayCreateChannelInvitationParamDto,
-	) {
-		const invitedUser = await this.usersRepository.findOne({
-			where: { id: gatewayInvitationDto.invitedUserId },
-		});
-
-		const invitingUser = await this.usersRepository.findOne({
-			where: { id: gatewayInvitationDto.invitingUserId },
-		});
-		if (!invitingUser) {
-			throw WSBadRequestException('유저가 유효하지 않습니다.');
-		}
-
-		const invitationEmitDto = {
-			invitationId: gatewayInvitationDto.invitationId,
-			invitingUserId: invitingUser.nickname,
-		};
-
-		if (
-			!invitedUser ||
-			!invitingUser ||
-			invitedUser.status === UserStatus.OFFLINE ||
-			invitingUser.status === UserStatus.OFFLINE ||
-			!invitedUser.channelSocketId
-		) {
-			throw WSBadRequestException('유저가 유효하지 않습니다.');
-		}
-		const isBlocked = await this.blocksRepository.findOne({
-			where: { fromUserId: invitedUser.id, toUserId: invitingUser.id },
-		});
-		if (isBlocked) return;
-
-		this.server
-			.to(invitedUser.channelSocketId)
-			.emit('privateAlert', invitationEmitDto);
-	}
+	// async privateAlert(
+	// 	gatewayInvitationDto: GatewayCreateChannelInvitationParamDto,
+	// ) {
+	// 	const isBlocked = await this.blocksRepository.findOne({
+	// 		where: { fromUserId: invitedUser.id, toUserId: invitingUser.id },
+	// 	});
+	// 	if (isBlocked) return;
+	//
+	// 	this.server
+	// 		.to(invitedUser.channelSocketId)
+	// 		.emit('privateAlert', invitationEmitDto);
+	// }
 
 	// 채널에 소켓 전송
 	channelNoticeMessage(

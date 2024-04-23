@@ -179,12 +179,11 @@ export class ChannelsController {
 		@GetUser() user: User,
 		@Body() createInvitationRequestDto: CreateInvitationRequestDto,
 	) {
-		const invitingUserId = user.id;
 		const channelId = createInvitationRequestDto.channelId;
 		const invitedUserId = createInvitationRequestDto.invitedUserId;
 
 		const invitationParamDto = new CreateInvitationParamDto(
-			invitingUserId,
+			user,
 			channelId,
 			invitedUserId,
 		);

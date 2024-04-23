@@ -2,11 +2,13 @@ import {
 	BadRequestException,
 	Body,
 	Controller,
+	Delete,
 	Get,
 	Logger,
 	Param,
 	ParseIntPipe,
 	Patch,
+	Post,
 	Query,
 	UseGuards,
 } from '@nestjs/common';
@@ -88,9 +90,7 @@ export class UsersController {
 	})
 	async paging(@Query('page', ParseIntPipe, PositiveIntPipe) page: number) {
 		// const rankResponseDto = await this.usersService.findRanksWithPage();	// 레디스 없이 DB에서 랭킹을 조회하는 코드
-		let rankResponseDto = await this.ranksServices.findRanksWithPage(
-			page,
-		); // 레디스로부터 랭킹을 조회하는 코드
+		let rankResponseDto = await this.ranksServices.findRanksWithPage(page); // 레디스로부터 랭킹을 조회하는 코드
 		if (rankResponseDto.rankUsers.length === 0) {
 			this.logger.log('랭킹이 없습니다. 랭킹을 추가합니다.');
 			rankResponseDto = await this.usersService.findRanksWithPage();
@@ -139,5 +139,27 @@ export class UsersController {
 		@Body('avatar') avatar: string,
 	) {
 		await this.usersService.updateMyAvatar(user.id, avatar);
+	}
+
+	@UseGuards(AuthGuard('access'))
+	@Get('/s3image')
+	async getPresignedUrl(@GetUser() user: User) {
+		const presignedUrl = await this.usersService.getPresignedUrl(
+			user.nickname,
+		);
+
+		return presignedUrl;
+	}
+
+	@UseGuards(AuthGuard('access'))
+	@Delete('/s3image')
+	async deleteAndGetPresignedUrl(@GetUser() user: User) {
+		const nickname = user.nickname;
+
+		await this.usersService.deleteS3Image(nickname);
+
+		const presignedUrl = await this.usersService.getPresignedUrl(nickname);
+
+		return presignedUrl;
 	}
 }

@@ -21,6 +21,8 @@
 		"test:e2e": "NODE_ENV=test jest --watch --no-cache --config ./test/jest-e2e.json"
 	},
 	"dependencies": {
+		"@aws-sdk/client-s3": "^3.554.0",
+		"@aws-sdk/s3-request-presigner": "^3.554.0",
 		"@liaoliaots/nestjs-redis": "^9.0.5",
 		"@nestjs/cache-manager": "^2.1.1",
 		"@nestjs/common": "^9.4.3",

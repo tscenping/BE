@@ -9,8 +9,6 @@ import { ChannelsService } from './channels.service';
 import { ChannelInvitation } from './entities/channel-invitation.entity';
 import { ChannelUser } from './entities/channel-user.entity';
 import { Channel } from './entities/channel.entity';
-import { UsersModule } from '../users/users.module';
-import { AuthModule } from '../auth/auth.module';
 import { UserRepositoryModule } from '../user-repository/user-repository.module';
 import { FriendsModule } from '../friends/friends.module';
 import { JwtModule } from '@nestjs/jwt';

@@ -19,6 +19,7 @@ import { UserRepositoryModule } from './user-repository/user-repository.module';
 import { FriendsModule } from './friends/friends.module';
 import userConfig from './config/user.config';
 import googleConfig from './config/google.config';
+import s3Config from './config/s3.config';
 
 @Module({
 	imports: [
@@ -36,6 +37,7 @@ import googleConfig from './config/google.config';
 				jwtConfig,
 				typeOrmConfig,
 				userConfig,
+				s3Config,
 			],
 		}),
 		TypeOrmModule.forRootAsync({
