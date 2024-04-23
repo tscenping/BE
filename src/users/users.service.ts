@@ -143,20 +143,21 @@ export class UsersService {
 		return await this.userRepository.findRanksWithPage();
 	}
 
-	async getPresignedUrl(nickname: string) {
+	async getPresignedUrl(userId: number) {
 		// TODO: 수정 72시간 이내에는 에러
 
 		const command = new PutObjectCommand({
 			Bucket: this.s3Configure.S3_BUCKET_NAME,
-			Key: nickname,
+			Key: `images/${userId}.jpeg`,
+			ContentType: 'image/jpeg',
 		});
 		return await getSignedUrl(this.s3, command, { expiresIn: 3000 });
 	}
 
-	async deleteS3Image(nickname: string) {
+	async deleteS3Image(userId: number) {
 		const command = new DeleteObjectCommand({
 			Bucket: this.s3Configure.S3_BUCKET_NAME,
-			Key: nickname,
+			Key: `images/${userId}.jpeg`,
 		});
 
 		const response = await this.s3.send(command);

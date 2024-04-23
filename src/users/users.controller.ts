@@ -144,9 +144,7 @@ export class UsersController {
 	@UseGuards(AuthGuard('access'))
 	@Get('/s3image')
 	async getPresignedUrl(@GetUser() user: User) {
-		const presignedUrl = await this.usersService.getPresignedUrl(
-			user.nickname,
-		);
+		const presignedUrl = await this.usersService.getPresignedUrl(user.id);
 
 		return presignedUrl;
 	}
@@ -154,11 +152,11 @@ export class UsersController {
 	@UseGuards(AuthGuard('access'))
 	@Delete('/s3image')
 	async deleteAndGetPresignedUrl(@GetUser() user: User) {
-		const nickname = user.nickname;
+		const userId = user.id;
 
-		await this.usersService.deleteS3Image(nickname);
+		await this.usersService.deleteS3Image(userId);
 
-		const presignedUrl = await this.usersService.getPresignedUrl(nickname);
+		const presignedUrl = await this.usersService.getPresignedUrl(userId);
 
 		return presignedUrl;
 	}
