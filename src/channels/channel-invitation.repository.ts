@@ -17,7 +17,7 @@ export class ChannelInvitationRepository extends Repository<ChannelInvitation> {
 	) {
 		const channelInvitation = this.create({
 			channelId: createChannelInvitationParamDto.channelId,
-			invitingUserId: createChannelInvitationParamDto.invitingUserId,
+			invitingUserId: createChannelInvitationParamDto.invitingUser.id,
 			invitedUserId: createChannelInvitationParamDto.invitedUserId,
 		});
 		const result = await this.save(channelInvitation);
@@ -27,8 +27,12 @@ export class ChannelInvitationRepository extends Repository<ChannelInvitation> {
 		return result;
 	}
 
-	async deleteChannelInvitation(deleteChannelInvitation: DeleteChannelInvitationParamDto) {
-		const result = await this.softDelete(deleteChannelInvitation.invitationId);
+	async deleteChannelInvitation(
+		deleteChannelInvitation: DeleteChannelInvitationParamDto,
+	) {
+		const result = await this.softDelete(
+			deleteChannelInvitation.invitationId,
+		);
 		if (result.affected !== 1)
 			throw DBUpdateFailureException('delete channel invitation failed');
 	}

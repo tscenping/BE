@@ -40,6 +40,7 @@ export class WsAuthGuard implements CanActivate {
 		if (!user) throw new UnauthorizedException('no user');
 
 		socket.user = user;
+		console.log('user in WsAuthGuard', JSON.stringify(user));
 		return true;
 	}
 }

@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+	BadRequestException,
+	Inject,
+	Injectable,
+	InternalServerErrorException,
+	Logger,
+} from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { GameRepository } from '../game/game.repository';
@@ -6,15 +12,29 @@ import { BlocksRepository } from '../friends/blocks.repository';
 import { UserProfileResponseDto } from './dto/user-profile-response.dto';
 import { FriendsRepository } from '../friends/friends.repository';
 import { UsersRepository } from '../user-repository/users.repository';
+import s3Config from '../config/s3.config';
+import { ConfigType } from '@nestjs/config';
+import {
+	DeleteObjectCommand,
+	PutObjectCommand,
+	S3Client,
+} from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 @Injectable()
 export class UsersService {
+	private readonly s3: S3Client;
+
 	constructor(
 		private readonly userRepository: UsersRepository,
 		private readonly gameRepository: GameRepository,
 		private readonly friendsRepository: FriendsRepository,
 		private readonly blocksRepository: BlocksRepository,
-	) {}
+		@Inject(s3Config.KEY)
+		private readonly s3Configure: ConfigType<typeof s3Config>,
+	) {
+		this.s3 = this.s3Configure.S3Object;
+	}
 
 	private readonly logger = new Logger(UsersService.name);
 
@@ -121,5 +141,29 @@ export class UsersService {
 
 	async findRanksWithPage() {
 		return await this.userRepository.findRanksWithPage();
+	}
+
+	async getPresignedUrl(nickname: string) {
+		// TODO: 수정 72시간 이내에는 에러
+
+		const command = new PutObjectCommand({
+			Bucket: this.s3Configure.S3_BUCKET_NAME,
+			Key: nickname,
+		});
+		return await getSignedUrl(this.s3, command, { expiresIn: 3000 });
+	}
+
+	async deleteS3Image(nickname: string) {
+		const command = new DeleteObjectCommand({
+			Bucket: this.s3Configure.S3_BUCKET_NAME,
+			Key: nickname,
+		});
+
+		const response = await this.s3.send(command);
+		// TODO: s3 이미지 삭제에 실패했을 때?
+		if (response.$metadata.httpStatusCode !== 200) {
+			console.error(response.$metadata.httpStatusCode);
+			// throw new InternalServerErrorException();
+		}
 	}
 }

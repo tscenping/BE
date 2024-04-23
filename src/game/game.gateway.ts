@@ -112,7 +112,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	async handleDisconnect(@ConnectedSocket() client: SocketWithAuth) {
 		// 끊기고 실행되는 로직. .
 		const user = client.user;
-		if (!user || client.id !== user.gameSocketId) return;
+		if (!user || !client.id) return;
 
 		console.log(
 			`${user.id}, ${user.nickname} is disconnected to game socket {${client.id}}`,
