@@ -111,7 +111,7 @@ export class AuthController {
 		const nickname = signupRequestDto.nickname;
 		const avatar = signupRequestDto.avatar;
 
-		await this.authService.signup(user.id, nickname, avatar);
+		return await this.authService.signup(user.id, nickname, avatar);
 	}
 
 	// TODO: 테스트용 코드. 추후 삭제
