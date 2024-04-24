@@ -1,5 +1,9 @@
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
-import { BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+	BadRequestException,
+	ForbiddenException,
+	Inject,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import Redis from 'ioredis';
 import { UserStatus } from 'src/common/enum';
@@ -8,11 +12,23 @@ import { MyProfileResponseDto } from './dto/my-profile-response.dto';
 import { UserProfileReturnDto } from './dto/user-profile-return.dto';
 import { User } from './entities/user.entity';
 import { RankUserReturnDto } from '../users/dto/rank-user-return.dto';
+import s3Config from '../config/s3.config';
+import { ConfigType } from '@nestjs/config';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import {
+	S3_OBJECT_CONTENTTYPE,
+	S3_OBJECT_KEY_PREFIX,
+	S3_OBJECT_KEY_SUFFIX,
+	S3_IMAGE_URL_PREFIX,
+} from '../common/constants';
 
 export class UsersRepository extends Repository<User> {
 	constructor(
 		@InjectRepository(User) private dataSource: DataSource,
 		@InjectRedis() private readonly redis: Redis,
+		@Inject(s3Config.KEY)
+		private readonly s3Configure: ConfigType<typeof s3Config>,
 	) {
 		super(User, dataSource.manager);
 	}
@@ -160,5 +176,49 @@ export class UsersRepository extends Repository<User> {
 		const totalItemCount = userRanking.length;
 
 		return { rankUsers, totalItemCount };
+	}
+
+	async getAvatarAndPresignedUrl(nickname: string) {
+		const date = this.getNowDate();
+		const key = `${S3_OBJECT_KEY_PREFIX}/${nickname}${date}${S3_OBJECT_KEY_SUFFIX}`;
+		const preSignedUrl = await this.getPresignedUrl(key);
+		return {
+			avatar: `${S3_IMAGE_URL_PREFIX}/${key}`,
+			preSignedUrl: preSignedUrl,
+		};
+	}
+
+	private async getPresignedUrl(key: string) {
+		const command = new PutObjectCommand({
+			Bucket: this.s3Configure.S3_BUCKET_NAME,
+			Key: key,
+			ContentType: S3_OBJECT_CONTENTTYPE,
+		});
+		return await getSignedUrl(this.s3Configure.S3Object, command, {
+			expiresIn: 180, //초 단위
+		});
+	}
+
+	// async deleteS3Image(userId: number) {
+	// 	const command = new DeleteObjectCommand({
+	// 		Bucket: this.s3Configure.S3_BUCKET_NAME,
+	// 		Key: `images/${userId}.jpeg`,
+	// 	});
+	//
+	// 	const response = await this.s3Configure.S3Object.send(command);
+	// 	// TODO: s3 이미지 삭제에 실패했을 때?
+	// 	if (response.$metadata.httpStatusCode !== 200) {
+	// 		console.error(response.$metadata.httpStatusCode);
+	// 		// throw new InternalServerErrorException();
+	// 	}
+	// }
+
+	private getNowDate(): string {
+		const date = new Date();
+		const year = date.getFullYear().toString();
+		const month = (date.getMonth() + 1).toString().padStart(2, '0'); // 월은 0부터 시작하므로 +1을 해줌
+		const day = date.getDate().toString().padStart(2, '0');
+
+		return `${year}${month}${day}`;
 	}
 }

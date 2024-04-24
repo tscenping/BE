@@ -20,3 +20,10 @@ export const CHANNEL_NAME_REGEXP = /^[ㄱ-ㅎㅏ-ㅣ가-힣a-zA-Z0-9]*$/;
 /* If K is of a lower value, then the rating is changed by a small fraction 
 but if K is of a higher value, then the changes in the rating are significant.*/
 export const K = 30;
+
+export const S3_IMAGE_URL_PREFIX = 'https://d5xph0h5q8hbn.cloudfront.net';
+
+export const S3_OBJECT_KEY_PREFIX = 'image';
+export const S3_OBJECT_KEY_SUFFIX = '.jpeg';
+
+export const S3_OBJECT_CONTENTTYPE = 'image/jpeg';

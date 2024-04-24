@@ -5,8 +5,7 @@ import { ApiProperty } from '@nestjs/swagger';
 export class SignupRequestDto {
 	@ApiProperty({ description: '아바타' })
 	@IsNotEmpty()
-	@IsString()
-	avatar: string;
+	avatar: boolean;
 	@ApiProperty({ description: '닉네임' })
 	@IsNotEmpty()
 	@IsString()

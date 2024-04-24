@@ -1,6 +1,6 @@
 export class EmitEventServerGameReadyParamDto {
 	rivalNickname: string;
-	rivalAvatar: string;
+	rivalAvatar: string | null;
 	myPosition: string;
 	ball: {
 		x: number;

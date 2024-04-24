@@ -1,10 +1,4 @@
-import {
-	BadRequestException,
-	Inject,
-	Injectable,
-	InternalServerErrorException,
-	Logger,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { GameRepository } from '../game/game.repository';
@@ -12,35 +6,21 @@ import { BlocksRepository } from '../friends/blocks.repository';
 import { UserProfileResponseDto } from './dto/user-profile-response.dto';
 import { FriendsRepository } from '../friends/friends.repository';
 import { UsersRepository } from '../user-repository/users.repository';
-import s3Config from '../config/s3.config';
-import { ConfigType } from '@nestjs/config';
-import {
-	DeleteObjectCommand,
-	PutObjectCommand,
-	S3Client,
-} from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 @Injectable()
 export class UsersService {
-	private readonly s3: S3Client;
-
 	constructor(
-		private readonly userRepository: UsersRepository,
+		private readonly usersRepository: UsersRepository,
 		private readonly gameRepository: GameRepository,
 		private readonly friendsRepository: FriendsRepository,
 		private readonly blocksRepository: BlocksRepository,
-		@Inject(s3Config.KEY)
-		private readonly s3Configure: ConfigType<typeof s3Config>,
-	) {
-		this.s3 = this.s3Configure.S3Object;
-	}
+	) {}
 
 	private readonly logger = new Logger(UsersService.name);
 
 	async findGameHistoriesWithPage(nickname: string, page: number) {
 		// 유저 id 조회
-		const targetUser = await this.userRepository.findUserByNickname(
+		const targetUser = await this.usersRepository.findUserByNickname(
 			nickname,
 		);
 		if (!targetUser) {
@@ -68,7 +48,7 @@ export class UsersService {
 	}
 
 	async findMyProfile(userId: number) {
-		const myProfile = await this.userRepository.findMyProfile(userId);
+		const myProfile = await this.usersRepository.findMyProfile(userId);
 
 		return myProfile;
 	}
@@ -77,9 +57,10 @@ export class UsersService {
 		userId: number,
 		targetUserNickname: string,
 	): Promise<UserProfileResponseDto> {
-		const userProfile = await this.userRepository.findUserProfileByNickname(
-			targetUserNickname,
-		);
+		const userProfile =
+			await this.usersRepository.findUserProfileByNickname(
+				targetUserNickname,
+			);
 
 		const friend = await this.friendsRepository.findFriend(
 			userId,
@@ -99,7 +80,7 @@ export class UsersService {
 	}
 
 	async updateMyStatusMessage(userId: number, statusMessage: string | null) {
-		const updateRes = await this.userRepository.update(userId, {
+		const updateRes = await this.usersRepository.update(userId, {
 			statusMessage: statusMessage,
 		});
 
@@ -108,18 +89,38 @@ export class UsersService {
 		}
 	}
 
-	async updateMyAvatar(userId: number, avatar: string) {
-		const updateRes = await this.userRepository.update(userId, {
-			avatar: avatar,
+	async updateMyAvatar(userId: number, nickname: string, hasAvatar: boolean) {
+		/*
+		TODO: 업데이트한지 3일 이내면 에러 던지기,
+			현 db 상태와 같다면(avatar가 이미 null인데 hasAvatar = false 라면) update 진행 중지
+		 */
+		let ret;
+		let updateUserDataDto;
+		if (hasAvatar) {
+			const { avatar, preSignedUrl } =
+				await this.usersRepository.getAvatarAndPresignedUrl(nickname);
+			updateUserDataDto = {
+				avatar: avatar,
+			};
+			ret = preSignedUrl;
+		} else {
+			updateUserDataDto = {
+				avatar: null,
+			};
+			ret = null;
+		}
+		const updateRes = await this.usersRepository.update(userId, {
+			...updateUserDataDto,
 		});
 
 		if (updateRes.affected !== 1) {
 			throw DBUpdateFailureException(`user ${userId} update failed`);
 		}
+		return ret;
 	}
 
 	async getUserIfRefreshTokenMatches(refreshToken: string, userId: number) {
-		const user = await this.userRepository.findOne({
+		const user = await this.usersRepository.findOne({
 			where: { id: userId },
 		});
 
@@ -140,31 +141,6 @@ export class UsersService {
 	}
 
 	async findRanksWithPage() {
-		return await this.userRepository.findRanksWithPage();
-	}
-
-	async getPresignedUrl(userId: number) {
-		// TODO: 수정 72시간 이내에는 에러
-
-		const command = new PutObjectCommand({
-			Bucket: this.s3Configure.S3_BUCKET_NAME,
-			Key: `images/${userId}.jpeg`,
-			ContentType: 'image/jpeg',
-		});
-		return await getSignedUrl(this.s3, command, { expiresIn: 3000 });
-	}
-
-	async deleteS3Image(userId: number) {
-		const command = new DeleteObjectCommand({
-			Bucket: this.s3Configure.S3_BUCKET_NAME,
-			Key: `images/${userId}.jpeg`,
-		});
-
-		const response = await this.s3.send(command);
-		// TODO: s3 이미지 삭제에 실패했을 때?
-		if (response.$metadata.httpStatusCode !== 200) {
-			console.error(response.$metadata.httpStatusCode);
-			// throw new InternalServerErrorException();
-		}
+		return await this.usersRepository.findRanksWithPage();
 	}
 }

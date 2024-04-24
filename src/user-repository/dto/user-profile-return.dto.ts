@@ -1,7 +1,7 @@
 export type UserProfileReturnDto = {
 	id: number;
 	nickname: string;
-	avatar: string;
+	avatar: string | null;
 	statusMessage: string | null;
 	loseCount: number;
 	winCount: number;

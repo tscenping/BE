@@ -34,22 +34,40 @@ export class AuthService {
 
 	private readonly logger = new Logger(AuthService.name);
 
-	async signup(userId: number, nickname: string, avatar: string) {
+	async signup(userId: number, nickname: string, hasAvatar: boolean) {
 		const user = await this.validateUserExist(userId);
 
 		await this.validateUserAlreadySignUp(user);
 
 		await this.validateNickname(nickname);
 
-		const updateRes = await this.usersRepository.update(userId, {
-			avatar: avatar,
-			nickname: nickname,
-			status: UserStatus.ONLINE,
-		});
-
-		if (updateRes.affected !== 1) {
-			throw DBUpdateFailureException(`user ${userId} update failed`);
+		let ret;
+		let updateUserDataDto;
+		if (hasAvatar) {
+			const { avatar, preSignedUrl } =
+				await this.usersRepository.getAvatarAndPresignedUrl(nickname);
+			updateUserDataDto = {
+				nickname: nickname,
+				avatar: avatar,
+			};
+			ret = preSignedUrl;
+		} else {
+			updateUserDataDto = {
+				nickname: nickname,
+			};
+			ret = null;
 		}
+
+		const updateRes = await this.usersRepository.update(userId, {
+			...updateUserDataDto,
+		});
+		if (updateRes.affected !== 1) {
+			throw DBUpdateFailureException(
+				`유저 ${userId}의 db 업데이트가 실패했습니다`,
+			);
+		}
+
+		return ret;
 	}
 
 	async validateUserExist(userId: number) {
