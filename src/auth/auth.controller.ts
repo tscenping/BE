@@ -111,7 +111,13 @@ export class AuthController {
 		const nickname = signupRequestDto.nickname;
 		const avatar = signupRequestDto.avatar;
 
-		return await this.authService.signup(user.id, nickname, avatar);
+		const preSignedUrl = await this.authService.signup(
+			user.id,
+			nickname,
+			avatar,
+		);
+
+		return { preSignedUrl: preSignedUrl };
 	}
 
 	// TODO: 테스트용 코드. 추후 삭제

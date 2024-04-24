@@ -136,10 +136,12 @@ export class UsersController {
 		@GetUser() user: User,
 		@Body('avatar') avatar: boolean,
 	) {
-		return await this.usersService.updateMyAvatar(
+		const preSignedUrl = await this.usersService.updateMyAvatar(
 			user.id,
 			user.nickname,
 			avatar,
 		);
+
+		return { preSignedUrl: preSignedUrl };
 	}
 }
