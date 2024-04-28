@@ -96,6 +96,15 @@ export class FriendsController {
 	}
 
 	@Get('/blocks')
+	async findAllBlockList(@GetUser() user: User) {
+		const BlockUserResponseDto = await this.blocksService.findAllBlockList(
+			user.id,
+		);
+
+		return BlockUserResponseDto;
+	}
+
+	@Get('/blocks')
 	@ApiOperation({
 		summary: '유저 차단목록 조회',
 		description: 'pagination된 차단 유저 목록을 제공합니다.',
@@ -107,15 +116,6 @@ export class FriendsController {
 	) {
 		const BlockUserResponseDto =
 			await this.blocksService.findBlockUserListWithPage(user.id, page);
-
-		return BlockUserResponseDto;
-	}
-
-	@Get('/blocks')
-	async findAllBlockList(@GetUser() user: User) {
-		const BlockUserResponseDto = await this.blocksService.findAllBlockList(
-			user.id,
-		);
 
 		return BlockUserResponseDto;
 	}
