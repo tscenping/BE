@@ -75,6 +75,19 @@ export class BlocksService {
 		}
 	}
 
+	async findAllBlockList(userId: number) {
+		const blockUsers: BlockUserReturnDto[] =
+			await this.blocksRepository.findAllBlockUsers(userId);
+
+		const totalItemCount = await this.blocksRepository.count({
+			where: {
+				fromUserId: userId,
+			},
+		});
+
+		return { blocks: blockUsers, totalItemCount };
+	}
+
 	async findBlockUserListWithPage(
 		userId: number,
 		page: number,
