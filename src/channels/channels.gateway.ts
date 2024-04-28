@@ -183,6 +183,7 @@ export class ChannelsGateway
 
 		const eventMessageEmitDto = {
 			nickname: user.nickname,
+			avatar: user.avatar,
 			message,
 			channelId,
 		};

@@ -91,6 +91,19 @@ export class BlocksService {
 		return { blocks: blockUsers, totalItemCount };
 	}
 
+	async findAllBlockList(userId: number) {
+		const blockUsers: BlockUserReturnDto[] =
+			await this.blocksRepository.findAllBlockUsers(userId);
+
+		const totalItemCount = await this.blocksRepository.count({
+			where: {
+				fromUserId: userId,
+			},
+		});
+
+		return { blocks: blockUsers, totalItemCount };
+	}
+
 	async validateUserExists(userId: number) {
 		const user = await this.usersRepository.findOne({
 			where: {

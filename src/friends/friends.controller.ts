@@ -110,4 +110,13 @@ export class FriendsController {
 
 		return BlockUserResponseDto;
 	}
+
+	@Get('/blocks')
+	async findAllBlockList(@GetUser() user: User) {
+		const BlockUserResponseDto = await this.blocksService.findAllBlockList(
+			user.id,
+		);
+
+		return BlockUserResponseDto;
+	}
 }
