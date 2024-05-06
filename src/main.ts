@@ -9,14 +9,12 @@ import { SocketIoAdapter } from './common/adapter/socket-io.adapter';
 import { WsFilter } from './common/exception/custom-ws-exception.filter';
 
 async function bootstrap() {
-	const httpsOptions = {
-		key: fs.readFileSync('./BE-config/localhost-key.pem'),
-		cert: fs.readFileSync('./BE-config/localhost.pem'),
-	};
+	// const httpsOptions = {
+	// 	key: fs.readFileSync('./BE-config/localhost-key.pem'),
+	// 	cert: fs.readFileSync('./BE-config/localhost.pem'),
+	// };
 
-	const app = await NestFactory.create(AppModule, {
-		httpsOptions,
-	});
+	const app = await NestFactory.create(AppModule);
 
 	app.enableCors({
 		credentials: true,

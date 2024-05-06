@@ -1,3 +1,4 @@
+import { WsException } from '@nestjs/websockets';
 import {
 	DB_QUERY_ERROR,
 	DB_UPDATE_FAILURE,
@@ -7,7 +8,6 @@ import {
 	WS_UNAUTHORIZED_ERROR,
 	WsErrorCode,
 } from './error-code';
-import { WsException } from '@nestjs/websockets';
 export class customException extends Error {
 	readonly errorCode: ErrorCode;
 
@@ -50,6 +50,12 @@ export const WSUnauthorizedException = (
 };
 
 export const WSBadRequestException = (message?: string): customWsException => {
+	return new customWsException(WS_BAD_REQUEST_ERROR, message);
+};
+
+export const WSDuplicateLoginException = (
+	message?: string,
+): customWsException => {
 	return new customWsException(WS_BAD_REQUEST_ERROR, message);
 };
 
