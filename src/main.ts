@@ -19,7 +19,7 @@ async function bootstrap() {
 	app.enableCors({
 		credentials: true,
 		// origin: 'https://localhost:3003',
-		origin: true,
+		origin: ['http://localhost:3003', 'https://tscenping.shop'],
 	});
 	app.use(cookieParser());
 

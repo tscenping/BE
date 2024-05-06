@@ -28,6 +28,7 @@ export class SocketIoAdapter extends IoAdapter {
 				new RegExp(
 					`/^http:\/\/192\.168\.1\.([1-9]|[1-9]\d):${clientPort}$/`,
 				),
+				`https://tscenping.shop`,
 			],
 		};
 
