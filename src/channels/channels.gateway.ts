@@ -19,7 +19,7 @@ import {
 import Redis from 'ioredis';
 import { Server } from 'socket.io';
 import { UserStatus } from 'src/common/enum';
-import { EVENT_ERROR, EVENT_USER_STATUS } from 'src/common/events';
+import { EVENT_USER_STATUS } from 'src/common/events';
 import { WSBadRequestException } from 'src/common/exception/custom-exception';
 import { WsFilter } from 'src/common/exception/custom-ws-exception.filter';
 import { WS_DUPLICATE_LOGIN_ERROR } from 'src/common/exception/error-code';
@@ -74,10 +74,6 @@ export class ChannelsGateway
 			console.log('socket이 이미 존재합니다.');
 			const socket = await this.isSocketConnected(user.channelSocketId);
 			if (socket) {
-				// 이미 로그인된 유저의 경우, 기존 소켓을 disconnect한다.
-				this.server
-					.to(socket.id)
-					.emit(EVENT_ERROR, WS_DUPLICATE_LOGIN_ERROR);
 				socket.disconnect();
 			} else {
 				await this.usersRepository.update(user.id, {
