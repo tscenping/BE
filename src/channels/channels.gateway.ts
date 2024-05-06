@@ -20,17 +20,20 @@ import Redis from 'ioredis';
 import { Server } from 'socket.io';
 import { UserStatus } from 'src/common/enum';
 import { EVENT_USER_STATUS } from 'src/common/events';
-import { WSBadRequestException } from 'src/common/exception/custom-exception';
+import {
+	WSBadRequestException,
+	WSDuplicateLoginException,
+} from 'src/common/exception/custom-exception';
 import { WsFilter } from 'src/common/exception/custom-ws-exception.filter';
 import { FriendsRepository } from 'src/friends/friends.repository';
+import { User } from 'src/user-repository/entities/user.entity';
 import { UsersRepository } from 'src/user-repository/users.repository';
+import { SocketWithAuth } from '../common/adapter/socket-io.adapter';
+import { WsAuthGuard } from '../common/guards/ws-auth.guard';
 import { ChannelUsersRepository } from './channel-users.repository';
+import { ChannelNameChangeResponseDto } from './dto/channel-name-change-response.dto';
 import { ChannelNoticeResponseDto } from './dto/channel-notice.response.dto';
 import { EventMessageOnDto } from './dto/event-message-on.dto';
-import { User } from 'src/user-repository/entities/user.entity';
-import { WsAuthGuard } from '../common/guards/ws-auth.guard';
-import { SocketWithAuth } from '../common/adapter/socket-io.adapter';
-import { ChannelNameChangeResponseDto } from './dto/channel-name-change-response.dto';
 
 @WebSocketGateway({ namespace: 'channels' })
 @UseGuards(WsAuthGuard)
@@ -73,7 +76,7 @@ export class ChannelsGateway
 			console.log('channel socket 갈아끼운다 ~?!');
 			const socket = await this.isSocketConnected(user.channelSocketId);
 			if (socket) {
-				socket.disconnect();
+				throw WSDuplicateLoginException();
 			} else {
 				await this.usersRepository.update(user.id, {
 					channelSocketId: null,

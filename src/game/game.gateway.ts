@@ -1,3 +1,10 @@
+import { InjectRedis } from '@liaoliaots/nestjs-redis';
+import {
+	UseFilters,
+	UseGuards,
+	UsePipes,
+	ValidationPipe,
+} from '@nestjs/common';
 import {
 	ConnectedSocket,
 	MessageBody,
@@ -7,17 +14,18 @@ import {
 	WebSocketGateway,
 	WebSocketServer,
 } from '@nestjs/websockets';
-import { UsersRepository } from '../user-repository/users.repository';
-import { FriendsRepository } from '../friends/friends.repository';
+import Redis from 'ioredis';
 import { Server, Socket } from 'socket.io';
+import { ChannelsGateway } from '../channels/channels.gateway';
+import { SocketWithAuth } from '../common/adapter/socket-io.adapter';
+import { K } from '../common/constants';
 import {
-	UseFilters,
-	UseGuards,
-	UsePipes,
-	ValidationPipe,
-} from '@nestjs/common';
-import { WsFilter } from '../common/exception/custom-ws-exception.filter';
-import { GatewayCreateGameInvitationParamDto } from './dto/gateway-create-invitation-param.dto';
+	GameStatus,
+	GameType,
+	KEYNAME,
+	KEYSTATUS,
+	UserStatus,
+} from '../common/enum';
 import {
 	EVENT_ERROR,
 	EVENT_GAME_INVITATION,
@@ -30,31 +38,26 @@ import {
 	EVENT_SERVER_GAME_READY,
 	EVENT_USER_STATUS,
 } from '../common/events';
-import { ChannelsGateway } from '../channels/channels.gateway';
-import { EmitEventInvitationReplyDto } from './dto/emit-event-invitation-reply.dto';
-import { GameRepository } from './game.repository';
-import { GameDto } from './dto/game.dto';
 import {
-	GameStatus,
-	GameType,
-	KEYNAME,
-	KEYSTATUS,
-	UserStatus,
-} from '../common/enum';
-import { EmitEventMatchStatusDto } from './dto/emit-event-match-status.dto';
-import { EmitEventMatchScoreParamDto } from './dto/emit-event-match-score-param.dto';
-import { EmitEventServerGameReadyParamDto } from './dto/emit-event-server-game-ready-param.dto';
-import { EmitEventMatchmakingReplyDto } from './dto/emit-event-matchmaking-param.dto';
-import { UpdateGameResultParamDto } from './dto/update-game-result-param.dto';
-import { InjectRedis } from '@liaoliaots/nestjs-redis';
-import Redis from 'ioredis';
-import { K } from '../common/constants';
-import { UpdateDto } from './dto/view-map.dto';
-import { User } from '../user-repository/entities/user.entity';
-import { EmitEventMatchEndParamDto } from './dto/emit-event-match-end-param.dto';
+	WSBadRequestException,
+	WSDuplicateLoginException,
+} from '../common/exception/custom-exception';
+import { WsFilter } from '../common/exception/custom-ws-exception.filter';
 import { WsAuthGuard } from '../common/guards/ws-auth.guard';
-import { SocketWithAuth } from '../common/adapter/socket-io.adapter';
-import { WSBadRequestException } from '../common/exception/custom-exception';
+import { FriendsRepository } from '../friends/friends.repository';
+import { User } from '../user-repository/entities/user.entity';
+import { UsersRepository } from '../user-repository/users.repository';
+import { EmitEventInvitationReplyDto } from './dto/emit-event-invitation-reply.dto';
+import { EmitEventMatchEndParamDto } from './dto/emit-event-match-end-param.dto';
+import { EmitEventMatchScoreParamDto } from './dto/emit-event-match-score-param.dto';
+import { EmitEventMatchStatusDto } from './dto/emit-event-match-status.dto';
+import { EmitEventMatchmakingReplyDto } from './dto/emit-event-matchmaking-param.dto';
+import { EmitEventServerGameReadyParamDto } from './dto/emit-event-server-game-ready-param.dto';
+import { GameDto } from './dto/game.dto';
+import { GatewayCreateGameInvitationParamDto } from './dto/gateway-create-invitation-param.dto';
+import { UpdateGameResultParamDto } from './dto/update-game-result-param.dto';
+import { UpdateDto } from './dto/view-map.dto';
+import { GameRepository } from './game.repository';
 
 @WebSocketGateway({ namespace: 'game' })
 @UseGuards(WsAuthGuard)
@@ -88,8 +91,9 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			const socket = this.userIdToClient.get(user.id);
 			if (socket) {
 				const result = await this.isSocketConnected(socket);
-				if (result) socket.disconnect();
-				else this.userIdToClient.delete(user.id);
+				if (result) {
+					throw WSDuplicateLoginException();
+				} else this.userIdToClient.delete(user.id);
 			} else {
 				await this.usersRepository.update(user.id, {
 					gameSocketId: null,
