@@ -17,6 +17,7 @@ import { UsersModule } from './users/users.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { UserRepositoryModule } from './user-repository/user-repository.module';
 import { FriendsModule } from './friends/friends.module';
+import { HealthModule } from './health/health.module';
 import userConfig from './config/user.config';
 import googleConfig from './config/google.config';
 import s3Config from './config/s3.config';
@@ -60,6 +61,7 @@ import s3Config from './config/s3.config';
 		UsersModule,
 		RedisModule,
 		SwaggerModule,
+		HealthModule,
 	],
 	controllers: [AppController],
 	providers: [AppService],

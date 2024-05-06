@@ -19,7 +19,7 @@ export class RanksService {
 		//userIDRanking: [userId, userId, userId, ...]
 		// 시간 재기
 		const startTime = new Date().getTime();
-		const userRanking = await this.redis.zrevrange('rankings', 0, 99);
+		const userRanking = await this.redis.zrevrange('rankings', 0, -1);
 		const endTime = new Date().getTime();
 		console.log(`redis time: ${endTime - startTime}ms`);
 
