@@ -3,7 +3,7 @@ export const DEFAULT_PAGE_SIZE = 10;
 export const GAME_DEFAULT_PAGE_SIZE = 5;
 
 // mute 시간
-export const MUTE_TIME = 10; // TODO: 30초로 변경
+export const MUTE_TIME = 30;
 
 // 정규식
 export const NICKNAME_REGEXP = /^[가-힣a-zA-Z0-9]*$/;
