@@ -16,7 +16,6 @@ import {
 } from '@nestjs/websockets';
 import Redis from 'ioredis';
 import { Server, Socket } from 'socket.io';
-import { WS_DUPLICATE_LOGIN_ERROR } from 'src/common/exception/error-code';
 import { ChannelsGateway } from '../channels/channels.gateway';
 import { SocketWithAuth } from '../common/adapter/socket-io.adapter';
 import { K } from '../common/constants';
