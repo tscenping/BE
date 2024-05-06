@@ -7,8 +7,8 @@ import {
 import type { ConfigType } from '@nestjs/config';
 import axios from 'axios';
 import ftConfig from '../config/ft.config';
-import { FtUserParamDto } from './dto/ft-user-param.dto';
-import { FtOauthResponseDto } from './dto/ft-oauth-response.dto';
+import { OauthUserinfoParamDto } from './dto/oauth-userinfo-param.dto';
+import { OauthResponseDto } from './dto/oauth-response.dto';
 
 @Injectable()
 export class FtAuthService {
@@ -30,7 +30,7 @@ export class FtAuthService {
 					client_secret: this.ftConfigure.FT_CLIENT_SECRET,
 					code,
 					redirect_uri: this.ftConfigure.FT_REDIRECT_URI,
-				} satisfies FtOauthResponseDto,
+				} satisfies OauthResponseDto,
 				{
 					headers: {
 						'Content-Type': 'application/json',
@@ -45,7 +45,7 @@ export class FtAuthService {
 		}
 	}
 
-	async getUserData(accessToken: string): Promise<FtUserParamDto> {
+	async getUserData(accessToken: string): Promise<OauthUserinfoParamDto> {
 		try {
 			const response = await axios.get(`${this.baseUrl}/v2/me`, {
 				headers: {
@@ -53,9 +53,9 @@ export class FtAuthService {
 				},
 			});
 
-			const userData: FtUserParamDto = {
+			const userData: OauthUserinfoParamDto = {
 				email: response.data.email,
-				ftId: response.data.id,
+				oauthId: response.data.id,
 			};
 			this.logger.log('user: ', userData);
 

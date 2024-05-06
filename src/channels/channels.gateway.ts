@@ -1,5 +1,11 @@
 import { InjectRedis } from '@liaoliaots/nestjs-redis';
-import { Logger, UseFilters, UsePipes, ValidationPipe } from '@nestjs/common';
+import {
+	Logger,
+	UseFilters,
+	UseGuards,
+	UsePipes,
+	ValidationPipe,
+} from '@nestjs/common';
 import {
 	ConnectedSocket,
 	MessageBody,
@@ -11,23 +17,24 @@ import {
 	WebSocketServer,
 } from '@nestjs/websockets';
 import Redis from 'ioredis';
-import { Server, Socket } from 'socket.io';
-import { AuthService } from 'src/auth/auth.service';
+import { Server } from 'socket.io';
 import { UserStatus } from 'src/common/enum';
-import { EVENT_ERROR, EVENT_USER_STATUS } from 'src/common/events';
+import { EVENT_USER_STATUS } from 'src/common/events';
 import { WSBadRequestException } from 'src/common/exception/custom-exception';
-import { WsExceptionFilter } from 'src/common/exception/custom-ws-exception.filter';
-import { GatewayCreateChannelInvitationParamDto } from 'src/game/dto/gateway-create-channelInvitation-param-dto';
-import { FriendsRepository } from 'src/users/friends.repository';
-import { UsersRepository } from 'src/users/users.repository';
-import { BlocksRepository } from '../users/blocks.repository';
+import { WsFilter } from 'src/common/exception/custom-ws-exception.filter';
+import { FriendsRepository } from 'src/friends/friends.repository';
+import { UsersRepository } from 'src/user-repository/users.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
 import { ChannelNoticeResponseDto } from './dto/channel-notice.response.dto';
 import { EventMessageOnDto } from './dto/event-message-on.dto';
-import { User } from 'src/users/entities/user.entity';
+import { User } from 'src/user-repository/entities/user.entity';
+import { WsAuthGuard } from '../common/guards/ws-auth.guard';
+import { SocketWithAuth } from '../common/adapter/socket-io.adapter';
+import { ChannelNameChangeResponseDto } from './dto/channel-name-change-response.dto';
 
 @WebSocketGateway({ namespace: 'channels' })
-@UseFilters(WsExceptionFilter)
+@UseGuards(WsAuthGuard)
+@UseFilters(WsFilter)
 @UsePipes(ValidationPipe)
 export class ChannelsGateway
 	implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
@@ -38,11 +45,10 @@ export class ChannelsGateway
 		SPECIAL_MATCHING: [],
 	};
 	constructor(
-		private readonly authService: AuthService,
 		private readonly usersRepository: UsersRepository,
 		private readonly channelUsersRepository: ChannelUsersRepository,
 		private readonly friendsRepository: FriendsRepository,
-		private readonly BlocksRepository: BlocksRepository,
+		// private readonly blocksRepository: BlocksRepository,
 		@InjectRedis() private readonly redis: Redis,
 	) {}
 
@@ -58,14 +64,22 @@ export class ChannelsGateway
 		this.usersRepository.initAllSocketIdAndUserStatus();
 	}
 
-	async handleConnection(@ConnectedSocket() client: Socket) {
+	async handleConnection(@ConnectedSocket() client: SocketWithAuth) {
 		// Socket으로부터 user 정보를 가져온다.
 
-		const user = await this.authService.getUserFromSocket(client);
+		const user = client.user;
 		if (!user || !client.id) return client.disconnect();
-		if (user.channelSocketId) {
-			this.sendError(client, 400, `중복 연결입니다`);
-			return client.disconnect();
+		else if (user.channelSocketId) {
+			console.log('channel socket 갈아끼운다 ~?!');
+			const socket = await this.isSocketConnected(user.channelSocketId);
+			if (socket) {
+				socket.disconnect();
+			} else {
+				await this.usersRepository.update(user.id, {
+					channelSocketId: null,
+					status: UserStatus.OFFLINE,
+				});
+			}
 		}
 		this.logger.log(`Client connected: ${client.id}, userId: ${user.id}`);
 
@@ -101,11 +115,11 @@ export class ChannelsGateway
 		}
 	}
 
-	async handleDisconnect(@ConnectedSocket() client: Socket) {
+	async handleDisconnect(@ConnectedSocket() client: SocketWithAuth) {
 		this.logger.log(`Client disconnected: ${client.id}`);
 		const gameQueue = this.gameQueue;
-		const user = await this.authService.getUserFromSocket(client);
-		if (!user || client.id !== user.channelSocketId) {
+		const user = client.user;
+		if (!user || !client.id) {
 			return;
 		}
 
@@ -147,11 +161,11 @@ export class ChannelsGateway
 
 	@SubscribeMessage('message')
 	async handleMessage(
-		@ConnectedSocket() client: Socket,
+		@ConnectedSocket() client: SocketWithAuth,
 		@MessageBody() data: EventMessageOnDto,
 	) {
 		// Socket으로부터 user 정보를 가져온다.
-		const user = await this.authService.getUserFromSocket(client);
+		const user = client.user;
 
 		if (!user || user.channelSocketId !== client.id) {
 			throw WSBadRequestException('유저 정보가 일치하지 않습니다.'); // TODO: exception 발생해도 서버 죽지 않는지 확인
@@ -164,11 +178,12 @@ export class ChannelsGateway
 			where: { userId: user.id, channelId, isBanned: false },
 		});
 		if (!channelUser) {
-			throw WSBadRequestException('채널에 속해있지 않습니다.');
+			return;
 		}
 
 		const eventMessageEmitDto = {
 			nickname: user.nickname,
+			avatar: user.avatar,
 			message,
 			channelId,
 		};
@@ -178,7 +193,8 @@ export class ChannelsGateway
 		const isMutedChannelUser = await this.redis.exists(muteRedisKey);
 
 		if (isMutedChannelUser) {
-			throw WSBadRequestException('채널에서 음소거 되었습니다.');
+			// TODO: 뮤트 상태에서 메세지 보내면 어떻게 핸들링?
+			return;
 		}
 
 		// 어떤 user가 보내는지 찾아주기 위해 emit한다. (nickname, message, channelId, notice)
@@ -193,11 +209,9 @@ export class ChannelsGateway
 			`joinChannelRoom: ${channelRoomName}, ${channelSocketId}`,
 		);
 
-		const socket = (await this.server.fetchSockets()).find(
-			(s) => s.id === channelSocketId,
-		);
+		const socket = await this.isSocketConnected(channelSocketId);
 		if (!socket) {
-			return WSBadRequestException('socket이 존재하지 않습니다.');
+			throw WSBadRequestException('socket이 존재하지 않습니다.');
 		}
 		this.logger.log(`socket.id: `, socket.id);
 		socket.join(channelRoomName);
@@ -213,50 +227,25 @@ export class ChannelsGateway
 			(s) => s.id === channelSocketId,
 		);
 		if (!socket) {
-			return WSBadRequestException('socket이 존재하지 않습니다.');
+			throw WSBadRequestException('socket이 존재하지 않습니다.');
 		}
 		this.logger.log(`socket.id: `, socket.id);
 		socket.leave(channelRoomName);
 	}
 
 	// 알람 구현을 위한 메소드(한명에게만 알람)
-	async privateAlert(
-		gatewayInvitationDto: GatewayCreateChannelInvitationParamDto,
-	) {
-		const invitedUser = await this.usersRepository.findOne({
-			where: { id: gatewayInvitationDto.invitedUserId },
-		});
-
-		const invitingUser = await this.usersRepository.findOne({
-			where: { id: gatewayInvitationDto.invitingUserId },
-		});
-		if (!invitingUser) {
-			throw WSBadRequestException('유저가 유효하지 않습니다.');
-		}
-
-		const invitationEmitDto = {
-			invitationId: gatewayInvitationDto.invitationId,
-			invitingUserId: invitingUser.nickname,
-		};
-
-		if (
-			!invitedUser ||
-			!invitingUser ||
-			invitedUser.status === UserStatus.OFFLINE ||
-			invitingUser.status === UserStatus.OFFLINE ||
-			!invitedUser.channelSocketId
-		) {
-			throw WSBadRequestException('유저가 유효하지 않습니다.');
-		}
-		const isBlocked = await this.BlocksRepository.findOne({
-			where: { fromUserId: invitedUser.id, toUserId: invitingUser.id },
-		});
-		if (isBlocked) return;
-
-		this.server
-			.to(invitedUser.channelSocketId)
-			.emit('privateAlert', invitationEmitDto);
-	}
+	// async privateAlert(
+	// 	gatewayInvitationDto: GatewayCreateChannelInvitationParamDto,
+	// ) {
+	// 	const isBlocked = await this.blocksRepository.findOne({
+	// 		where: { fromUserId: invitedUser.id, toUserId: invitingUser.id },
+	// 	});
+	// 	if (isBlocked) return;
+	//
+	// 	this.server
+	// 		.to(invitedUser.channelSocketId)
+	// 		.emit('privateAlert', invitationEmitDto);
+	// }
 
 	// 채널에 소켓 전송
 	channelNoticeMessage(
@@ -268,10 +257,22 @@ export class ChannelsGateway
 			.emit('notice', channelNoticeResponseDto);
 	}
 
-	sendError(client: Socket, statusCode: number, message: string) {
-		this.server.to(client.id).emit(EVENT_ERROR, {
-			statusCode: statusCode,
-			message: message,
-		});
+	channelNameChangeMessage(
+		channelId: number,
+		channelNameChangeResponseDto: ChannelNameChangeResponseDto,
+	) {
+		this.server
+			.to(channelId.toString())
+			.emit('nameChange', channelNameChangeResponseDto);
+	}
+
+	private async isSocketConnected(ChannelSocketId: string) {
+		const socket = (await this.server.fetchSockets()).find(
+			(s) => s.id === ChannelSocketId,
+		);
+		if (!socket) {
+			return null;
+		}
+		return socket;
 	}
 }

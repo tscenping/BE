@@ -8,7 +8,8 @@ import { AuthService } from './auth.service';
 import { FtAuthService } from './ft-auth.service';
 import { JwtAccessStrategy } from './jwt-access.strategy';
 import { JwtRefreshStrategy } from './jwt-refresh.strategy';
-import { UsersModule } from '../users/users.module';
+import { UserRepositoryModule } from '../user-repository/user-repository.module';
+import { GoogleAuthService } from './google-auth.service';
 
 @Module({
 	imports: [
@@ -18,15 +19,16 @@ import { UsersModule } from '../users/users.module';
 			useFactory: (jwtConfigure: ConfigType<typeof jwtConfig>) =>
 				jwtConfigure,
 		}),
-		UsersModule,
+		UserRepositoryModule,
 	],
 	controllers: [AuthController],
 	providers: [
 		AuthService,
 		FtAuthService,
+		GoogleAuthService,
 		JwtAccessStrategy,
 		JwtRefreshStrategy,
 	],
-	exports: [AuthService, JwtAccessStrategy, JwtRefreshStrategy],
+	exports: [JwtAccessStrategy, JwtRefreshStrategy],
 })
 export class AuthModule {}

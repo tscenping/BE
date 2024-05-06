@@ -22,9 +22,9 @@ export class User extends BaseEntity {
 	@Matches(NICKNAME_REGEXP)
 	nickname: string;
 
-	@Column({ default: null })
+	@Column({ default: null, type: 'varchar' })
 	@IsString()
-	avatar: string;
+	avatar: string | null;
 
 	@Column()
 	@IsNotEmpty()

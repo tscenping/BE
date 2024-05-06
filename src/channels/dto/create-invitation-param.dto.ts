@@ -1,14 +1,12 @@
+import { User } from '../../user-repository/entities/user.entity';
+
 export class CreateInvitationParamDto {
-	invitingUserId: number;
+	invitingUser: User;
 	channelId: number;
 	invitedUserId: number;
 
-	constructor(
-		invitingUserId: number,
-		channelId: number,
-		invitedUserId: number,
-	) {
-		this.invitingUserId = invitingUserId;
+	constructor(invitingUser: User, channelId: number, invitedUserId: number) {
+		this.invitingUser = invitingUser;
 		this.channelId = channelId;
 		this.invitedUserId = invitedUserId;
 	}

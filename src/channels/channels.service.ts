@@ -4,9 +4,8 @@ import * as bycrypt from 'bcrypt';
 import { Redis } from 'ioredis';
 import { MUTE_TIME } from 'src/common/constants';
 import { ChannelType, ChannelUserType } from 'src/common/enum';
-import { GatewayCreateChannelInvitationParamDto } from 'src/game/dto/gateway-create-channelInvitation-param-dto';
-import { User } from 'src/users/entities/user.entity';
-import { UsersRepository } from 'src/users/users.repository';
+import { User } from 'src/user-repository/entities/user.entity';
+import { UsersRepository } from 'src/user-repository/users.repository';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { ChannelInvitationRepository } from './channel-invitation.repository';
 import { ChannelUsersRepository } from './channel-users.repository';
@@ -18,7 +17,7 @@ import { ChannelListResponseDto } from './dto/channel-list-response.dto';
 import { ChannelListReturnDto } from './dto/channel-list-return.dto';
 import { ChannelUserInfoReturnDto } from './dto/channel-user-info-return.dto';
 import { ChannelUsersResponseDto } from './dto/channel-users-response.dto';
-import { CreateChannelRequestDto } from './dto/creat-channel-request.dto';
+import { CreateChannelRequestDto } from './dto/create-channel-request.dto';
 import { CreateChannelResponseDto } from './dto/create-channel-response.dto';
 import { CreateChannelUserParamDto } from './dto/create-channel-user-param.dto';
 import { CreateInvitationParamDto } from './dto/create-invitation-param.dto';
@@ -26,9 +25,9 @@ import { DeleteChannelInvitationParamDto } from './dto/delete-invitation-param.d
 import { DmChannelListResponseDto } from './dto/dmchannel-list-response.dto';
 import { DmChannelListReturnDto } from './dto/dmchannel-list-return.dto';
 import { UpdateChannelPwdParamDto } from './dto/update-channel-pwd-param.dto';
-import moment from 'moment';
-import { channel } from 'diagnostics_channel';
 import { In } from 'typeorm';
+import { UpdateChannelNameParamDto } from './dto/update-channel-name-param.dto';
+import { BlocksRepository } from '../friends/blocks.repository';
 
 @Injectable()
 export class ChannelsService {
@@ -37,7 +36,8 @@ export class ChannelsService {
 		private readonly channelUsersRepository: ChannelUsersRepository,
 		private readonly channelInvitationRepository: ChannelInvitationRepository,
 		private readonly usersRepository: UsersRepository,
-		private readonly ChannelsGateway: ChannelsGateway,
+		private readonly blocksRepository: BlocksRepository,
+		private readonly channelsGateway: ChannelsGateway,
 		@InjectRedis() private readonly redis: Redis,
 	) {}
 
@@ -150,6 +150,30 @@ export class ChannelsService {
 			channelUsers: channelUserInfoList,
 			myChannelUserType: myChannelUserInfo.channelUserType,
 		};
+	}
+
+	async updateChannelName(
+		updateChannelNameParamDto: UpdateChannelNameParamDto,
+	) {
+		// channel 유효성 확인
+		const channelId = updateChannelNameParamDto.channelId;
+		await this.checkChannelExist(channelId);
+
+		// 요청한 user의 유효성 확인 (채널에 있는지, owner인지)
+		const userId = updateChannelNameParamDto.userId;
+		const channelUser = await this.checkUserExistInChannel(
+			userId,
+			channelId,
+		);
+
+		if (channelUser.channelUserType !== ChannelUserType.OWNER)
+			throw new BadRequestException(
+				`user ${userId} does not have authority`,
+			);
+
+		await this.channelsRepository.update(channelId, {
+			name: updateChannelNameParamDto.newName,
+		});
 	}
 
 	async updateChannelTypeAndPassword(
@@ -266,7 +290,8 @@ export class ChannelsService {
 	async createChannelInvitation(
 		createInvitationParamDto: CreateInvitationParamDto,
 	) {
-		const invitingUserId = createInvitationParamDto.invitingUserId;
+		const invitingUser = createInvitationParamDto.invitingUser;
+		const invitingUserId = invitingUser.id;
 		const channelId = createInvitationParamDto.channelId;
 		const invitedUserId = createInvitationParamDto.invitedUserId;
 
@@ -276,11 +301,11 @@ export class ChannelsService {
 		if (invitingUserId === invitedUserId)
 			throw new BadRequestException('cannot invite yourself');
 
-		// 초대받은 user가 존재하는지 확인
-		await this.checkUserExist(invitedUserId);
-
 		// 초대한 user가 channel에 있는지 확인
 		await this.checkUserExistInChannel(invitingUserId, channelId);
+
+		// 초대받은 user가 존재하는지 확인
+		const invitedUser = await this.checkUserExist(invitedUserId);
 
 		// 초대받은 user가 channel에 없는지 확인
 		const channelUser = await this.channelUsersRepository.findOne({
@@ -298,13 +323,22 @@ export class ChannelsService {
 				createInvitationParamDto,
 			);
 
-		const gatewayInvitationParamDto: GatewayCreateChannelInvitationParamDto =
-			{
-				invitationId: channelInvitation.id,
-				invitingUserId: invitingUserId,
-				invitedUserId: invitedUserId,
-			};
-		await this.ChannelsGateway.privateAlert(gatewayInvitationParamDto);
+		const isBlocked = await this.blocksRepository.findOne({
+			where: { fromUserId: invitedUser.id, toUserId: invitingUser.id },
+		});
+		if (isBlocked) return;
+
+		if (!invitedUser.channelSocketId || !invitingUser.channelSocketId)
+			return;
+
+		const invitationEmitDto = {
+			invitationId: channelInvitation.id,
+			invitingUserNickname: invitingUser.nickname,
+		};
+
+		this.channelsGateway.server
+			.to(invitedUser.channelSocketId)
+			.emit('privateAlert', invitationEmitDto);
 	}
 
 	async updateChannelUser(userId: number, channelId: number) {

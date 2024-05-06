@@ -4,7 +4,7 @@ import { BlocksRepository } from './blocks.repository';
 import { BlockUserResponseDto } from './dto/block-user-response.dto';
 import { BlockUserReturnDto } from './dto/block-user-return.dto';
 import { FriendsRepository } from './friends.repository';
-import { UsersRepository } from './users.repository';
+import { UsersRepository } from '../user-repository/users.repository';
 
 class BlockDto {
 	id: number;
@@ -73,6 +73,19 @@ export class BlocksService {
 		if (result.affected !== 1) {
 			throw DBUpdateFailureException('Cancel block failed');
 		}
+	}
+
+	async findAllBlockList(userId: number) {
+		const blockUsers: BlockUserReturnDto[] =
+			await this.blocksRepository.findAllBlockUsers(userId);
+
+		const totalItemCount = await this.blocksRepository.count({
+			where: {
+				fromUserId: userId,
+			},
+		});
+
+		return { blocks: blockUsers, totalItemCount };
 	}
 
 	async findBlockUserListWithPage(

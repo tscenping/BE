@@ -1,18 +1,16 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
-import { UserStatus } from 'src/common/enum';
 import { DBUpdateFailureException } from '../common/exception/custom-exception';
 import { GameRepository } from '../game/game.repository';
-import { BlocksRepository } from './blocks.repository';
-import { UserProfileResponseDto } from './dto/user-profile.dto';
-import { User } from './entities/user.entity';
-import { FriendsRepository } from './friends.repository';
-import { UsersRepository } from './users.repository';
+import { BlocksRepository } from '../friends/blocks.repository';
+import { UserProfileResponseDto } from './dto/user-profile-response.dto';
+import { FriendsRepository } from '../friends/friends.repository';
+import { UsersRepository } from '../user-repository/users.repository';
 
 @Injectable()
 export class UsersService {
 	constructor(
-		private readonly userRepository: UsersRepository,
+		private readonly usersRepository: UsersRepository,
 		private readonly gameRepository: GameRepository,
 		private readonly friendsRepository: FriendsRepository,
 		private readonly blocksRepository: BlocksRepository,
@@ -22,7 +20,7 @@ export class UsersService {
 
 	async findGameHistoriesWithPage(nickname: string, page: number) {
 		// 유저 id 조회
-		const targetUser = await this.userRepository.findUserByNickname(
+		const targetUser = await this.usersRepository.findUserByNickname(
 			nickname,
 		);
 		if (!targetUser) {
@@ -50,7 +48,7 @@ export class UsersService {
 	}
 
 	async findMyProfile(userId: number) {
-		const myProfile = await this.userRepository.findMyProfile(userId);
+		const myProfile = await this.usersRepository.findMyProfile(userId);
 
 		return myProfile;
 	}
@@ -59,9 +57,10 @@ export class UsersService {
 		userId: number,
 		targetUserNickname: string,
 	): Promise<UserProfileResponseDto> {
-		const userProfile = await this.userRepository.findUserProfileByNickname(
-			targetUserNickname,
-		);
+		const userProfile =
+			await this.usersRepository.findUserProfileByNickname(
+				targetUserNickname,
+			);
 
 		const friend = await this.friendsRepository.findFriend(
 			userId,
@@ -80,62 +79,8 @@ export class UsersService {
 		};
 	}
 
-	async signup(userId: number, nickname: string, avatar: string) {
-		const user = await this.validateUserExist(userId);
-
-		await this.validateUserAlreadySignUp(user);
-
-		await this.validateNickname(nickname);
-
-		const updateRes = await this.userRepository.update(userId, {
-			avatar: avatar,
-			nickname: nickname,
-			status: UserStatus.ONLINE,
-		});
-
-		if (updateRes.affected !== 1) {
-			throw DBUpdateFailureException(`user ${userId} update failed`);
-		}
-	}
-
-	async validateUserExist(userId: number) {
-		const user = await this.userRepository.findOne({
-			where: {
-				id: userId,
-			},
-		});
-
-		if (!user) {
-			throw new BadRequestException(
-				`User with id ${userId} doesn't exist`,
-			);
-		}
-		return user;
-	}
-
-	async validateUserAlreadySignUp(user: User) {
-		if (user.nickname)
-			throw new BadRequestException(`${user.id} is already signed up`);
-	}
-
-	async validateNickname(nickname: string) {
-		const user = await this.userRepository.findUserByNickname(nickname);
-
-		if (user)
-			throw new BadRequestException(
-				`nickname '${nickname}' is already exist! Try again`,
-			);
-	}
-
-	async signout(userId: number) {
-		await this.userRepository.update(userId, {
-			refreshToken: null,
-			status: UserStatus.OFFLINE,
-		});
-	}
-
 	async updateMyStatusMessage(userId: number, statusMessage: string | null) {
-		const updateRes = await this.userRepository.update(userId, {
+		const updateRes = await this.usersRepository.update(userId, {
 			statusMessage: statusMessage,
 		});
 
@@ -144,18 +89,38 @@ export class UsersService {
 		}
 	}
 
-	async updateMyAvatar(userId: number, avatar: string) {
-		const updateRes = await this.userRepository.update(userId, {
-			avatar: avatar,
+	async updateMyAvatar(userId: number, nickname: string, hasAvatar: boolean) {
+		/*
+		TODO: 업데이트한지 3일 이내면 에러 던지기,
+			현 db 상태와 같다면(avatar가 이미 null인데 hasAvatar = false 라면) update 진행 중지
+		 */
+		let ret;
+		let updateUserDataDto;
+		if (hasAvatar) {
+			const { avatar, preSignedUrl } =
+				await this.usersRepository.getAvatarAndPresignedUrl(nickname);
+			updateUserDataDto = {
+				avatar: avatar,
+			};
+			ret = preSignedUrl;
+		} else {
+			updateUserDataDto = {
+				avatar: null,
+			};
+			ret = null;
+		}
+		const updateRes = await this.usersRepository.update(userId, {
+			...updateUserDataDto,
 		});
 
 		if (updateRes.affected !== 1) {
 			throw DBUpdateFailureException(`user ${userId} update failed`);
 		}
+		return ret;
 	}
 
 	async getUserIfRefreshTokenMatches(refreshToken: string, userId: number) {
-		const user = await this.userRepository.findOne({
+		const user = await this.usersRepository.findOne({
 			where: { id: userId },
 		});
 
@@ -175,28 +140,7 @@ export class UsersService {
 		return user;
 	}
 
-	// TODO: test용 메서드. 추후 삭제
-	async findUserByNickname(nickname: string) {
-		const user = await this.userRepository.findOne({
-			where: { nickname },
-		});
-
-		return user;
-	}
-
-	// TODO: test용 메서드. 추후 삭제
-	async createUser(nickname: string, email: string) {
-		const user = this.userRepository.create({
-			nickname,
-			email,
-		});
-
-		await this.userRepository.save(user);
-
-		return user;
-	}
-
 	async findRanksWithPage() {
-		return await this.userRepository.findRanksWithPage();
+		return await this.usersRepository.findRanksWithPage();
 	}
 }

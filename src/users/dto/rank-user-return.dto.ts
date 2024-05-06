@@ -1,6 +1,6 @@
 export type RankUserReturnDto = {
 	nickname: string;
-	avatar: string;
-    ladderScore: number;
+	avatar: string | null;
+	ladderScore: number;
 	ranking: number;
 };

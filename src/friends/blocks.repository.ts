@@ -10,6 +10,24 @@ export class BlocksRepository extends Repository<Block> {
 		super(Block, dataSource.manager);
 	}
 
+	async findAllBlockUsers(userId: number): Promise<BlockUserReturnDto[]> {
+		const users = this.dataSource
+			.query(
+				`
+			SELECT u.id, u.nickname, u.avatar, u.status
+			FROM Block b
+			JOIN "user" u
+			ON u.id = b."toUserId"
+			WHERE b."fromUserId" = $1 AND b."deletedAt" IS NULL
+			`,
+				[userId],
+			)
+			.catch((reason) => {
+				throw DBQueryErrorException(reason);
+			});
+		return users;
+	}
+
 	async findBlockUsers(
 		userId: number,
 		page: number,

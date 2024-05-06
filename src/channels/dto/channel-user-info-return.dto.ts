@@ -4,7 +4,7 @@ export type ChannelUserInfoReturnDto = {
 	channelUserId: number;
 	userId: number;
 	nickname: string;
-	avatar: string;
+	avatar: string | null;
 	isFriend: boolean;
 	isBlocked: boolean;
 	channelUserType: ChannelUserType;

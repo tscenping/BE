@@ -1,23 +1,16 @@
-import {
-	Body,
-	Controller,
-	Logger,
-	Patch,
-	Post,
-	Res,
-	UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Patch, Post, Res, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
-import { User } from 'src/users/entities/user.entity';
-import { SignupRequestDto } from '../users/dto/signup-request.dto';
-import { UsersService } from '../users/users.service';
+import { User } from 'src/user-repository/entities/user.entity';
+import { SignupRequestDto } from './dto/signup-request.dto';
 import { AuthService } from './auth.service';
 import { SigninMfaRequestDto } from './dto/signin-mfa-request.dto';
 import { UserSigninResponseDto } from './dto/user-signin-response.dto';
 import { FtAuthService } from './ft-auth.service';
 import { GetUser } from './get-user.decorator';
+import { UsersRepository } from '../user-repository/users.repository';
+import { GoogleAuthService } from './google-auth.service';
 
 @Controller('auth')
 @ApiTags('auth')
@@ -25,7 +18,8 @@ export class AuthController {
 	constructor(
 		private readonly authService: AuthService,
 		private readonly ftAuthService: FtAuthService,
-		private readonly usersService: UsersService,
+		private readonly googleAuthService: GoogleAuthService,
+		private readonly usersRepository: UsersRepository,
 	) {}
 
 	@Post('/signin')
@@ -53,14 +47,48 @@ export class AuthController {
 			// token을 쿠키에 저장한다.
 			res.cookie('accessToken', jwtAccessToken, {
 				// httpOnly: true,	// 자동로그인을 위해 httpOnly를 false로 설정
-				secure: true,
-				sameSite: 'none',
+				// secure: true,
+				// sameSite: 'none',
 				expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
 			});
 		}
 
 		const userSigninResponseDto: UserSigninResponseDto = {
 			userId: user.id,
+			nickname: user.nickname,
+			isFirstLogin: user.nickname === null,
+			isMfaEnabled: user.isMfaEnabled,
+			mfaUrl,
+		};
+
+		return res.send(userSigninResponseDto);
+	}
+
+	@Post('/signin-google')
+	async signinGoogle(@Body('code') code: any, @Res() res: Response) {
+		console.log('google code: ', code);
+
+		const accessToken = await this.googleAuthService.getAccessToken(code);
+		const userData = await this.googleAuthService.getUserData(accessToken);
+		const { user, mfaUrl } = await this.authService.findOrCreateUser(
+			userData,
+		);
+
+		const jwtAccessToken = await this.authService.generateJwtToken(user);
+
+		if (user.isMfaEnabled == false) {
+			// token을 쿠키에 저장한다.
+			res.cookie('accessToken', jwtAccessToken, {
+				// httpOnly: true,	// 자동로그인을 위해 httpOnly를 false로 설정
+				// secure: true,
+				// sameSite: 'none',
+				expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
+			});
+		}
+
+		const userSigninResponseDto: UserSigninResponseDto = {
+			userId: user.id,
+			nickname: user.nickname,
 			isFirstLogin: user.nickname === null,
 			isMfaEnabled: user.isMfaEnabled,
 			mfaUrl,
@@ -83,7 +111,13 @@ export class AuthController {
 		const nickname = signupRequestDto.nickname;
 		const avatar = signupRequestDto.avatar;
 
-		await this.usersService.signup(user.id, nickname, avatar);
+		const preSignedUrl = await this.authService.signup(
+			user.id,
+			nickname,
+			avatar,
+		);
+
+		return { preSignedUrl: preSignedUrl };
 	}
 
 	// TODO: 테스트용 코드. 추후 삭제
@@ -100,7 +134,9 @@ export class AuthController {
 	@ApiResponse({ status: 201, description: '토큰 발급 성공' })
 	async testSignIn(@Body('nickname') nickname: string, @Res() res: Response) {
 		// 이미 존재하는 유저인지 확인한다.
-		const existUser = await this.usersService.findUserByNickname(nickname);
+		const existUser = await this.usersRepository.findUserByNickname(
+			nickname,
+		);
 		// 이미 존재하는 유저라면 토큰을 발급한다.
 		if (existUser) {
 			const jwtAccessToken = await this.authService.generateJwtToken(
@@ -123,6 +159,7 @@ export class AuthController {
 
 			const userSigninResponseDto: UserSigninResponseDto = {
 				userId: existUser.id,
+				nickname: existUser.nickname,
 				isFirstLogin: false,
 				isMfaEnabled: false,
 				mfaUrl: undefined,
@@ -131,7 +168,10 @@ export class AuthController {
 			return res.send(userSigninResponseDto);
 		}
 
-		const user = await this.usersService.createUser(nickname, 'test@test');
+		const user = await this.usersRepository.createUser(
+			nickname,
+			'test@test',
+		);
 
 		const jwtAccessToken = await this.authService.generateJwtToken(user);
 
@@ -152,6 +192,7 @@ export class AuthController {
 
 		const userSigninResponseDto: UserSigninResponseDto = {
 			userId: user.id,
+			nickname: user.nickname,
 			isFirstLogin: false,
 			isMfaEnabled: false,
 			mfaUrl: undefined,
@@ -168,7 +209,7 @@ export class AuthController {
 	})
 	@UseGuards(AuthGuard('access'))
 	async signout(@GetUser() user: User, @Res() res: Response) {
-		await this.usersService.signout(user.id);
+		await this.authService.signout(user.id);
 
 		res.clearCookie('accessToken');
 		res.clearCookie('refreshToken');

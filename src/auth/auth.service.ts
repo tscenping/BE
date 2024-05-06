@@ -13,11 +13,13 @@ import { Socket } from 'socket.io';
 import * as speakeasy from 'speakeasy';
 import jwtConfig from 'src/config/jwt.config';
 import userConfig from 'src/config/user.config';
-import { User } from 'src/users/entities/user.entity';
-import { UsersRepository } from '../users/users.repository';
-import { FtUserParamDto } from './dto/ft-user-param.dto';
+import { User } from 'src/user-repository/entities/user.entity';
+import { UsersRepository } from '../user-repository/users.repository';
+import { OauthUserinfoParamDto } from './dto/oauth-userinfo-param.dto';
 import { SigninMfaRequestDto } from './dto/signin-mfa-request.dto';
 import { UserFindReturnDto } from './dto/user-find-return.dto';
+import { UserStatus } from '../common/enum';
+import { DBUpdateFailureException } from '../common/exception/custom-exception';
 
 @Injectable()
 export class AuthService {
@@ -32,6 +34,69 @@ export class AuthService {
 
 	private readonly logger = new Logger(AuthService.name);
 
+	async signup(userId: number, nickname: string, hasAvatar: boolean) {
+		const user = await this.validateUserExist(userId);
+
+		await this.validateUserAlreadySignUp(user);
+
+		await this.validateNickname(nickname);
+
+		let ret;
+		let updateUserDataDto;
+		if (hasAvatar) {
+			const { avatar, preSignedUrl } =
+				await this.usersRepository.getAvatarAndPresignedUrl(nickname);
+			updateUserDataDto = {
+				nickname: nickname,
+				avatar: avatar,
+			};
+			ret = preSignedUrl;
+		} else {
+			updateUserDataDto = {
+				nickname: nickname,
+			};
+			ret = null;
+		}
+
+		const updateRes = await this.usersRepository.update(userId, {
+			...updateUserDataDto,
+		});
+		if (updateRes.affected !== 1) {
+			throw DBUpdateFailureException(
+				`유저 ${userId}의 db 업데이트가 실패했습니다`,
+			);
+		}
+
+		return ret;
+	}
+
+	async validateUserExist(userId: number) {
+		const user = await this.usersRepository.findOne({
+			where: {
+				id: userId,
+			},
+		});
+
+		if (!user) {
+			throw new BadRequestException(
+				`User with id ${userId} doesn't exist`,
+			);
+		}
+		return user;
+	}
+
+	async validateUserAlreadySignUp(user: User) {
+		if (user.nickname)
+			throw new BadRequestException(`${user.id} is already signed up`);
+	}
+
+	async signout(userId: number) {
+		await this.usersRepository.update(userId, {
+			refreshToken: null,
+			status: UserStatus.OFFLINE,
+		});
+	}
+
 	private async createMfaSecret() {
 		const secret = speakeasy.generateSecret({
 			name: this.userConfigure.MFA_SECRET,
@@ -40,7 +105,7 @@ export class AuthService {
 	}
 
 	async findOrCreateUser(
-		userData: FtUserParamDto,
+		userData: OauthUserinfoParamDto,
 	): Promise<UserFindReturnDto> {
 		const user = await this.usersRepository.findOne({
 			where: { email: userData.email },
