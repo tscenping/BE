@@ -85,16 +85,16 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		const user = client.user;
 		if (!user || !client.id) return client.disconnect();
 		else if (user.gameSocketId) {
-			console.log('game socket 갈아끼운다 ~?!');
+			console.log('game socket이 이미 존재합니다.');
 			const socket = this.userIdToClient.get(user.id);
 			if (socket) {
 				const result = await this.isSocketConnected(socket);
 				if (result) {
 					// 이미 로그인된 유저의 경우, 기존 소켓을 disconnect한다.
 					this.server
-						.to(socket.id)
-						.emit(EVENT_ERROR, WS_DUPLICATE_LOGIN_ERROR);
-					socket.disconnect();
+						.to(result.id)
+						.emit(EVENT_ERROR, 'WS_DUPLICATE_LOGIN_ERROR');
+					result.disconnect();
 				} else this.userIdToClient.delete(user.id);
 			} else {
 				await this.usersRepository.update(user.id, {
