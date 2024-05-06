@@ -16,6 +16,7 @@ import {
 } from '@nestjs/websockets';
 import Redis from 'ioredis';
 import { Server, Socket } from 'socket.io';
+import { WS_DUPLICATE_LOGIN_ERROR } from 'src/common/exception/error-code';
 import { ChannelsGateway } from '../channels/channels.gateway';
 import { SocketWithAuth } from '../common/adapter/socket-io.adapter';
 import { K } from '../common/constants';
@@ -38,10 +39,7 @@ import {
 	EVENT_SERVER_GAME_READY,
 	EVENT_USER_STATUS,
 } from '../common/events';
-import {
-	WSBadRequestException,
-	WSDuplicateLoginException,
-} from '../common/exception/custom-exception';
+import { WSBadRequestException } from '../common/exception/custom-exception';
 import { WsFilter } from '../common/exception/custom-ws-exception.filter';
 import { WsAuthGuard } from '../common/guards/ws-auth.guard';
 import { FriendsRepository } from '../friends/friends.repository';
@@ -92,7 +90,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 			if (socket) {
 				const result = await this.isSocketConnected(socket);
 				if (result) {
-					throw WSDuplicateLoginException();
+					// 이미 로그인된 유저의 경우, 기존 소켓을 disconnect한다.
+					this.server
+						.to(socket.id)
+						.emit(EVENT_ERROR, WS_DUPLICATE_LOGIN_ERROR);
+					socket.disconnect();
 				} else this.userIdToClient.delete(user.id);
 			} else {
 				await this.usersRepository.update(user.id, {

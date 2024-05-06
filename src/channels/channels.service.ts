@@ -572,7 +572,7 @@ export class ChannelsService {
 		// redis에 mute 정보 저장
 		await this.redis.set(muteKey, '');
 		// mute 정보 만료 시간 설정
-		await this.redis.expire(muteKey, MUTE_TIME); // TODO: 30초로 변경
+		await this.redis.expire(muteKey, MUTE_TIME);
 
 		return receiverUserProfile!;
 	}

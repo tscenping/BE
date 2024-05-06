@@ -112,10 +112,14 @@ export class AuthService {
 		});
 
 		if (!user) {
-			const user = this.usersRepository.create(userData);
-			await this.usersRepository.save(user);
-
-			return { user };
+			try {
+				const user = this.usersRepository.create(userData);
+				await this.usersRepository.save(user);
+				return { user };
+			} catch (e) {
+				console.log(e);
+				throw new BadRequestException('유저 생성에 실패했습니다.');
+			}
 		}
 
 		if (!user.isMfaEnabled || user.mfaSecret) {
