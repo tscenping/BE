@@ -96,6 +96,7 @@ export class AuthService {
 			status: UserStatus.OFFLINE,
 		});
 	}
+s
 
 	private async createMfaSecret() {
 		const secret = speakeasy.generateSecret({

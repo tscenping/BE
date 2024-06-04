@@ -46,9 +46,10 @@ export class AuthController {
 		if (user.isMfaEnabled == false) {
 			// token을 쿠키에 저장한다.
 			res.cookie('accessToken', jwtAccessToken, {
-				// httpOnly: true,	// 자동로그인을 위해 httpOnly를 false로 설정
-				// secure: true,
-				// sameSite: 'none',
+				httpOnly: false,	// 자동로그인을 위해 httpOnly를 false로 설정
+				secure: true,
+				sameSite: 'lax',
+				domain: 'tscenping.shop',
 				expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
 			});
 		}
@@ -79,9 +80,10 @@ export class AuthController {
 		if (user.isMfaEnabled == false) {
 			// token을 쿠키에 저장한다.
 			res.cookie('accessToken', jwtAccessToken, {
-				// httpOnly: true,	// 자동로그인을 위해 httpOnly를 false로 설정
-				// secure: true,
-				// sameSite: 'none',
+				httpOnly: false,	// 자동로그인을 위해 httpOnly를 false로 설정
+				secure: true,
+				sameSite: "lax",
+				domain: 'tscenping.shop',
 				expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
 			});
 		}
@@ -144,9 +146,10 @@ export class AuthController {
 			);
 			// token을 쿠키에 저장한다.
 			res.cookie('accessToken', jwtAccessToken, {
-				// httpOnly: true,	// 자동로그인을 위해 httpOnly를 false로 설정
+				httpOnly: false,	// 자동로그인을 위해 httpOnly를 false로 설정
 				secure: true,
-				sameSite: 'none',
+				sameSite: "lax",
+				domain: 'tscenping.shop',
 				expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1),
 			});
 
@@ -177,9 +180,10 @@ export class AuthController {
 
 		// token을 쿠키에 저장한다.
 		res.cookie('accessToken', jwtAccessToken, {
-			// httpOnly: true,
+			httpOnly: false,
 			secure: true,
-			sameSite: 'none',
+			sameSite: "lax",
+			domain: 'tscenping.shop',
 			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1), // 1일
 		});
 
@@ -228,9 +232,10 @@ export class AuthController {
 	async refresh(@GetUser() user: User, @Res() res: Response) {
 		const jwtAccessToken = await this.authService.generateAccessToken(user);
 		res.cookie('accessToken', jwtAccessToken, {
-			// httpOnly: true,
+			httpOnly: false,
 			secure: true,
-			sameSite: 'none',
+			sameSite: "lax",
+			domain: 'tscenping.shop',
 			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1), // 1일
 		});
 
@@ -255,9 +260,10 @@ export class AuthController {
 
 		// token을 쿠키에 저장한다.
 		res.cookie('accessToken', jwtAccessToken, {
-			// httpOnly: true,
+			httpOnly: false,
 			secure: true,
-			sameSite: 'none',
+			sameSite: "lax",
+			domain: 'tscenping.shop',
 			expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 1), // 1일
 		});
 

@@ -4,6 +4,7 @@ import {
 	Controller,
 	Get,
 	Logger,
+	Header,
 	Param,
 	ParseIntPipe,
 	Patch,
@@ -81,7 +82,25 @@ export class UsersController {
 		return gameHistories;
 	}
 
+	// @Get('/rank')
+	// @ApiOperation({
+	// 	summary: '랭킹 조회',
+	// 	description: '레디스로부터 pagination해 랭킹 목록을 제공합니다.',
+	// })
+	// async paging() {
+	// 	// const rankResponseDto = await this.usersService.findRanksWithPage();	// 레디스 없이 DB에서 랭킹을 조회하는 코드
+	// 	let rankResponseDto = await this.ranksServices.findRanksWithPage(); // 레디스로부터 랭킹을 조회하는 코드
+	// 	if (rankResponseDto.rankUsers.length === 0) {
+	// 		this.logger.log('랭킹이 없습니다. 랭킹을 추가합니다.');
+	// 		rankResponseDto = await this.usersService.findRanksWithPage();
+	// 		await this.ranksServices.addRanking();
+	// 	}
+
+	// 	return rankResponseDto;
+	// }
+
 	@Get('/rank')
+	@UseGuards(AuthGuard('access'))
 	@ApiOperation({
 		summary: '랭킹 조회',
 		description: '레디스로부터 pagination해 랭킹 목록을 제공합니다.',
