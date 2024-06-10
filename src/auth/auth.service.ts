@@ -58,14 +58,19 @@ export class AuthService {
 			ret = null;
 		}
 
-		const updateRes = await this.usersRepository.update(userId, {
+		// '결과가 즉각 반영될 필요 없으니 비동기적으로 수행하도록 냅두자'라는 생각 -> await 키워드 뺌
+		this.usersRepository.update(userId, {
 			...updateUserDataDto,
 		});
-		if (updateRes.affected !== 1) {
-			throw DBUpdateFailureException(
-				`유저 ${userId}의 db 업데이트가 실패했습니다`,
-			);
-		}
+
+		// const updateRes = await this.usersRepository.update(userId, {
+		// 	...updateUserDataDto,
+		// });
+		// if (updateRes.affected !== 1) {
+		// 	throw DBUpdateFailureException(
+		// 		`유저 ${userId}의 db 업데이트가 실패했습니다`,
+		// 	);
+		// }
 
 		return ret;
 	}
@@ -96,7 +101,7 @@ export class AuthService {
 			status: UserStatus.OFFLINE,
 		});
 	}
-s
+
 
 	private async createMfaSecret() {
 		const secret = speakeasy.generateSecret({

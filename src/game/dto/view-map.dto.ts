@@ -1,5 +1,5 @@
 // ball 변하는 값
-import { KEYNAME, KEYSTATUS } from '../../common/enum';
+import { RACKETSTATUS } from '../../common/enum';
 
 export type ball = {
 	x: number;
@@ -14,7 +14,7 @@ export type ball = {
 // racket 변하는 값
 export type racket = {
 	y: number;
-	action: KEYSTATUS | null; // up, down
+	action: RACKETSTATUS; // up, down
 };
 
 export class UpdateDto {
@@ -91,11 +91,11 @@ export class ViewMapDto {
 
 		this.racketLeft = {
 			y: canvasHeight / 2 - racketHeight / 2,
-			action: null,
+			action: RACKETSTATUS.none,
 		};
 		this.racketRight = {
 			y: canvasHeight / 2 - racketHeight / 2,
-			action: null,
+			action: RACKETSTATUS.none,
 		};
 		this.racketSize = racketSize;
 	}
@@ -139,38 +139,46 @@ export class ViewMapDto {
 			(ball.yVelocity < 0 ? ball.accel * -1 : ball.accel) * dt * dt * 0.5;
 	}
 
-	updateRacketLeft(action: KEYNAME) {
+	updateRacketLeft(action: RACKETSTATUS) {
 		const racket = this.racketLeft;
-
-		if (action === KEYNAME.arrowUp) {
-			racket.y -= this.racketSpeed;
-		} else if (action === KEYNAME.arrowDown) {
-			racket.y += this.racketSpeed;
-		}
-
-		if (racket.y <= 0) racket.y = 0;
-		if (racket.y + this.racketHeight >= this.canvasHeight)
-			racket.y = this.canvasHeight - this.racketHeight;
+		racket.action = action;
 	}
 
-	updateRacketRight(action: KEYNAME) {
+	updateRacketRight(action: RACKETSTATUS) {
 		const racket = this.racketRight;
+		racket.action = action;
+	}
 
-		if (action === KEYNAME.arrowUp) {
-			racket.y -= this.racketSpeed;
-		} else if (action === KEYNAME.arrowDown) {
-			racket.y += this.racketSpeed;
+	private async calculateRacketLocation() {
+		const racketLeft = this.racketLeft;
+		const racketRight = this.racketRight;
+
+		if (racketLeft.action == RACKETSTATUS.up) {
+			racketLeft.y -= this.racketSpeed;
+		} else if (racketLeft.action == RACKETSTATUS.down) {
+			racketLeft.y += this.racketSpeed;
 		}
 
-		if (racket.y <= 0) racket.y = 0;
-		if (racket.y + this.racketHeight >= this.canvasHeight)
-			racket.y = this.canvasHeight - this.racketHeight;
+		if (racketLeft.y <= 0) racketLeft.y = 0;
+		if (racketLeft.y + this.racketHeight >= this.canvasHeight)
+			racketLeft.y = this.canvasHeight - this.racketHeight;
+
+		if (racketRight.action == RACKETSTATUS.up) {
+			racketRight.y -= this.racketSpeed;
+		} else if (racketRight.action == RACKETSTATUS.down) {
+			racketRight.y += this.racketSpeed;
+		}
+
+		if (racketRight.y <= 0) racketRight.y = 0;
+		if (racketRight.y + this.racketHeight >= this.canvasHeight)
+			racketRight.y = this.canvasHeight - this.racketHeight;
 	}
 
 	async changes() {
 		const updateDto = this.updateDto;
 		const ball = this.ball;
 		await this.calculateNextBallLocation();
+		await this.calculateRacketLocation();
 
 		const xChange = this.ballRadius;
 		const piece = Math.abs(ball.vx / xChange);
