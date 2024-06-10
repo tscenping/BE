@@ -199,20 +199,6 @@ export class UsersRepository extends Repository<User> {
 		});
 	}
 
-	// async deleteS3Image(userId: number) {
-	// 	const command = new DeleteObjectCommand({
-	// 		Bucket: this.s3Configure.S3_BUCKET_NAME,
-	// 		Key: `images/${userId}.jpeg`,
-	// 	});
-	//
-	// 	const response = await this.s3Configure.S3Object.send(command);
-	// 	// TODO: s3 이미지 삭제에 실패했을 때?
-	// 	if (response.$metadata.httpStatusCode !== 200) {
-	// 		console.error(response.$metadata.httpStatusCode);
-	// 		// throw new InternalServerErrorException();
-	// 	}
-	// }
-
 	private getNowDate(): string {
 		const date = new Date();
 		const year = date.getFullYear().toString();

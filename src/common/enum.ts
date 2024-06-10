@@ -43,12 +43,8 @@ export enum ChannelEventType {
 	NAME_CHANGE = 'NAME_CHANGE',
 }
 
-export enum KEYSTATUS {
+export enum RACKETSTATUS {
 	up = 'up',
 	down = 'down',
-}
-
-export enum KEYNAME {
-	arrowUp = 'arrowUp',
-	arrowDown = 'arrowDown',
+	none = 'none',
 }

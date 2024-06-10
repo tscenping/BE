@@ -19,13 +19,7 @@ import { Server, Socket } from 'socket.io';
 import { ChannelsGateway } from '../channels/channels.gateway';
 import { SocketWithAuth } from '../common/adapter/socket-io.adapter';
 import { K } from '../common/constants';
-import {
-	GameStatus,
-	GameType,
-	KEYNAME,
-	KEYSTATUS,
-	UserStatus,
-} from '../common/enum';
+import { GameStatus, GameType, RACKETSTATUS, UserStatus } from '../common/enum';
 import {
 	EVENT_ERROR,
 	EVENT_GAME_INVITATION,
@@ -279,8 +273,7 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		@MessageBody()
 		data: {
 			gameId: number;
-			keyStatus: KEYSTATUS;
-			keyName: KEYNAME;
+			racketStatus: RACKETSTATUS;
 		},
 	) {
 		const user = client.user;
@@ -290,16 +283,17 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect {
 		if (!gameDto) {
 			throw WSBadRequestException(`유효하지 않은 게임입니다`);
 		}
-
 		// console.log('----When matchKeyDown event coming, racket status----');
 		// console.log(`before left racket y: ${gameDto.viewMap.racketLeft.y}`);
 		// console.log(`before right racket y: ${gameDto.viewMap.racketRight.y}`);
-		if (data.keyStatus === KEYSTATUS.down) {
-			// console.log('hi im gonna update racket');
-			if (user.id === gameDto.playerLeftId)
-				gameDto.viewMap.updateRacketLeft(data.keyName);
-			else gameDto.viewMap.updateRacketRight(data.keyName);
+		// console.log('hi im gonna update racket');
+
+		if (user.id === gameDto.playerLeftId) {
+			gameDto.viewMap.updateRacketLeft(data.racketStatus);
+		} else {
+			gameDto.viewMap.updateRacketRight(data.racketStatus);
 		}
+
 		// console.log(`after left racket y: ${gameDto.viewMap.racketLeft.y}`);
 		// console.log(`after right racket y: ${gameDto.viewMap.racketRight.y}`);
 	}
